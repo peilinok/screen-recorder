@@ -12,6 +12,8 @@ extern "C" {
 #include <libavdevice\avdevice.h>
 #include "libavcodec\avcodec.h"  
 #include "libswscale\swscale.h"
+#include "libswresample\swresample.h"
+#include <libavutil\audio_fifo.h>
 
 #include "headers.h"
 }
@@ -422,7 +424,7 @@ HRESULT capture_audio()
 			NULL);
 	EXIT_ON_ERROR(hr)
 
-		size_t _FrameSize = (pwfx->wBitsPerSample / 8) * pwfx->nChannels;
+		size_t persample_size = (pwfx->wBitsPerSample / 8) * pwfx->nChannels;
 
 		// Get the size of the allocated buffer.
 		hr = pAudioClient->GetBufferSize(&bufferFrameCount);
@@ -446,7 +448,7 @@ HRESULT capture_audio()
 	AVStream *output_stream = NULL;
 	AVCodec *output_codec = NULL;
 
-	const char* out_file = "tdjm.aac";          //Output URL
+	const char* out_file = "tdjm.aac";
 
 	if (avio_open(&output_io_context, out_file, AVIO_FLAG_READ_WRITE) < 0) {
 		printf("Failed to open output file!\n");
@@ -482,7 +484,7 @@ HRESULT capture_audio()
 	output_codec_context->channel_layout = av_get_default_channel_layout(2); //AV_CH_LAYOUT_STEREO;
 	output_codec_context->sample_rate = pwfx->nSamplesPerSec;//48000
 	output_codec_context->sample_fmt = AV_SAMPLE_FMT_FLTP;
-	output_codec_context->bit_rate = pwfx->nAvgBytesPerSec;
+	output_codec_context->bit_rate = 96000;
 
 	output_codec_context->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
@@ -500,19 +502,28 @@ HRESULT capture_audio()
 	if (avcodec_parameters_from_context(output_stream->codecpar, output_codec_context) < 0)
 		return -1;
 
-	avformat_write_header(output_format_context, NULL);
+	AVFrame *resampled_frame = av_frame_alloc();
+	resampled_frame->nb_samples = output_codec_context->frame_size;
+	resampled_frame->channel_layout = output_codec_context->channel_layout;
+	resampled_frame->format = output_codec_context->sample_fmt;
+	resampled_frame->sample_rate = output_codec_context->sample_rate;
 
-	AVFrame *output_frame = av_frame_alloc();
-	output_frame->nb_samples = output_codec_context->frame_size;
-	output_frame->channel_layout = output_codec_context->channel_layout;
-	output_frame->format = output_codec_context->sample_fmt;
-	output_frame->sample_rate = output_codec_context->sample_rate;
+	int resampled_size = av_samples_get_buffer_size(NULL, output_codec_context->channels, output_codec_context->frame_size, output_codec_context->sample_fmt, 0);
 
-	int size = av_samples_get_buffer_size(NULL, output_codec_context->channels, output_codec_context->frame_size, output_codec_context->sample_fmt, 1);
-
-	uint8_t *frame_buf = (uint8_t*)av_malloc(size);
-	if (avcodec_fill_audio_frame(output_frame, output_codec_context->channels, output_codec_context->sample_fmt, frame_buf, size, 1) < 0)
+	uint8_t *resampled_buf = (uint8_t*)av_malloc(resampled_size);
+	if (avcodec_fill_audio_frame(resampled_frame, output_codec_context->channels, output_codec_context->sample_fmt, resampled_buf, resampled_size, 0) < 0)
 		return -1;
+
+	AVFrame *sample_frame = av_frame_alloc();
+	sample_frame->nb_samples = 1024;
+	sample_frame->channel_layout = av_get_default_channel_layout(pwfx->nChannels);
+	sample_frame->format = AV_SAMPLE_FMT_FLT;
+	sample_frame->sample_rate = pwfx->nSamplesPerSec;
+
+	int sample_size = av_samples_get_buffer_size(NULL, pwfx->nChannels, 1024, AV_SAMPLE_FMT_FLT, 0);
+	uint8_t *sample_buf = (uint8_t*)av_malloc(sample_size);
+
+	avcodec_fill_audio_frame(sample_frame, pwfx->nChannels, AV_SAMPLE_FMT_FLT, sample_buf, sample_size, 0);
 
 	AVPacket pkt;
 
@@ -531,8 +542,19 @@ HRESULT capture_audio()
 		return false;
 	}
 
+	//init resampler
+	SwrContext *resample_ctx = swr_alloc_set_opts(NULL, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLTP, 48000, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000, 0, NULL);
+	int error = swr_init(resample_ctx);
+	if (error < 0)
+		return false;
 
-	hr = pAudioClient->Start();  // Start recording.
+	//init FIFO buffer
+
+	//start recording
+
+	avformat_write_header(output_format_context, NULL);
+
+	hr = pAudioClient->Start();
 	EXIT_ON_ERROR(hr)
 
 		int pcmInBuffer = 0;
@@ -544,9 +566,6 @@ HRESULT capture_audio()
 	waitArray[0] = hAudioSamplesReadyEvent;
 
 	uint64_t nextptx = 0;
-
-	FILE *fpPCM = fopen("direct.pcm", "wb+");
-	FILE *fpPCM1 = fopen("direct1.pcm", "wb+");
 
 	while (bDone == false)
 	{
@@ -573,23 +592,24 @@ HRESULT capture_audio()
 
 				if (pData != NULL) {
 
-					fwrite(pData, 1, numFramesAvailable*_FrameSize, fpPCM);
-
-					copiedPcm = min(size - pcmInBuffer, numFramesAvailable*_FrameSize);
+					copiedPcm = min(sample_size - pcmInBuffer, numFramesAvailable*persample_size);
 					if (copiedPcm > 0) {
-						memcpy(frame_buf + pcmInBuffer, pData, copiedPcm);
+						memcpy(sample_buf + pcmInBuffer, pData, copiedPcm);
 						pcmInBuffer += copiedPcm;
 					}
 
-					if (pcmInBuffer == size) {//got one frame ,encode
+					if (pcmInBuffer == sample_size) {//got one frame ,encode
+
+						int ret = swr_convert(resample_ctx, resampled_frame->data, output_codec_context->frame_size, (const uint8_t**)sample_frame->data, 1024);
+						if (ret <= 0)
+							return -1;
 
 						av_init_packet(&pkt);
-						output_frame->pts = nextptx;
-						nextptx += output_frame->nb_samples;
+						resampled_frame->pts = nextptx;
+						nextptx += resampled_frame->nb_samples;
 
-						int error = avcodec_send_frame(output_codec_context, output_frame);
+						int error = avcodec_send_frame(output_codec_context, resampled_frame);
 
-						fwrite(frame_buf, 1, size, fpPCM1);
 						if (error == 0) {
 							error = avcodec_receive_packet(output_codec_context, &pkt);
 							if (error == 0) {
@@ -605,14 +625,14 @@ HRESULT capture_audio()
 						pcmInBuffer = 0;
 					}
 
-					if (numFramesAvailable*_FrameSize - copiedPcm > 0)
+					if (numFramesAvailable*persample_size - copiedPcm > 0)
 					{
-						memcpy(frame_buf + pcmInBuffer, pData + copiedPcm, numFramesAvailable*_FrameSize - copiedPcm);
+						memcpy(sample_buf + pcmInBuffer, pData + copiedPcm, numFramesAvailable*persample_size - copiedPcm);
 
-						pcmInBuffer += numFramesAvailable*_FrameSize - copiedPcm;
+						pcmInBuffer += numFramesAvailable*persample_size - copiedPcm;
 					}
 
-					if (index > 500) {
+					if (index > 2000) {
 						printf("pcm still in buffer:%d\r\n", pcmInBuffer);
 						bDone = true;
 						break;
@@ -632,8 +652,6 @@ HRESULT capture_audio()
 	} // end of 'while (stillPlaying)'
 
 
-	fclose(fpPCM);
-	fclose(fpPCM1);
 		av_write_trailer(output_format_context);
 
 		if (output_codec_context)
@@ -1007,119 +1025,10 @@ static void encode(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
 	}
 }
 
-void test_encode_audio()
-{
-	const char *filename = "test.aac";
-	const AVCodec *codec;
-	AVCodecContext *c = NULL;
-	AVFrame *frame;
-	AVPacket *pkt;
-	int i, j, k, ret;
-	FILE *f;
-	uint16_t *samples;
-	float t, tincr;
-
-	/* find the MP2 encoder */
-	codec = avcodec_find_encoder(AV_CODEC_ID_MP2);
-	if (!codec) {
-		fprintf(stderr, "Codec not found\n");
-		exit(1);
-	}
-
-	c = avcodec_alloc_context3(codec);
-	if (!c) {
-		fprintf(stderr, "Could not allocate audio codec context\n");
-		exit(1);
-	}
-
-	/* put sample parameters */
-	c->bit_rate = 64000;
-
-	/* check that the encoder supports s16 pcm input */
-	c->sample_fmt = AV_SAMPLE_FMT_S16;
-	if (!check_sample_fmt(codec, c->sample_fmt)) {
-		fprintf(stderr, "Encoder does not support sample format %s",
-			av_get_sample_fmt_name(c->sample_fmt));
-		exit(1);
-	}
-
-	/* select other audio parameters supported by the encoder */
-	c->sample_rate = select_sample_rate(codec);
-	c->channel_layout = select_channel_layout(codec);
-	c->channels = av_get_channel_layout_nb_channels(c->channel_layout);
-
-	/* open it */
-	if (avcodec_open2(c, codec, NULL) < 0) {
-		fprintf(stderr, "Could not open codec\n");
-		exit(1);
-	}
-
-	f = fopen(filename, "wb");
-	if (!f) {
-		fprintf(stderr, "Could not open %s\n", filename);
-		exit(1);
-	}
-
-	/* packet for holding encoded output */
-	pkt = av_packet_alloc();
-	if (!pkt) {
-		fprintf(stderr, "could not allocate the packet\n");
-		exit(1);
-	}
-
-	/* frame containing input raw audio */
-	frame = av_frame_alloc();
-	if (!frame) {
-		fprintf(stderr, "Could not allocate audio frame\n");
-		exit(1);
-	}
-
-	frame->nb_samples = c->frame_size;
-	frame->format = c->sample_fmt;
-	frame->channel_layout = c->channel_layout;
-
-	/* allocate the data buffers */
-	ret = av_frame_get_buffer(frame, 0);
-	if (ret < 0) {
-		fprintf(stderr, "Could not allocate audio data buffers\n");
-		exit(1);
-	}
-
-	/* encode a single tone sound */
-	t = 0;
-	tincr = 2 * M_PI * 440.0 / c->sample_rate;
-	for (i = 0; i < 200; i++) {
-		/* make sure the frame is writable -- makes a copy if the encoder
-		* kept a reference internally */
-		ret = av_frame_make_writable(frame);
-		if (ret < 0)
-			exit(1);
-		samples = (uint16_t*)frame->data[0];
-
-		for (j = 0; j < c->frame_size; j++) {
-			samples[2 * j] = (int)(sin(t) * 10000);
-
-			for (k = 1; k < c->channels; k++)
-				samples[2 * j + k] = samples[2 * j];
-			t += tincr;
-		}
-		encode(c, frame, pkt, f);
-	}
-
-	/* flush the encoder */
-	encode(c, NULL, pkt, f);
-
-	fclose(f);
-
-	av_frame_free(&frame);
-	av_packet_free(&pkt);
-	avcodec_free_context(&c);
-}
-
 int main()
 {
-	//capture_audio();
-	test_transcode();
+	capture_audio();
+	//test_transcode();
 
 	system("pause");
 
