@@ -12,7 +12,11 @@ extern "C" {
 #include <libavdevice\avdevice.h>
 #include "libavcodec\avcodec.h"  
 #include "libswscale\swscale.h"
+
+#include "headers.h"
 }
+
+#include "headers.h"
 
 void capture_screen()
 {
@@ -335,6 +339,7 @@ void SaveWaveData(BYTE *CaptureBuffer, size_t BufferSize, const WAVEFORMATEX *Wa
 }
 
 static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt);
+static int select_sample_rate(const AVCodec *codec);
 
 BOOL AdjustFormatTo16Bits(WAVEFORMATEX *pwfx)
 {
@@ -406,7 +411,7 @@ HRESULT capture_audio()
 		hr = pAudioClient->GetMixFormat(&pwfx);
 	EXIT_ON_ERROR(hr)
 
-		AdjustFormatTo16Bits(pwfx);
+		//AdjustFormatTo16Bits(pwfx);
 
 		hr = pAudioClient->Initialize(
 			AUDCLNT_SHAREMODE_SHARED,
@@ -462,7 +467,8 @@ HRESULT capture_audio()
 	if (!(output_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)))
 		return -1;
 
-	int ret = check_sample_fmt(output_codec, AV_SAMPLE_FMT_S16);
+	int is_support = check_sample_fmt(output_codec, AV_SAMPLE_FMT_S16);
+	int selected_sample = select_sample_rate(output_codec);
 
 	output_stream = avformat_new_stream(output_format_context, NULL);
 	if (!output_stream)
@@ -593,8 +599,6 @@ HRESULT capture_audio()
 								index++;
 
 								printf("index:%d\r\n", index);
-								//static FILE *fp = fopen("direct.aac", "wb+");
-								//fwrite(pkt.data, 1, pkt.size, fp);
 							}
 							av_packet_unref(&pkt);
 						}
@@ -609,7 +613,7 @@ HRESULT capture_audio()
 					}
 
 					if (index > 500) {
-						printf("pcm in buffer:%d\r\n", pcmInBuffer);
+						printf("pcm still in buffer:%d\r\n", pcmInBuffer);
 						bDone = true;
 						break;
 					}
@@ -1114,7 +1118,8 @@ void test_encode_audio()
 
 int main()
 {
-	capture_audio();
+	//capture_audio();
+	test_transcode();
 
 	system("pause");
 
