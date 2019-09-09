@@ -35,3 +35,9 @@
 /ipch/RECORDER-9effb513/RECORDER-4258f25c.ipch
 /Recorder.VC.db
 /Recorder.VC.VC.opendb
+/Recorder/Debug/Recorder.Build.CppClean.log
+/Recorder/Debug/main.obj
+/Recorder/Debug/record_audio.obj
+/Recorder/Debug/record_audio_factory.obj
+/Recorder/Debug/record_audio_wasapi.obj
+/Recorder/Recorder.vcxproj.user

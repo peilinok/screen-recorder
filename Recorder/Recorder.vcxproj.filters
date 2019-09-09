@@ -24,7 +24,34 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers.h">
+    <ClInclude Include="record_audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_aac.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_264.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="muxer_mp4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="error_define.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_wasapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_define.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,10 +59,16 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Recorder.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="transcode_aac.c">
+    <ClCompile Include="record_audio_wasapi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,18 +7,9 @@
 #include <iostream>
 
 extern "C" {
-#include <libavformat\avformat.h>
-#include <libavutil\avutil.h>
-#include <libavdevice\avdevice.h>
-#include "libavcodec\avcodec.h"  
-#include "libswscale\swscale.h"
-#include "libswresample\swresample.h"
-#include <libavutil\audio_fifo.h>
-
-#include "headers.h"
+#include "common.h"
 }
 
-#include "headers.h"
 
 void capture_screen()
 {
@@ -96,8 +87,8 @@ void capture_screen()
 		pEncoderCtx->width = pDecoderCtx->width;
 		pEncoderCtx->height = pDecoderCtx->height;
 		pEncoderCtx->time_base.num = 1;
-		pEncoderCtx->time_base.den = 20;//Ö¡ÂÊ(¼ÈÒ»ÃëÖÓ¶àÉÙÕÅÍ¼Æ¬)
-		pEncoderCtx->bit_rate = 4000000; //±ÈÌØÂÊ(µ÷½ÚÕâ¸ö´óÐ¡¿ÉÒÔ¸Ä±ä±àÂëºóÊÓÆµµÄÖÊÁ¿)
+		pEncoderCtx->time_base.den = 20;//Ö¡ï¿½ï¿½(ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬)
+		pEncoderCtx->bit_rate = 4000000; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½Ô¸Ä±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 		pEncoderCtx->gop_size = 12;
 
 		if (pEncoderCtx->flags & AVFMT_GLOBALHEADER)
@@ -161,7 +152,7 @@ void capture_screen()
 			}
 
 			av_free_packet(packet);
-		}//for(;;£©
+		}//for(;;ï¿½ï¿½
 
 		av_free(pFrameYUV);
 		avcodec_close(pDecoderCtx);
@@ -392,6 +383,12 @@ HRESULT capture_audio()
 	BOOL bDone = FALSE;
 	BYTE *pData;
 	DWORD flags;
+
+		/*CoTaskMemFree(pwfx);
+	SAFE_RELEASE(pEnumerator)
+		SAFE_RELEASE(pDevice)
+		SAFE_RELEASE(pAudioClient)
+		SAFE_RELEASE(pCaptureClient)*/
 
 	hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
@@ -997,35 +994,7 @@ static int select_channel_layout(const AVCodec *codec)
 	return best_ch_layout;
 }
 
-static void encode(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
-	FILE *output)
-{
-	int ret;
-
-	/* send the frame for encoding */
-	ret = avcodec_send_frame(ctx, frame);
-	if (ret < 0) {
-		fprintf(stderr, "Error sending the frame to the encoder\n");
-		exit(1);
-	}
-
-	/* read all the available output packets (in general there may be any
-	* number of them */
-	while (ret >= 0) {
-		ret = avcodec_receive_packet(ctx, pkt);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-			return;
-		else if (ret < 0) {
-			fprintf(stderr, "Error encoding audio frame\n");
-			exit(1);
-		}
-
-		fwrite(pkt->data, 1, pkt->size, output);
-		av_packet_unref(pkt);
-	}
-}
-
-int main()
+int main2()
 {
 	capture_audio();
 	//test_transcode();

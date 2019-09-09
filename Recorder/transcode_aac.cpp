@@ -43,7 +43,7 @@
 
 #include "libswresample/swresample.h"
 
-#include "headers.h"
+#include "common.h"
 
 /* The output bit rate in bit/s */
 #define OUTPUT_BIT_RATE 96000
@@ -449,7 +449,7 @@ static int init_converted_samples(uint8_t ***converted_input_samples,
 	* Each pointer will later point to the audio samples of the corresponding
 	* channels (although it may be NULL for interleaved formats).
 	*/
-	if (!(*converted_input_samples = calloc(output_codec_context->channels,
+	if (!(*converted_input_samples = (uint8_t**)calloc(output_codec_context->channels,
 		sizeof(**converted_input_samples)))) {
 		fprintf(stderr, "Could not allocate converted input sample pointers\n");
 		return AVERROR(ENOMEM);
