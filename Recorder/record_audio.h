@@ -17,11 +17,7 @@ namespace am {
 		record_audio();
 		virtual ~record_audio();
 
-		virtual int init(
-			const std::string &device_name,
-			const RECORD_AUDIO_FORMAT fmt,
-			const int sample_rate,
-			const int bit_rate) = 0;
+		virtual int init(const std::string &device_name) = 0;
 
 		virtual int start() = 0;
 		
@@ -37,10 +33,14 @@ namespace am {
 		inline int get_sample_rate() { return _sample_rate; }
 		
 		inline int get_bit_rate() { return _bit_rate; }
+
+		inline int get_bit_per_sample() { return _bit_per_sample; }
+
+		inline int get_channel_num() { return _channel_num; }
 		
 		inline RECORD_AUDIO_FORMAT get_fmt() { return _fmt; }
 
-		inline std::string get_device_name() { return _device_name; }
+		inline const std::string & get_device_name() { return _device_name; }
 
 		inline void registe_cb(
 			cb_audio_data on_data,

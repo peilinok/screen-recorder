@@ -7,13 +7,13 @@
 *  Create a new audio record context
 *
 */
-int record_audio_new(RECORD_AUDIO_TYPES type, am::record_audio **recoder);
+int record_audio_new(RECORD_AUDIO_TYPES type, am::record_audio **recorder);
 
 /**
 * Destroy audio record context
 *
 */
-void record_audio_destroy(am::record_audio ** recoder);
+void record_audio_destroy(am::record_audio ** recorder);
 
 #endif // !RECORD_AUDIO_FACTORY
 

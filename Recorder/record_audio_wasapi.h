@@ -19,11 +19,7 @@ namespace am {
 		record_audio_wasapi();
 		~record_audio_wasapi();
 
-		virtual int init(
-			const std::string &device_name,
-			const RECORD_AUDIO_FORMAT fmt,
-			const int sample_rate,
-			const int bit_rate);
+		virtual int init(const std::string &device_name);
 
 		virtual int start();
 

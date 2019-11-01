@@ -39,18 +39,24 @@ namespace am {
 
 	record_audio_wasapi::~record_audio_wasapi()
 	{
+		stop();
+
 		clean_wasapi();
 
 		if(_co_inited == true)
 			CoUninitialize();
 	}
 
-	int record_audio_wasapi::init(const std::string & device_name, const RECORD_AUDIO_FORMAT fmt, const int sample_rate, const int bit_rate)
+	int record_audio_wasapi::init(const std::string & device_name)
 	{
 		int error = AE_NO;
 
 		if (_co_inited == false) {
 			return AE_CO_INITED_FAILED;
+		}
+
+		if (_inited == true) {
+			return AE_NO;
 		}
 
 		do {
@@ -136,7 +142,7 @@ namespace am {
 	int record_audio_wasapi::start()
 	{
 		if (_running == true) {
-			al_debug("audio record is already running");
+			al_warn("audio record is already running");
 			return AE_NO;
 		}
 
@@ -207,7 +213,7 @@ namespace am {
 					data = NULL;
 				}
 
-				if (data &&_on_data) {
+				if (_on_data) {
 					_on_data(data, frame_num*frame_size);
 				}
 

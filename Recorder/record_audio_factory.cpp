@@ -5,7 +5,7 @@
 #include "log_helper.h"
 
 
-int record_audio_new(RECORD_AUDIO_TYPES type,am::record_audio **recoder)
+int record_audio_new(RECORD_AUDIO_TYPES type,am::record_audio **recorder)
 {
 	int err = AE_NO;
 
@@ -15,9 +15,12 @@ int record_audio_new(RECORD_AUDIO_TYPES type,am::record_audio **recoder)
 		err = AE_UNSUPPORT;
 		break;
 	case AT_AUDIO_WAS:
-		*recoder = (am::record_audio *)new am::record_audio_wasapi();
+		*recorder = (am::record_audio *)new am::record_audio_wasapi();
 		break;
 	case AT_AUDIO_DSHOW:
+		err = AE_UNSUPPORT;
+		break;
+	case AT_AUDIO_FFMPEG:
 		err = AE_UNSUPPORT;
 		break;
 	default:
@@ -28,10 +31,12 @@ int record_audio_new(RECORD_AUDIO_TYPES type,am::record_audio **recoder)
 	return err;
 }
 
-void record_audio_destroy(am::record_audio ** recoder)
+void record_audio_destroy(am::record_audio ** recorder)
 {
-	if (*recoder != nullptr) {
-		(*recoder)->stop();
-		delete *recoder;
+	if (*recorder != nullptr) {
+		(*recorder)->stop();
+		delete *recorder;
 	}
+
+	*recorder = nullptr;
 }
