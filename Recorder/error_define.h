@@ -24,11 +24,15 @@ enum AM_ERROR{
 	AE_FFMPEG_FIND_DECODER_FAILED,
 	AE_FFMPEG_OPEN_CODEC_FAILED,
 	AE_FFMPEG_READ_FRAME_FAILED,
+	AE_FFMPEG_READ_PACKET_FAILED,
 	AE_FFMPEG_DECODE_FRAME_FAILED,
 	AE_FFMPEG_NEW_SWSCALE_FAILED,
 	AE_FFMPEG_FIND_ENCODER_FAILED,
 	AE_FFMPEG_ALLOC_CONTEXT_FAILED,
 	AE_FFMPEG_ENCODE_FRAME_FAILED,
+	AE_FFMPEG_ALLOC_FRAME_FAILED,
+
+	AE_RESAMPLE_INIT_FAILED,
 };
 
 static const char *ERRORS_STR[] = {
@@ -53,12 +57,16 @@ static const char *ERRORS_STR[] = {
 	"ffmpeg find decoder failed",       //AE_FFMPEG_FIND_DECODER_FAILED
 	"ffmpeg open codec failed",         //AE_FFMPEG_OPEN_CODEC_FAILED
 	"ffmpeg read frame failed",         //AE_FFMPEG_READ_FRAME_FAILED
+	"ffmpeg read packet failed",        //AE_FFMPEG_READ_PACKET_FAILED
 	"ffmpeg decode frame failed",       //AE_FFMPEG_DECODE_FRAME_FAILED
 	"ffmpeg create swscale failed",     //AE_FFMPEG_NEW_SWSCALE_FAILED
 
 	"ffmpeg find encoder failed",       //AE_FFMPEG_FIND_ENCODER_FAILED
 	"ffmpeg alloc context failed",      //AE_FFMPEG_ALLOC_CONTEXT_FAILED
 	"ffmpeg encode frame failed",       //AE_FFMPEG_ENCODE_FRAME_FAILED
+	"ffmpeg alloc frame failed",        //AE_FFMPEG_ALLOC_FRAME_FAILED
+
+	"resampler init failed",            //AE_RESAMPLE_INIT_FAILED
 
 };
 

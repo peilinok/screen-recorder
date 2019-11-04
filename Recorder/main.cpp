@@ -1,9 +1,10 @@
 #include "record_audio_factory.h"
+#include "resample_pcm.h"
+#include "encoder_aac.h"
+
+
 #include "record_desktop_factory.h"
 #include "encoder_264.h"
-
-#include "encoder_aac.h"
-#include "encoder_aac.h"
 
 #include "muxer_mp4.h"
 
@@ -15,16 +16,59 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
+#define FRAME_RATE 25
 
 
 
 static am::record_audio *_recorder_audio = nullptr;
+static uint8_t* _sample_frame = NULL;
+static int _sample_frame_size = 0;
+static int _sample_in_frame = 0;
+
+
+static am::resample_pcm *_resample_pcm = nullptr;
+static uint8_t * _resampled_frame = NULL;
+static int _resampled_frame_size = 0;
+static am::SAMPLE_SETTING _sample_setting;
+static am::SAMPLE_SETTING _resample_setting;
+
+static am::encoder_aac *_encoder_aac = nullptr;
+
+void on_encoder_aac_data(const uint8_t *data, int length)
+{
+	static FILE *aac_file = fopen("test.aac", "wb+");
+	fwrite(data, 1, length, aac_file);
+}
+
+void on_encoder_aac_error(int error)
+{
+	al_fatal("on aac encoder error:%d", error);
+}
+
 
 void on_record_audio_data(const uint8_t *data, int length)
 {
-	if (data && length)
-		al_debug("on audio data:%d\r\n", length);
+
+	if (data && length) {
+
+		int copy_len = min(_sample_frame_size - _sample_in_frame, length);
+		if (copy_len > 0) {
+			memcpy(_sample_frame + _sample_in_frame, data, copy_len);
+			_sample_in_frame += copy_len;
+		}
+
+		if (_sample_in_frame == _sample_frame_size) {
+			int ret = _resample_pcm->convert(_sample_frame, _sample_frame_size, _resampled_frame, _resampled_frame_size);
+			_encoder_aac->put(_resampled_frame, _resampled_frame_size);
+			_sample_in_frame = 0;
+		}
+
+		if (length - copy_len > 0) {
+			memcpy(_sample_frame + _sample_in_frame, data + copy_len, length - copy_len);
+
+			_sample_in_frame += length - copy_len;
+		}
+	}
 	else
 		al_debug("on silence data:%d\r\n", length);
 }
@@ -59,7 +103,46 @@ int start_record_audio() {
 		_recorder_audio->get_channel_num(),
 		_recorder_audio->get_fmt());
 
+	_sample_setting.sample_rate = _recorder_audio->get_sample_rate();
+	_sample_setting.nb_samples = 1024;//output_codec_context->frame_size,size of pcm per frame
+	_sample_setting.nb_channels = _recorder_audio->get_channel_num();
+	_sample_setting.channel_layout = av_get_default_channel_layout(_recorder_audio->get_channel_num());
+	_sample_setting.fmt = AV_SAMPLE_FMT_FLT;
+
+	_sample_frame_size = av_samples_get_buffer_size(NULL, _sample_setting.nb_channels, _sample_setting.nb_samples, _sample_setting.fmt, 0);
+	_sample_frame = (uint8_t*)malloc(_sample_frame_size);
+
+	_resample_setting.sample_rate = 48000;
+	_resample_setting.nb_samples = 1024;
+	_resample_setting.nb_channels = 2;
+	_resample_setting.channel_layout = av_get_default_channel_layout(_resample_setting.nb_channels);
+	_resample_setting.fmt = AV_SAMPLE_FMT_FLTP;
+
 	_recorder_audio->registe_cb(on_record_audio_data, on_record_audio_error);
+
+	_resample_pcm = new am::resample_pcm();
+
+
+	error = _resample_pcm->init(&_sample_setting,&_resample_setting,&_resampled_frame_size);
+	if (error == AE_NO && _resampled_frame_size) {
+		_resampled_frame = (uint8_t*)malloc(_resampled_frame_size);
+	}
+
+	_encoder_aac = new am::encoder_aac();
+
+	_encoder_aac->registe_cb(on_encoder_aac_data, on_encoder_aac_error);
+
+	error = _encoder_aac->init(
+		_resample_setting.nb_channels,
+		_resample_setting.nb_samples,
+		48000,
+		_resample_setting.fmt,
+		128000);
+	if (error != AE_NO) {
+		goto exit;
+	}
+
+	_encoder_aac->start();
 
 	error = _recorder_audio->start();
 
@@ -67,6 +150,29 @@ exit:
 	if (error != AE_NO) {
 		if (_recorder_audio != nullptr)
 			record_audio_destroy(&_recorder_audio);
+
+		_recorder_audio = nullptr;
+
+		if (_resample_pcm != nullptr)
+			delete _resampled_frame;
+
+		_resampled_frame = nullptr;
+
+		if (_encoder_aac != nullptr)
+			delete _encoder_aac;
+
+		_encoder_aac = nullptr;
+
+		if (_sample_frame)
+			free(_sample_frame);
+
+		_sample_frame = NULL;
+
+		if (_resampled_frame)
+			free(_sample_frame);
+
+		_sample_frame = NULL;
+
 	}
 
 	return error;
@@ -79,14 +185,29 @@ static am::encoder_264 *_encoder_264 = nullptr;
 static uint8_t *_buff_264 = NULL;
 static int _buff_264_len = 0;
 
+void on_encode_264_data(const uint8_t *data, int length)
+{
+	static FILE * fp = fopen("a.264", "wb+");
+	fwrite(data, 1, length, fp);
+
+	fflush(fp);
+}
+
+void on_encode_264_error(int error) {
+	al_error("encode error:%d", error);
+}
+
 void init_encoder() {
 	_encoder_264 = new am::encoder_264();
 
-	int error = _encoder_264->init(1920, 1080, 15, &_buff_264_len);
+	int error = _encoder_264->init(1920, 1080, FRAME_RATE, &_buff_264_len);
 	if (error != AE_NO)
 		goto exit;
 
 	_buff_264 = (uint8_t*)malloc(_buff_264_len);
+
+	_encoder_264->registe_cb(on_encode_264_data, on_encode_264_error);
+	_encoder_264->start();
 
 exit:
 	if (error != AE_NO) {
@@ -108,13 +229,18 @@ static am::record_desktop *_recorder_desktop = nullptr;
 void on_record_desktop_data(const uint8_t *data, int data_len) {
 	//al_debug("on desktop data:%d \r\n", data_len);
 	if (_encoder_264) {
+		
+#if 1
+		_encoder_264->put(data, data_len);
+#else
 		int got_pic = 0;
 		int err = _encoder_264->encode(data, data_len, _buff_264, _buff_264_len, &got_pic);
 		if (err == AE_NO && got_pic) {
-			al_debug("got 264 data:%d \r\n", got_pic);
+			//al_debug("got 264 data:%d \r\n", got_pic);
 			static FILE * fp = fopen("a.264", "wb+");
 			fwrite(_buff_264, 1, got_pic, fp);
 		}
+#endif
 	}
 }
 
@@ -134,7 +260,7 @@ int start_record_desktop() {
 	rect.top = 0;
 	rect.right = 1920;
 	rect.bottom = 1080;
-	error = _recorder_desktop->init(rect, 15);
+	error = _recorder_desktop->init(rect, FRAME_RATE);
 
 	_recorder_desktop->registe_cb(on_record_desktop_data, on_record_desktop_error);
 
@@ -370,8 +496,8 @@ int main(int argc, char **argv)
 
 	//enum_audio_devices();
 
-	//start_record_audio();
-	start_record_desktop();
+	start_record_audio();
+	//start_record_desktop();
 
 	do {
 		Sleep(20);

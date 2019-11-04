@@ -151,6 +151,7 @@
     <ClInclude Include="encoder_264.h" />
     <ClInclude Include="encoder_aac.h" />
     <ClInclude Include="error_define.h" />
+    <ClInclude Include="filter_amix.h" />
     <ClInclude Include="log_helper.h" />
     <ClInclude Include="muxer_mp4.h" />
     <ClInclude Include="record_audio.h" />
@@ -163,13 +164,16 @@
     <ClInclude Include="record_desktop_gdi.h" />
     <ClInclude Include="record_devices.h" />
     <ClInclude Include="resample_pcm.h" />
+    <ClInclude Include="ring_buffer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="encoder_264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
+    <ClCompile Include="filter_amix.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="muxer_mp4.cpp" />
     <ClCompile Include="record_audio.cpp" />
     <ClCompile Include="record_audio_factory.cpp" />
     <ClCompile Include="record_audio_wasapi.cpp" />
@@ -178,6 +182,7 @@
     <ClCompile Include="record_desktop_factory.cpp" />
     <ClCompile Include="record_devices.cpp" />
     <ClCompile Include="resample_pcm.cpp" />
+    <ClCompile Include="ring_buffer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

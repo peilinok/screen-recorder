@@ -69,6 +69,12 @@
     <ClInclude Include="resample_pcm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ring_buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filter_amix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -104,8 +110,17 @@
     <ClCompile Include="encoder_264.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ring_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="muxer_mp4.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filter_amix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="encoder_aac.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

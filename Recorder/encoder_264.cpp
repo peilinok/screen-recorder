@@ -10,17 +10,25 @@ namespace am {
 		av_register_all();
 
 		_inited = false;
+		_running = false;
+
 		_encoder = NULL;
 		_encoder_ctx = NULL;
 		_frame = NULL;
 		_buff = NULL;
 		_buff_size = 0;
 		_y_size = 0;
+
+		_ring_buffer = new ring_buffer();
 	}
 
 	encoder_264::~encoder_264()
 	{
+		stop();
+
 		cleanup();
+
+		delete _ring_buffer;
 	}
 
 	int encoder_264::init(int pic_width, int pic_height, int frame_rate, int *buff_size, int gop_size)
@@ -110,6 +118,38 @@ namespace am {
 		return err;
 	}
 
+	int encoder_264::start()
+	{
+		int error = AE_NO;
+
+		if (_running == true) {
+			return error;
+		}
+
+		if (_inited == false) {
+			return AE_NEED_INIT;
+		}
+
+		_running = true;
+		_thread = std::thread(std::bind(&encoder_264::encode_loop, this));
+
+		return error;
+	}
+
+	void encoder_264::stop()
+	{
+		_running = false;
+		if (_thread.joinable())
+			_thread.join();
+
+	}
+
+	int encoder_264::put(const uint8_t * data, int data_len)
+	{
+		_ring_buffer->put(data, data_len);
+		return 0;
+	}
+
 	int encoder_264::encode(const uint8_t *src, int src_len, unsigned char * dst, int dst_len, int * got_pic)
 	{
 		if (_inited == false)
@@ -140,14 +180,6 @@ namespace am {
 		return err;
 	}
 
-	void encoder_264::release()
-	{
-		if (_inited == false)
-			return;
-
-		cleanup();
-	}
-
 	void encoder_264::cleanup()
 	{
 		if (_frame)
@@ -168,6 +200,41 @@ namespace am {
 			avcodec_free_context(&_encoder_ctx);
 
 		_encoder_ctx = NULL;
+	}
+
+	void encoder_264::encode_loop()
+	{
+		int len, ret, got_pic = 0;
+
+		AVPacket packet;
+		av_new_packet(&packet, _buff_size);
+
+		while (_running)
+		{
+			len = _ring_buffer->get(_buff, _buff_size);
+
+			_frame->data[0] = _buff;
+			_frame->data[1] = _buff + _y_size;
+			_frame->data[2] = _buff + _y_size * 5 / 4;
+
+			if (len) {
+				ret = avcodec_encode_video2(_encoder_ctx, &packet, _frame, &got_pic);
+				if (ret != 0) {
+					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
+
+					al_fatal("encode yuv frame failed:%d", ret);
+				}
+				else if(got_pic){
+					if (_on_data) _on_data(packet.data, packet.size);
+
+					av_free_packet(&packet);
+				}
+			}
+			else
+				_sleep(10);//should use condition_variable instead
+		}
+
+		av_free_packet(&packet);
 	}
 
 }
