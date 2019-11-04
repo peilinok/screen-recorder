@@ -173,7 +173,7 @@ namespace am {
 	{
 		int len, ret = 0;
 
-		AVPacket packet;
+		AVPacket *packet = av_packet_alloc();
 
 #ifdef SAVE_AAC
 		avformat_write_header(_aac_fmt_ctx, NULL);
@@ -186,37 +186,40 @@ namespace am {
 				continue;
 
 			ret = avcodec_send_frame(_encoder_ctx, _frame);
+			if (ret < 0) {
+				if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
+				al_fatal("encode pcm failed:%d", ret);
+				continue;
+			}
 
-			if (ret == 0) {
-
-				av_init_packet(&packet);
-				ret = avcodec_receive_packet(_encoder_ctx, &packet);
-
-				if (ret == 0) {
-					if (_on_data) _on_data(packet.data, packet.size);
-
-#ifdef SAVE_AAC
-					av_write_frame(_aac_fmt_ctx, &packet);
-#endif
-
-					av_packet_unref(&packet);
+			while (ret >= 0) {
+				ret = avcodec_receive_packet(_encoder_ctx, packet);
+				if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+					break;
 				}
-				else {
-					//if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
+
+				if (ret < 0) {
+					if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
 
 					al_fatal("read aac packet failed:%d", ret);
+					break;
 				}
-			}
-			else {
-				if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
 
-				al_fatal("encode pcm failed:%d", ret);
+				if (_on_data) _on_data(packet->data, packet->size);
+
+#ifdef SAVE_AAC
+				av_write_frame(_aac_fmt_ctx, packet);
+#endif
+
+				av_packet_unref(packet);
 			}
 		}
 
+		av_packet_free(&packet);
 #ifdef SAVE_AAC
 		av_write_trailer(_aac_fmt_ctx);
 #endif
+
 	}
 
 	void encoder_aac::cleanup()

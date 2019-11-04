@@ -495,8 +495,8 @@ int main(int argc, char **argv)
 
 	//enum_audio_devices();
 
-	start_record_audio();
-	//start_record_desktop();
+	//start_record_audio();
+	start_record_desktop();
 
 	do {
 		Sleep(20);

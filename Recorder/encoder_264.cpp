@@ -206,8 +206,7 @@ namespace am {
 	{
 		int len, ret, got_pic = 0;
 
-		AVPacket packet;
-		av_new_packet(&packet, _buff_size);
+		AVPacket *packet = av_packet_alloc();
 
 		while (_running)
 		{
@@ -218,23 +217,36 @@ namespace am {
 			_frame->data[2] = _buff + _y_size * 5 / 4;
 
 			if (len) {
-				ret = avcodec_encode_video2(_encoder_ctx, &packet, _frame, &got_pic);
-				if (ret != 0) {
+				ret = avcodec_send_frame(_encoder_ctx, _frame);
+				if (ret < 0) {
 					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
-
 					al_fatal("encode yuv frame failed:%d", ret);
-				}
-				else if(got_pic){
-					if (_on_data) _on_data(packet.data, packet.size);
 
-					av_free_packet(&packet);
+					continue;
+				}
+
+				while (ret >= 0) {
+					ret = avcodec_receive_packet(_encoder_ctx, packet);
+					if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+						break;
+					}
+
+					if (ret < 0) {
+						if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
+
+						al_fatal("read aac packet failed:%d", ret);
+					}
+
+					if (_on_data) _on_data(packet->data, packet->size);
+
+					av_packet_unref(packet);
 				}
 			}
 			else
 				_sleep(10);//should use condition_variable instead
 		}
 
-		av_free_packet(&packet);
+		av_free_packet(packet);
 	}
 
 }
