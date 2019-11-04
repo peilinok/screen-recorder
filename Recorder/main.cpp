@@ -36,8 +36,7 @@ static am::encoder_aac *_encoder_aac = nullptr;
 
 void on_encoder_aac_data(const uint8_t *data, int length)
 {
-	static FILE *aac_file = fopen("test.aac", "wb+");
-	fwrite(data, 1, length, aac_file);
+	al_debug("on aac data:%d", length);
 }
 
 void on_encoder_aac_error(int error)

@@ -12,6 +12,8 @@ extern "C" {
 
 #include "ring_buffer.h"
 
+//#define SAVE_AAC
+
 namespace am {
 	typedef std::function<void(const uint8_t*, int)> cb_aac_data;
 	typedef std::function<void(int)> cb_aac_error;
@@ -63,6 +65,12 @@ namespace am {
 		AVFrame *_frame;
 		uint8_t *_buff;
 		int _buff_size;
+
+#ifdef SAVE_AAC
+		AVIOContext *_aac_io_ctx;
+		AVStream *_aac_stream;
+		AVFormatContext *_aac_fmt_ctx;
+#endif
 	};
 }
 

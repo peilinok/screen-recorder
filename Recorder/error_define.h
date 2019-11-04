@@ -32,6 +32,10 @@ enum AM_ERROR{
 	AE_FFMPEG_ENCODE_FRAME_FAILED,
 	AE_FFMPEG_ALLOC_FRAME_FAILED,
 
+	AE_FFMPEG_OPEN_IO_FAILED,
+	AE_FFMPEG_CREATE_STREAM_FAILED,
+	AE_FFMPEG_COPY_PARAMS_FAILED,
+
 	AE_RESAMPLE_INIT_FAILED,
 };
 
@@ -65,6 +69,10 @@ static const char *ERRORS_STR[] = {
 	"ffmpeg alloc context failed",      //AE_FFMPEG_ALLOC_CONTEXT_FAILED
 	"ffmpeg encode frame failed",       //AE_FFMPEG_ENCODE_FRAME_FAILED
 	"ffmpeg alloc frame failed",        //AE_FFMPEG_ALLOC_FRAME_FAILED
+	
+	"ffmpeg open io ctx failed",        //AE_FFMPEG_OPEN_IO_FAILED
+	"ffmpeg new stream failed",         //AE_FFMPEG_CREATE_STREAM_FAILED
+	"ffmpeg copy parameters failed",    //AE_FFMPEG_COPY_PARAMS_FAILED
 
 	"resampler init failed",            //AE_RESAMPLE_INIT_FAILED
 
