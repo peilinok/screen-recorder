@@ -102,7 +102,8 @@ namespace am {
 			_frame->height = _encoder_ctx->height;
 
 			_y_size = _encoder_ctx->width * _encoder_ctx->height;
-			*buff_size = _buff_size;
+			if(buff_size)
+				*buff_size = _buff_size;
 
 			_inited = true;
 		} while (0);

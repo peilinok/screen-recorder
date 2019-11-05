@@ -45,7 +45,7 @@ void on_encoder_aac_error(int error)
 }
 
 
-void on_record_audio_data(const uint8_t *data, int length)
+void on_record_audio_data(const uint8_t *data, int length,int extra_index)
 {
 
 	if (data && length) {
@@ -72,7 +72,7 @@ void on_record_audio_data(const uint8_t *data, int length)
 		al_debug("on silence data:%d\r\n", length);
 }
 
-void on_record_audio_error(int error)
+void on_record_audio_error(int error,int index)
 {
 	al_error("on audio error:%s\r\n", err2str(error));
 }
@@ -276,7 +276,45 @@ exit:
 }
 
 
+static am::muxer_mp4 *_muxer;
 
+int start_muxer() {
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_audio);
+	_recorder_audio->init("");
+
+
+	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
+	RECORD_DESKTOP_RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = 1920;
+	rect.bottom = 1080;
+
+	_recorder_desktop->init(rect, FRAME_RATE);
+
+	am::record_audio *audios[] = { _recorder_audio };
+
+	_muxer = new am::muxer_mp4();
+
+	am::MUX_SETTING setting;
+	setting.v_frame_rate = FRAME_RATE;
+	setting.v_bit_rate = 4000000;
+
+	setting.a_nb_channel = 2;
+	setting.a_nb_samples = 1024;
+	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
+	setting.a_sample_rate = 48000;
+	setting.a_bit_rate = 128000;
+
+	int error = _muxer->init("save.mp4", _recorder_desktop, audios, 1, setting);
+	if (error != AE_NO) {
+		return error;
+	}
+
+	_muxer->start();
+
+	return error;
+}
 
 
 
@@ -496,7 +534,8 @@ int main(int argc, char **argv)
 	//enum_audio_devices();
 
 	//start_record_audio();
-	start_record_desktop();
+	//start_record_desktop();
+	start_muxer();
 
 	do {
 		Sleep(20);

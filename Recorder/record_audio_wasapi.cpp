@@ -214,7 +214,7 @@ namespace am {
 				}
 
 				if (_on_data) {
-					_on_data(data, frame_num*frame_size);
+					_on_data(data, frame_num*frame_size, _cb_extra_index);
 				}
 
 				hr = _capture->ReleaseBuffer(frame_num);

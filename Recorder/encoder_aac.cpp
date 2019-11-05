@@ -7,6 +7,8 @@ namespace am {
 
 	encoder_aac::encoder_aac()
 	{
+		av_register_all();
+
 		_ring_buffer = new ring_buffer(1024 * 1024 * 10);
 
 		_inited = false;
@@ -182,8 +184,10 @@ namespace am {
 		while (_running)
 		{
 			len = _ring_buffer->get(_buff, _buff_size);
-			if (!len)
+			if (!len) {
+				_sleep(10);
 				continue;
+			}
 
 			ret = avcodec_send_frame(_encoder_ctx, _frame);
 			if (ret < 0) {

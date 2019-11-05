@@ -153,6 +153,7 @@
     <ClInclude Include="error_define.h" />
     <ClInclude Include="filter_amix.h" />
     <ClInclude Include="log_helper.h" />
+    <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_mp4.h" />
     <ClInclude Include="record_audio.h" />
     <ClInclude Include="record_audio_define.h" />

@@ -37,6 +37,7 @@ namespace am {
 			_on_data = on_data;
 			_on_error = on_error;
 		}
+		inline const RECORD_DESKTOP_RECT & get_rect() { return _rect; }
 
 	protected:
 		virtual void clean_up() = 0;

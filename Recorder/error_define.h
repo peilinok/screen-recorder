@@ -37,6 +37,9 @@ enum AM_ERROR{
 	AE_FFMPEG_COPY_PARAMS_FAILED,
 
 	AE_RESAMPLE_INIT_FAILED,
+
+	AE_FFMPEG_NEW_STREAM_FAILED,
+
 };
 
 static const char *ERRORS_STR[] = {
@@ -76,6 +79,7 @@ static const char *ERRORS_STR[] = {
 
 	"resampler init failed",            //AE_RESAMPLE_INIT_FAILED
 
+	"ffmpeg new out stream failed",     //AE_FFMPEG_NEW_STREAM_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]

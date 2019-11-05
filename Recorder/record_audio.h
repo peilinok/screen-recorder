@@ -8,8 +8,8 @@
 #include <functional>
 
 namespace am {
-	typedef std::function<void(const uint8_t*, int)> cb_audio_data;
-	typedef std::function<void(int)> cb_audio_error;
+	typedef std::function<void(const uint8_t*, int, int)> cb_audio_data;
+	typedef std::function<void(int,int)> cb_audio_error;
 
 	class record_audio
 	{
@@ -44,9 +44,11 @@ namespace am {
 
 		inline void registe_cb(
 			cb_audio_data on_data,
-			cb_audio_error on_error) {
+			cb_audio_error on_error,
+			int cb_extra_index = -1) {
 			_on_data = on_data;
 			_on_error = on_error;
+			_cb_extra_index = cb_extra_index;
 		}
 
 	protected:
@@ -70,6 +72,8 @@ namespace am {
 		cb_audio_error _on_error;
 		
 		cb_audio_data _on_data;
+
+		int _cb_extra_index;
 	};
 }
 
