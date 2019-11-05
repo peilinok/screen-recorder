@@ -81,7 +81,6 @@ namespace am {
 				break;
 
 			av_dump_format(_fmt_ctx, 0, NULL, 1);
-			av_dump_format(_fmt_ctx, 1, NULL, 1);
 
 			_inited = true;
 
@@ -178,13 +177,45 @@ namespace am {
 
 	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
 	{
-		//cache
+		if (_running == false 
+			|| !_a_stream 
+			|| !_a_stream->a_samples 
+			|| !_a_stream->a_samples[index]
+			|| !_a_stream->a_resamples
+			|| !_a_stream->a_resamples[index]
+			|| !_a_stream->a_rs
+			|| !_a_stream->a_rs[index])
+			return;
 
-		//resample
+		AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
+		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
+		resample_pcm *resampler = _a_stream->a_rs[index];
 
-		//amix
+		//cache pcm
+		int copied_len = min(samples->size - samples->sample_in, len);
+		if (copied_len) {
+			memcpy(samples->buff + samples->sample_in, data, copied_len);
+			samples->sample_in += copied_len;
+		}
 
-		//encode
+		//got enough pcm to encoder,resample and mix
+		if (samples->sample_in == samples->size) {
+			int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
+			if (ret > 0) {
+				_a_stream->a_enc->put(resamples->buff, resamples->size);
+			}
+			else {
+				al_debug("resample audio %d failed,%d", index, ret);
+			}
+
+			samples->sample_in = 0;
+		}
+
+		//copy last pcms
+		if (len - copied_len > 0) {
+			memcpy(samples->buff + samples->sample_in, data + copied_len, len - copied_len);
+			samples->sample_in += len - copied_len;
+		}
 	}
 
 	void muxer_mp4::on_audio_error(int error, int index)
@@ -194,7 +225,9 @@ namespace am {
 
 	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len)
 	{
+		//al_debug("on video data:%d", len);
 		if (_running && _v_stream && _v_stream->buffer) {
+			//write_video(data, len);
 			_v_stream->buffer->put(data, len);
 		}
 	}
@@ -206,7 +239,9 @@ namespace am {
 
 	void muxer_mp4::on_enc_aac_data(const uint8_t * data, int len)
 	{
+		//al_debug("on audio data:%d", len);
 		if (_running && _a_stream && _a_stream->buffer) {
+			//write_audio(data, len);
 			_a_stream->buffer->put(data, len);
 		}
 	}
@@ -535,9 +570,112 @@ namespace am {
 		_fmt = NULL;
 	}
 
+	int muxer_mp4::write_video(const uint8_t * data, int len)
+	{
+		AVPacket packet;
+		av_init_packet(&packet);
+
+		packet.data = (uint8_t*)data;
+		packet.size = len;
+		packet.stream_index = _v_stream->st->index;
+
+		int64_t duration = (double)AV_TIME_BASE / av_q2d({ 1,_v_stream->v_src->get_frame_rate() });
+
+		packet.pts = av_rescale_q_rnd(_v_stream->next_pts / _v_stream->st->codec->time_base.num,
+			_v_stream->st->codec->time_base, _v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet.dts = packet.pts;
+
+		_v_stream->next_pts++;
+
+	    return av_interleaved_write_frame(_fmt_ctx, &packet);
+	}
+
+	int muxer_mp4::write_audio(const uint8_t * data, int len)
+	{
+		AVPacket packet;
+		av_init_packet(&packet);
+
+		packet.data = (uint8_t*)data;
+		packet.size = len;
+		packet.stream_index = _a_stream->st->index;
+
+		packet.pts = av_rescale_q_rnd(_a_stream->next_pts / _a_stream->st->codec->time_base.num,
+			_a_stream->st->codec->time_base, _a_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+		packet.dts = packet.pts;
+
+		_a_stream->next_pts++;
+
+		return av_interleaved_write_frame(_fmt_ctx, &packet);
+	}
+
+	//static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
+	//{
+	//	AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
+
+	//	printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
+	//		av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
+	//		av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
+	//		av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
+	//		pkt->stream_index);
+	//}
+
 	void muxer_mp4::mux_loop()
 	{
+		AVPacket packet = { 0 };
 
+		int ret = 0;
+		int buf_size = 1024 * 1024 * 2;
+		uint8_t *buf = new uint8_t[buf_size];
+		while (_running) {
+			
+			av_init_packet(&packet);
+
+			if (av_compare_ts(
+				_v_stream->next_pts, _v_stream->st->time_base,
+				_a_stream->next_pts, _a_stream->st->time_base
+			) <= 0) {//write video
+				ret = _v_stream->buffer->get(buf, buf_size);
+				if (ret) {
+					packet.data = buf;
+					packet.size = ret;
+					packet.stream_index = _v_stream->st->index;
+
+					int64_t duration = (double)AV_TIME_BASE / av_q2d({ 1,_v_stream->v_src->get_frame_rate() });
+
+					packet.pts = av_rescale_q_rnd(_v_stream->next_pts / _v_stream->st->codec->time_base.num,
+						_v_stream->st->codec->time_base, _v_stream->st->time_base, 
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+					packet.dts = packet.pts;
+
+					_v_stream->next_pts++;
+
+					av_interleaved_write_frame(_fmt_ctx, &packet);
+				}
+			}
+			else {//write audio
+				ret = _a_stream->buffer->get(buf, buf_size);
+				if (ret) {
+					packet.data = buf;
+					packet.size = ret;
+					packet.stream_index = _a_stream->st->index;
+
+					packet.pts = av_rescale_q_rnd(_a_stream->next_pts / _a_stream->st->codec->time_base.num,
+						_a_stream->st->codec->time_base, _a_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+					packet.dts = packet.pts;
+
+					_a_stream->next_pts++;
+
+					av_interleaved_write_frame(_fmt_ctx, &packet);
+				}
+			}
+		}
+
+		delete[] buf;
 
 		av_write_trailer(_fmt_ctx);
 	}

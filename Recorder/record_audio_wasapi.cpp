@@ -213,11 +213,12 @@ namespace am {
 					data = NULL;
 				}
 
-				if (_on_data) {
+				if (_on_data && data) {
 					_on_data(data, frame_num*frame_size, _cb_extra_index);
 				}
 
-				hr = _capture->ReleaseBuffer(frame_num);
+				if(data)
+					hr = _capture->ReleaseBuffer(frame_num);
 				hr = _capture->GetNextPacketSize(&packet_num);
 			}
 

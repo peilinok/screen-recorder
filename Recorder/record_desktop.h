@@ -39,6 +39,8 @@ namespace am {
 		}
 		inline const RECORD_DESKTOP_RECT & get_rect() { return _rect; }
 
+		inline const int get_frame_rate() { return _fps; }
+
 	protected:
 		virtual void clean_up() = 0;
 

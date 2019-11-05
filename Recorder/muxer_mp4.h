@@ -77,13 +77,9 @@ namespace am {
 		void cleanup_audio();
 		void cleanup();
 
-		int get_video_data();
+		int write_video(const uint8_t *data,int len);
 
-		int get_audio_data();
-
-		int write_video();
-
-		int write_audio();
+		int write_audio(const uint8_t *data,int len);
 
 		void mux_loop();
 

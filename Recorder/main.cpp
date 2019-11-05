@@ -298,7 +298,7 @@ int start_muxer() {
 
 	am::MUX_SETTING setting;
 	setting.v_frame_rate = FRAME_RATE;
-	setting.v_bit_rate = 4000000;
+	setting.v_bit_rate = 400000;
 
 	setting.a_nb_channel = 2;
 	setting.a_nb_samples = 1024;
@@ -314,6 +314,12 @@ int start_muxer() {
 	_muxer->start();
 
 	return error;
+}
+
+void stop_muxer()
+{
+	_muxer->stop();
+	delete _muxer;
 }
 
 
@@ -538,6 +544,10 @@ int main(int argc, char **argv)
 	start_muxer();
 
 	do {
-		Sleep(20);
-	} while (1);
+		Sleep(20000);
+	} while (0);
+
+	stop_muxer();
+
+	getchar();
 }
