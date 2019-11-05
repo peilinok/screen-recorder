@@ -652,6 +652,7 @@ namespace am {
 					packet.pts = av_rescale_q_rnd(_v_stream->next_pts / _v_stream->st->codec->time_base.num,
 						_v_stream->st->codec->time_base, _v_stream->st->time_base, 
 						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
 					packet.dts = packet.pts;
 
 					_v_stream->next_pts++;

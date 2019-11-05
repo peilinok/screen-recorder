@@ -64,7 +64,7 @@ namespace am {
 			_encoder_ctx->height = pic_height;
 			_encoder_ctx->time_base.num = 1;
 			_encoder_ctx->time_base.den = frame_rate;
-			_encoder_ctx->bit_rate = 4000000;
+			_encoder_ctx->bit_rate = 256000;
 			_encoder_ctx->gop_size = gop_size;
 			_encoder_ctx->qmin = 10;
 			_encoder_ctx->qmax = 51;
