@@ -210,7 +210,7 @@ namespace am {
 			{
 				hr = _capture->GetBuffer(&data, &frame_num, &flags, NULL, NULL);
 				if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {//tell to copy silence data
-					data = NULL;
+					//data = NULL;
 				}
 
 				if (_on_data && data) {

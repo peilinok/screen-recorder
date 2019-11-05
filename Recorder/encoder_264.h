@@ -13,7 +13,7 @@ extern "C" {
 #include "ring_buffer.h"
 
 namespace am {
-	typedef std::function<void(const uint8_t*, int)> cb_264_data;
+	typedef std::function<void(const uint8_t*, int, bool)> cb_264_data;
 	typedef std::function<void(int)> cb_264_error;
 
 	class encoder_264 

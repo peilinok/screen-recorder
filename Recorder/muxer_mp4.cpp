@@ -132,16 +132,16 @@ namespace am {
 	{
 		_running = false;
 
-		if (_v_stream && _v_stream->v_src)
+		/*if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
 		if (_v_stream && _v_stream->v_enc)
-			_v_stream->v_enc->stop();
+			_v_stream->v_enc->stop();*/
 
 		if (_a_stream) {
-			for (int i = 0; i < _a_stream->a_nb; i++) {
+			/*for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->stop();
-			}
+			}*/
 
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
@@ -223,11 +223,11 @@ namespace am {
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len)
+	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
 	{
 		//al_debug("on video data:%d", len);
 		if (_running && _v_stream && _v_stream->buffer) {
-			//write_video(data, len);
+			//write_video(data, len, key_frame);
 			_v_stream->buffer->put(data, len);
 		}
 	}
@@ -276,14 +276,14 @@ namespace am {
 		int error = AE_NO;
 		int ret = 0;
 
-		_v_stream = (MUX_STREAM*)av_malloc(sizeof(MUX_STREAM));
+		_v_stream = new MUX_STREAM();
 		memset(_v_stream, 0, sizeof(MUX_STREAM));
 
 		_v_stream->v_src = source_desktop;
 		
 		_v_stream->v_src->registe_cb(
 			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2),
-			std::bind(&muxer_mp4::on_desktop_error,this, std::placeholders::_1)
+			std::bind(&muxer_mp4::on_desktop_error, this, std::placeholders::_1)
 		);
 
 		int width = _v_stream->v_src->get_rect().right - _v_stream->v_src->get_rect().left;
@@ -296,7 +296,7 @@ namespace am {
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2),
+				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
 			);
 
@@ -363,7 +363,7 @@ namespace am {
 		int error = AE_NO;
 		int ret = 0;
 
-		_a_stream = (MUX_STREAM*)av_malloc(sizeof(MUX_STREAM));
+		_a_stream = new MUX_STREAM();
 		memset(_a_stream, 0, sizeof(MUX_STREAM));
 
 
@@ -493,10 +493,9 @@ namespace am {
 		if (_v_stream->v_enc)
 			delete _v_stream->v_enc;
 
-		if (_v_stream->v_src)
-			delete _v_stream->v_src;
-
 		delete _v_stream;
+
+		_v_stream = nullptr;
 	}
 
 	void muxer_mp4::cleanup_audio()
@@ -521,8 +520,8 @@ namespace am {
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				if (_a_stream->a_src && _a_stream->a_src[i])
-					delete _a_stream->a_src[i];
+				/*if (_a_stream->a_src && _a_stream->a_src[i])
+					delete _a_stream->a_src[i];*/
 
 				if (_a_stream->a_rs && _a_stream->a_rs[i])
 					delete _a_stream->a_rs[i];
@@ -538,9 +537,6 @@ namespace am {
 				}
 			}
 
-			if (_a_stream->a_src)
-				delete[] _a_stream->a_src;
-
 			if (_a_stream->a_rs)
 				delete[] _a_stream->a_rs;
 
@@ -552,6 +548,8 @@ namespace am {
 		}
 
 		delete _a_stream;
+
+		_a_stream = nullptr;
 	}
 
 	void muxer_mp4::cleanup()
@@ -568,9 +566,11 @@ namespace am {
 
 		_fmt_ctx = NULL;
 		_fmt = NULL;
+
+		_inited = false;
 	}
 
-	int muxer_mp4::write_video(const uint8_t * data, int len)
+	int muxer_mp4::write_video(const uint8_t * data, int len, bool key_frame)
 	{
 		AVPacket packet;
 		av_init_packet(&packet);
@@ -579,16 +579,21 @@ namespace am {
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
-		int64_t duration = (double)AV_TIME_BASE / av_q2d({ 1,_v_stream->v_src->get_frame_rate() });
-
 		packet.pts = av_rescale_q_rnd(_v_stream->next_pts / _v_stream->st->codec->time_base.num,
 			_v_stream->st->codec->time_base, _v_stream->st->time_base,
 			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet.dts = packet.pts;
+
+		packet.dts = av_rescale_q_rnd(_v_stream->next_pts / _v_stream->st->codec->time_base.num,
+			_v_stream->st->codec->time_base, _v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+		if (key_frame == true)
+			packet.flags = AV_PKT_FLAG_KEY;
 
 		_v_stream->next_pts++;
 
-	    return av_interleaved_write_frame(_fmt_ctx, &packet);
+		printf("pts:%ld dts:%ld\r\n", packet.pts, packet.dts);
+		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
 
 	int muxer_mp4::write_audio(const uint8_t * data, int len)
@@ -630,7 +635,6 @@ namespace am {
 		int buf_size = 1024 * 1024 * 2;
 		uint8_t *buf = new uint8_t[buf_size];
 		while (_running) {
-			
 			av_init_packet(&packet);
 
 			if (av_compare_ts(

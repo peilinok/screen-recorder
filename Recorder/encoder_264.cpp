@@ -68,9 +68,7 @@ namespace am {
 			_encoder_ctx->gop_size = gop_size;
 			_encoder_ctx->qmin = 10;
 			_encoder_ctx->qmax = 51;
-
-			if (_encoder_ctx->flags & AVFMT_GLOBALHEADER)
-				_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+			//_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 			_encoder = avcodec_find_encoder(_encoder_ctx->codec_id);
 			if (!_encoder) {
@@ -238,7 +236,7 @@ namespace am {
 						al_fatal("read aac packet failed:%d", ret);
 					}
 
-					if (_on_data) _on_data(packet->data, packet->size);
+					if (_on_data) _on_data(packet->data, packet->size,packet->flags == AV_PKT_FLAG_KEY);
 
 					av_packet_unref(packet);
 				}

@@ -184,7 +184,7 @@ static am::encoder_264 *_encoder_264 = nullptr;
 static uint8_t *_buff_264 = NULL;
 static int _buff_264_len = 0;
 
-void on_encode_264_data(const uint8_t *data, int length)
+void on_encode_264_data(const uint8_t *data, int length,bool key_frame)
 {
 	static FILE * fp = fopen("a.264", "wb+");
 	fwrite(data, 1, length, fp);
@@ -277,6 +277,7 @@ exit:
 
 
 static am::muxer_mp4 *_muxer;
+static am::record_audio *audios[1];
 
 int start_muxer() {
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_audio);
@@ -292,13 +293,13 @@ int start_muxer() {
 
 	_recorder_desktop->init(rect, FRAME_RATE);
 
-	am::record_audio *audios[] = { _recorder_audio };
+	audios[0] =  _recorder_audio ;
 
 	_muxer = new am::muxer_mp4();
 
 	am::MUX_SETTING setting;
 	setting.v_frame_rate = FRAME_RATE;
-	setting.v_bit_rate = 400000;
+	setting.v_bit_rate = 256000;
 
 	setting.a_nb_channel = 2;
 	setting.a_nb_samples = 1024;
@@ -319,6 +320,9 @@ int start_muxer() {
 void stop_muxer()
 {
 	_muxer->stop();
+
+	delete _recorder_desktop;
+	delete _recorder_audio;
 	delete _muxer;
 }
 
@@ -543,11 +547,9 @@ int main(int argc, char **argv)
 	//start_record_desktop();
 	start_muxer();
 
-	do {
-		Sleep(20000);
-	} while (0);
+	getchar();
 
 	stop_muxer();
 
-	getchar();
+	system("pause");
 }
