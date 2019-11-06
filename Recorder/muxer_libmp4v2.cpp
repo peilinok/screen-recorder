@@ -1,4 +1,5 @@
-#include "muxer_mp4.h"
+#include "muxer_libmp4v2.h"
+#include "muxer_libmp4v2.h"
 #include "muxer_define.h"
 
 #include "record_audio.h"
@@ -23,7 +24,7 @@ extern "C" {
 
 namespace am {
 
-	muxer_mp4::muxer_mp4()
+	muxer_libmp4v2::muxer_libmp4v2()
 	{
 		av_register_all();
 
@@ -42,13 +43,13 @@ namespace am {
 		_running = false;
 	}
 
-	muxer_mp4::~muxer_mp4()
+	muxer_libmp4v2::~muxer_libmp4v2()
 	{
 		stop();
 		cleanup();
 	}
 
-	int muxer_mp4::init(
+	int muxer_libmp4v2::init(
 		const char * output_file,
 		record_desktop * source_desktop,
 		record_audio ** source_audios,
@@ -94,7 +95,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::start()
+	int muxer_libmp4v2::start()
 	{
 		int error = AE_NO;
 
@@ -123,24 +124,24 @@ namespace am {
 
 
 		_running = true;
-		_thread = std::thread(std::bind(&muxer_mp4::mux_loop, this));
+		_thread = std::thread(std::bind(&muxer_libmp4v2::mux_loop, this));
 
 		return error;
 	}
 
-	int muxer_mp4::stop()
+	int muxer_libmp4v2::stop()
 	{
 		_running = false;
 
 		/*if (_v_stream && _v_stream->v_src)
-			_v_stream->v_src->stop();
+		_v_stream->v_src->stop();
 
 		if (_v_stream && _v_stream->v_enc)
-			_v_stream->v_enc->stop();*/
+		_v_stream->v_enc->stop();*/
 
 		if (_a_stream) {
 			/*for (int i = 0; i < _a_stream->a_nb; i++) {
-				_a_stream->a_src[i]->stop();
+			_a_stream->a_src[i]->stop();
 			}*/
 
 			if (_a_stream->a_enc)
@@ -153,33 +154,33 @@ namespace am {
 		return AE_NO;
 	}
 
-	int muxer_mp4::pause()
+	int muxer_libmp4v2::pause()
 	{
 		return 0;
 	}
 
-	int muxer_mp4::resume()
+	int muxer_libmp4v2::resume()
 	{
 		return 0;
 	}
 
-	void muxer_mp4::on_desktop_data(const uint8_t * data, int len)
+	void muxer_libmp4v2::on_desktop_data(const uint8_t * data, int len)
 	{
 		if (_running && _v_stream && _v_stream->v_enc) {
 			_v_stream->v_enc->put(data, len);
 		}
 	}
 
-	void muxer_mp4::on_desktop_error(int error)
+	void muxer_libmp4v2::on_desktop_error(int error)
 	{
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
+	void muxer_libmp4v2::on_audio_data(const uint8_t * data, int len, int index)
 	{
-		if (_running == false 
-			|| !_a_stream 
-			|| !_a_stream->a_samples 
+		if (_running == false
+			|| !_a_stream
+			|| !_a_stream->a_samples
 			|| !_a_stream->a_samples[index]
 			|| !_a_stream->a_resamples
 			|| !_a_stream->a_resamples[index]
@@ -218,12 +219,12 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_audio_error(int error, int index)
+	void muxer_libmp4v2::on_audio_error(int error, int index)
 	{
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
+	void muxer_libmp4v2::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
 	{
 		//al_debug("on video data:%d", len);
 		if (_running && _v_stream && _v_stream->buffer) {
@@ -232,12 +233,12 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_enc_264_error(int error)
+	void muxer_libmp4v2::on_enc_264_error(int error)
 	{
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(const uint8_t * data, int len)
+	void muxer_libmp4v2::on_enc_aac_data(const uint8_t * data, int len)
 	{
 		//al_debug("on audio data:%d", len);
 		if (_running && _a_stream && _a_stream->buffer) {
@@ -246,12 +247,12 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_enc_aac_error(int error)
+	void muxer_libmp4v2::on_enc_aac_error(int error)
 	{
 		al_fatal("on audio encode error:%d", error);
 	}
 
-	int muxer_mp4::alloc_oc(const char * output_file, const MUX_SETTING & setting)
+	int muxer_libmp4v2::alloc_oc(const char * output_file, const MUX_SETTING & setting)
 	{
 		_output_file = std::string(output_file);
 
@@ -271,7 +272,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::add_video_stream(const MUX_SETTING & setting, record_desktop * source_desktop)
+	int muxer_libmp4v2::add_video_stream(const MUX_SETTING & setting, record_desktop * source_desktop)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -280,10 +281,10 @@ namespace am {
 		memset(_v_stream, 0, sizeof(MUX_STREAM));
 
 		_v_stream->v_src = source_desktop;
-		
+
 		_v_stream->v_src->registe_cb(
-			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2),
-			std::bind(&muxer_mp4::on_desktop_error, this, std::placeholders::_1)
+			std::bind(&muxer_libmp4v2::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2),
+			std::bind(&muxer_libmp4v2::on_desktop_error, this, std::placeholders::_1)
 		);
 
 		int width = _v_stream->v_src->get_rect().right - _v_stream->v_src->get_rect().left;
@@ -296,8 +297,8 @@ namespace am {
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
+				std::bind(&muxer_libmp4v2::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+				std::bind(&muxer_libmp4v2::on_enc_264_error, this, std::placeholders::_1)
 			);
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
@@ -313,7 +314,7 @@ namespace am {
 			}
 
 			st->codec->codec_id = AV_CODEC_ID_H264;
-			st->codec->bit_rate_tolerance = setting.v_bit_rate;
+			st->codec->bit_rate = setting.v_bit_rate;
 			st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
 			st->codec->time_base.den = setting.v_frame_rate;
 			st->codec->time_base.num = 1;
@@ -334,8 +335,6 @@ namespace am {
 			}
 
 			_v_stream->st = st;
-
-			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
 
 			_v_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 		} while (0);
@@ -360,7 +359,7 @@ namespace am {
 		}
 	}
 
-	int muxer_mp4::add_audio_stream(const MUX_SETTING & setting, record_audio ** source_audios, const int source_audios_nb)
+	int muxer_libmp4v2::add_audio_stream(const MUX_SETTING & setting, record_audio ** source_audios, const int source_audios_nb)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -378,8 +377,8 @@ namespace am {
 		do {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->registe_cb(
-					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-					std::bind(&muxer_mp4::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_libmp4v2::on_audio_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+					std::bind(&muxer_libmp4v2::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
 					i
 				);
 
@@ -410,18 +409,18 @@ namespace am {
 
 			_a_stream->a_enc = new encoder_aac();
 			error = _a_stream->a_enc->init(
-				setting.a_nb_channel, 
-				setting.a_nb_samples, 
-				setting.a_sample_rate, 
-				setting.a_sample_fmt, 
+				setting.a_nb_channel,
+				setting.a_nb_samples,
+				setting.a_sample_rate,
+				setting.a_sample_fmt,
 				setting.a_bit_rate
 			);
 			if (error != AE_NO)
 				break;
 
 			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
-				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
+				std::bind(&muxer_libmp4v2::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
+				std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
@@ -453,9 +452,6 @@ namespace am {
 			}
 
 			_a_stream->st = st;
-
-			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
-
 			_a_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 
 		} while (0);
@@ -463,7 +459,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::open_output(const char * output_file, const MUX_SETTING & setting)
+	int muxer_libmp4v2::open_output(const char * output_file, const MUX_SETTING & setting)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -481,7 +477,7 @@ namespace am {
 		return error;
 	}
 
-	void muxer_mp4::cleanup_video()
+	void muxer_libmp4v2::cleanup_video()
 	{
 		if (!_v_stream)
 			return;
@@ -503,7 +499,7 @@ namespace am {
 		_v_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup_audio()
+	void muxer_libmp4v2::cleanup_audio()
 	{
 		if (!_a_stream)
 			return;
@@ -526,7 +522,7 @@ namespace am {
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				/*if (_a_stream->a_src && _a_stream->a_src[i])
-					delete _a_stream->a_src[i];*/
+				delete _a_stream->a_src[i];*/
 
 				if (_a_stream->a_rs && _a_stream->a_rs[i])
 					delete _a_stream->a_rs[i];
@@ -557,7 +553,7 @@ namespace am {
 		_a_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup()
+	void muxer_libmp4v2::cleanup()
 	{
 		cleanup_video();
 		cleanup_audio();
@@ -575,86 +571,48 @@ namespace am {
 		_inited = false;
 	}
 
-	int muxer_mp4::write_video(const uint8_t * data, int len, bool key_frame)
+	int muxer_libmp4v2::write_video(const uint8_t * data, int len, bool key_frame)
 	{
 		AVPacket packet;
 		av_init_packet(&packet);
-
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
 
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
-		int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-		packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-		packet.dts = packet.pts;
-		packet.pos = -1;
-		packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
+		packet.pts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
+			_v_stream->st->codec->time_base, _v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		_v_stream->cur_pts = packet.pts;
-		_v_stream->cur_frame_index++;
-
-		//convert pts/dts to out_put timebase
-
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
+		packet.dts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
+			_v_stream->st->codec->time_base, _v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		if (key_frame == true)
 			packet.flags = AV_PKT_FLAG_KEY;
 
+		_v_stream->cur_pts++;
+
+		printf("pts:%ld dts:%ld\r\n", packet.pts, packet.dts);
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
 
-	int muxer_mp4::write_audio(const uint8_t * data, int len)
+	int muxer_libmp4v2::write_audio(const uint8_t * data, int len)
 	{
 		AVPacket packet;
 		av_init_packet(&packet);
-
-		AVRational a_time_base = { 1,48000 };
 
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _a_stream->st->index;
 
-		packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
+		packet.pts = av_rescale_q_rnd(_a_stream->cur_pts / _a_stream->st->codec->time_base.num,
+			_a_stream->st->codec->time_base, _a_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
 		packet.dts = packet.pts;
-		packet.duration = 1024;
 
-		_a_stream->cur_frame_index++;
-		_a_stream->cur_pts = packet.pts;
-
-
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
+		_a_stream->cur_pts++;
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
@@ -670,59 +628,35 @@ namespace am {
 	//		pkt->stream_index);
 	//}
 
-	void muxer_mp4::mux_loop()
+	void muxer_libmp4v2::mux_loop()
 	{
 		AVPacket packet = { 0 };
 
 		int ret = 0;
 		int buf_size = 1024 * 1024 * 2;
 		uint8_t *buf = new uint8_t[buf_size];
-
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
-		AVRational a_time_base = { 1,48000 };
-
 		while (_running) {
 			av_init_packet(&packet);
 
 			if (av_compare_ts(
-				_v_stream->cur_pts, v_time_base,
-				_a_stream->cur_pts, a_time_base
+				_v_stream->cur_pts, _v_stream->st->time_base,
+				_a_stream->cur_pts, _a_stream->st->time_base
 			) <= 0) {//write video
 				ret = _v_stream->buffer->get(buf, buf_size);
 				if (ret) {
 					packet.data = buf;
 					packet.size = ret;
 					packet.stream_index = _v_stream->st->index;
-					
-					int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-					packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
+
+					int64_t duration = (double)AV_TIME_BASE / av_q2d({ 1,_v_stream->v_src->get_frame_rate() });
+
+					packet.pts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
+						_v_stream->st->codec->time_base, _v_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
 					packet.dts = packet.pts;
-					packet.pos = -1;
-					packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 
-					_v_stream->cur_pts = packet.pts;
-					_v_stream->cur_frame_index++;
-
-					//convert pts/dts to out_put timebase
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts, 
-						v_time_base, 
-						_v_stream->st->time_base, 
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts, 
-						v_time_base, 
-						_v_stream->st->time_base, 
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
-
-					av_bitstream_filter_filter(_v_stream->filter, _v_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
+					_v_stream->cur_pts++;
 
 					av_interleaved_write_frame(_fmt_ctx, &packet);
 				}
@@ -734,35 +668,13 @@ namespace am {
 					packet.size = ret;
 					packet.stream_index = _a_stream->st->index;
 
-					
-					//int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(a_time_base);
+					packet.pts = av_rescale_q_rnd(_a_stream->cur_pts / _a_stream->st->codec->time_base.num,
+						_a_stream->st->codec->time_base, _a_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-					packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
 					packet.dts = packet.pts;
-					packet.duration = 1024;
 
-					_a_stream->cur_frame_index++;
-					_a_stream->cur_pts = packet.pts;
-
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
-
-					//av_bitstream_filter_filter(_a_stream->filter, _a_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
+					_a_stream->cur_pts++;
 
 					av_interleaved_write_frame(_fmt_ctx, &packet);
 				}

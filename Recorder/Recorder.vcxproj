@@ -87,13 +87,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)portaudio\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)portaudio\include\;$(SolutionDir)libmp4v2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;portaudio_static_x86.lib;Ole32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)portaudio\lib\;$(SolutionDir)libmp4v2\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;portaudio_static_x86.lib;Ole32.lib;libmp4v2.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -116,15 +116,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)portaudio\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)portaudio\include\;$(SolutionDir)libmp4v2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;portaudio_static_x86.lib;Ole32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)portaudio\lib\;$(SolutionDir)libmp4v2\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;portaudio_static_x86.lib;Ole32.lib;libmp4v2.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -154,6 +154,7 @@
     <ClInclude Include="filter_amix.h" />
     <ClInclude Include="log_helper.h" />
     <ClInclude Include="muxer_define.h" />
+    <ClInclude Include="muxer_libmp4v2.h" />
     <ClInclude Include="muxer_mp4.h" />
     <ClInclude Include="record_audio.h" />
     <ClInclude Include="record_audio_define.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="filter_amix.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="muxer_libmp4v2.cpp" />
     <ClCompile Include="muxer_mp4.cpp" />
     <ClCompile Include="record_audio.cpp" />
     <ClCompile Include="record_audio_factory.cpp" />

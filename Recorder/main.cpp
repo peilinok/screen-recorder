@@ -199,7 +199,7 @@ void on_encode_264_error(int error) {
 void init_encoder() {
 	_encoder_264 = new am::encoder_264();
 
-	int error = _encoder_264->init(1920, 1080, FRAME_RATE, &_buff_264_len);
+	int error = _encoder_264->init(1920, 1080, FRAME_RATE, 400000, &_buff_264_len);
 	if (error != AE_NO)
 		goto exit;
 
@@ -299,7 +299,7 @@ int start_muxer() {
 
 	am::MUX_SETTING setting;
 	setting.v_frame_rate = FRAME_RATE;
-	setting.v_bit_rate = 256000;
+	setting.v_bit_rate = 400000;
 
 	setting.a_nb_channel = 2;
 	setting.a_nb_samples = 1024;

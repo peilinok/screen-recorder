@@ -22,7 +22,9 @@ namespace am {
 	typedef struct MUX_STREAM_T {
 		//common
 		AVStream *st;               // av stream
-		int64_t next_pts;           // pts of the next frame that will be generated
+		int64_t cur_pts;            // pts of the current frame that will be generated
+		int64_t cur_frame_index;    // current frame index
+		AVBitStreamFilterContext *filter; //pps|sps adt
 
 		AVFrame *frame;             // current av frame
 		AVFrame *tmp_frame;         // tmp av frame 
