@@ -45,6 +45,8 @@ namespace am {
 		_mp4v2_file = NULL;
 		_mp4v2_v_track = -1;
 		_mp4v2_a_track = -1;
+
+		_buffer = new ring_buffer(1024 * 1024 * 10);
 	}
 
 	muxer_libmp4v2::~muxer_libmp4v2()
@@ -118,6 +120,7 @@ namespace am {
 
 
 		_running = true;
+		_thread = std::thread(std::bind(&muxer_libmp4v2::mux_loop, this));
 
 		return error;
 	}
@@ -530,14 +533,42 @@ namespace am {
 		tmp_buf[2] = (len - 4) >> 8;
 		tmp_buf[3] = len - 4;
 
-
-
-		return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
+		_buffer->put(tmp_buf, len, 1);
+		return 0;
+		//return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
 	}
 
 	int muxer_libmp4v2::write_audio(const uint8_t * data, int len)
 	{
-		return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
+		_buffer->put(data, len, 0);
+
+		return 0;
+		//return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
+	}
+
+	void muxer_libmp4v2::mux_loop()
+	{
+
+		uint8_t *buff = new uint8_t[1024 * 1024 * 8];
+		int ret = 0;
+		uint8_t type = 0;
+		while (_running) {
+			ret = _buffer->get(buff, 1024 * 1024 * 8, &type);
+			if (ret) {
+				if (type == 1) {//video
+					MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
+				}
+				else {//audio
+					MP4WriteSample(_mp4v2_file, _mp4v2_a_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
+				}
+			}
+			else {
+				//_sleep(10);
+			}
+		}
+
+
+		delete[] buff;
 	}
 
 

@@ -16,6 +16,7 @@ namespace am {
 
 	class record_audio;
 	class record_desktop;
+	class ring_buffer;
 
 	struct MUX_STREAM_T;
 	struct MUX_SETTING_T;
@@ -71,6 +72,7 @@ namespace am {
 
 		int write_audio(const uint8_t *data, int len);
 
+		void mux_loop();
 	private:
 		std::atomic_bool _inited;
 		std::atomic_bool _running;
@@ -88,6 +90,8 @@ namespace am {
 		MP4FileHandle _mp4v2_file;
 		MP4TrackId _mp4v2_v_track;
 		MP4TrackId _mp4v2_a_track;
+
+		ring_buffer *_buffer;
 	};
 
 
