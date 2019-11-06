@@ -53,7 +53,7 @@ namespace am {
 		record_desktop * source_desktop,
 		record_audio ** source_audios,
 		const int source_audios_nb,
-		const MUX_SETTING & setting
+		const MUX_SETTING_T & setting
 	)
 	{
 		int error = AE_NO;
@@ -228,7 +228,7 @@ namespace am {
 		//al_debug("on video data:%d", len);
 		if (_running && _v_stream && _v_stream->buffer) {
 			//write_video(data, len, key_frame);
-			_v_stream->buffer->put(data, len);
+			_v_stream->buffer->put(data, len, key_frame);
 		}
 	}
 
@@ -251,7 +251,7 @@ namespace am {
 		al_fatal("on audio encode error:%d", error);
 	}
 
-	int muxer_mp4::alloc_oc(const char * output_file, const MUX_SETTING & setting)
+	int muxer_mp4::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		_output_file = std::string(output_file);
 
@@ -271,7 +271,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::add_video_stream(const MUX_SETTING & setting, record_desktop * source_desktop)
+	int muxer_mp4::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -346,7 +346,7 @@ namespace am {
 		return error;
 	}
 
-	static AVSampleFormat AFTypetrans2AVType(RECORD_AUDIO_FORMAT af_format) {
+	static AVSampleFormat AFTypeTrans2AVType(RECORD_AUDIO_FORMAT af_format) {
 		switch (af_format) {
 		case AF_AUDIO_S16:
 			return AV_SAMPLE_FMT_S16;
@@ -363,7 +363,7 @@ namespace am {
 		}
 	}
 
-	int muxer_mp4::add_audio_stream(const MUX_SETTING & setting, record_audio ** source_audios, const int source_audios_nb)
+	int muxer_mp4::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -390,7 +390,7 @@ namespace am {
 					1024,
 					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
 					_a_stream->a_src[i]->get_channel_num(),
-					AFTypetrans2AVType(_a_stream->a_src[i]->get_fmt()),
+					AFTypeTrans2AVType(_a_stream->a_src[i]->get_fmt()),
 					_a_stream->a_src[i]->get_sample_rate()
 				};
 				SAMPLE_SETTING dst_setting = {
@@ -469,7 +469,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::open_output(const char * output_file, const MUX_SETTING & setting)
+	int muxer_mp4::open_output(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -687,6 +687,7 @@ namespace am {
 		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
 		AVRational a_time_base = { 1,48000 };
 
+		uint8_t key_frame = 0;
 		while (_running) {
 			av_init_packet(&packet);
 
@@ -694,7 +695,7 @@ namespace am {
 				_v_stream->cur_pts, v_time_base,
 				_a_stream->cur_pts, a_time_base
 			) <= 0) {//write video
-				ret = _v_stream->buffer->get(buf, buf_size);
+				ret = _v_stream->buffer->get(buf, buf_size, &key_frame);
 				if (ret) {
 					packet.data = buf;
 					packet.size = ret;
@@ -727,6 +728,9 @@ namespace am {
 
 					packet.pos = -1;
 					packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
+
+					if (key_frame == 1)
+						packet.flags = AV_PKT_FLAG_KEY;
 
 					av_bitstream_filter_filter(_v_stream->filter, _v_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
 

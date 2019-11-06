@@ -159,6 +159,7 @@
     <ClInclude Include="record_audio.h" />
     <ClInclude Include="record_audio_define.h" />
     <ClInclude Include="record_audio_factory.h" />
+    <ClInclude Include="record_audio_dshow.h" />
     <ClInclude Include="record_audio_wasapi.h" />
     <ClInclude Include="record_desktop.h" />
     <ClInclude Include="record_desktop_define.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="muxer_mp4.cpp" />
     <ClCompile Include="record_audio.cpp" />
     <ClCompile Include="record_audio_factory.cpp" />
+    <ClCompile Include="record_audio_dshow.cpp" />
     <ClCompile Include="record_audio_wasapi.cpp" />
     <ClCompile Include="record_desktop.cpp" />
     <ClCompile Include="record_desktop_gdi.cpp" />

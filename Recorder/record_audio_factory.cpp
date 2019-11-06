@@ -1,5 +1,6 @@
 #include "record_audio_factory.h"
 #include "record_audio_wasapi.h"
+#include "record_audio_dshow.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -18,7 +19,7 @@ int record_audio_new(RECORD_AUDIO_TYPES type,am::record_audio **recorder)
 		*recorder = (am::record_audio *)new am::record_audio_wasapi();
 		break;
 	case AT_AUDIO_DSHOW:
-		err = AE_UNSUPPORT;
+		*recorder = (am::record_audio *)new am::record_audio_dshow();
 		break;
 	case AT_AUDIO_FFMPEG:
 		err = AE_UNSUPPORT;

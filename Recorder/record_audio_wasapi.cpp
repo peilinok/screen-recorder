@@ -125,7 +125,7 @@ namespace am {
 			_bit_rate = _wfex->nAvgBytesPerSec;
 			_bit_per_sample = _wfex->wBitsPerSample;
 			_channel_num = _wfex->nChannels;
-			_fmt = RECORD_AUDIO_FORMAT::AF_AUDIO_FLT;
+			_fmt =  RECORD_AUDIO_FORMAT::AF_AUDIO_FLT;
 
 			_inited = true;
 

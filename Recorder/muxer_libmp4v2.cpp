@@ -53,7 +53,7 @@ namespace am {
 		record_desktop * source_desktop,
 		record_audio ** source_audios,
 		const int source_audios_nb,
-		const MUX_SETTING & setting
+		const MUX_SETTING_T & setting
 	)
 	{
 		int error = AE_NO;
@@ -251,7 +251,7 @@ namespace am {
 		al_fatal("on audio encode error:%d", error);
 	}
 
-	int muxer_libmp4v2::alloc_oc(const char * output_file, const MUX_SETTING & setting)
+	int muxer_libmp4v2::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		_output_file = std::string(output_file);
 
@@ -271,7 +271,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_libmp4v2::add_video_stream(const MUX_SETTING & setting, record_desktop * source_desktop)
+	int muxer_libmp4v2::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -291,7 +291,7 @@ namespace am {
 
 		do {
 			_v_stream->v_enc = new encoder_264();
-			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate,setting.v_bit_rate, NULL);
+			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate, setting.v_bit_rate, NULL);
 			if (error != AE_NO)
 				break;
 
@@ -313,7 +313,7 @@ namespace am {
 			}
 
 			st->codec->codec_id = AV_CODEC_ID_H264;
-			st->codec->bit_rate = setting.v_bit_rate;
+			st->codec->bit_rate_tolerance = setting.v_bit_rate;
 			st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
 			st->codec->time_base.den = setting.v_frame_rate;
 			st->codec->time_base.num = 1;
@@ -329,11 +329,16 @@ namespace am {
 			st->time_base = st->codec->time_base;
 			st->avg_frame_rate = av_inv_q(st->codec->time_base);
 
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
 				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
 			}
 
 			_v_stream->st = st;
+
+			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
 
 			_v_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 		} while (0);
@@ -358,7 +363,7 @@ namespace am {
 		}
 	}
 
-	int muxer_libmp4v2::add_audio_stream(const MUX_SETTING & setting, record_audio ** source_audios, const int source_audios_nb)
+	int muxer_libmp4v2::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -446,11 +451,17 @@ namespace am {
 			//st->codec->extradata_size = 
 			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
 
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
 				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
 			}
 
 			_a_stream->st = st;
+
+			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
+
 			_a_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 
 		} while (0);
@@ -458,7 +469,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_libmp4v2::open_output(const char * output_file, const MUX_SETTING & setting)
+	int muxer_libmp4v2::open_output(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -575,24 +586,43 @@ namespace am {
 		AVPacket packet;
 		av_init_packet(&packet);
 
+		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
+
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
-		packet.pts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
-			_v_stream->st->codec->time_base, _v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
+		packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
+		packet.dts = packet.pts;
+		packet.pos = -1;
+		packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 
-		packet.dts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
-			_v_stream->st->codec->time_base, _v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		_v_stream->cur_pts = packet.pts;
+		_v_stream->cur_frame_index++;
+
+		//convert pts/dts to out_put timebase
+
+		packet.pts = av_rescale_q_rnd(
+			packet.pts,
+			v_time_base,
+			_v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+		);
+
+		packet.dts = av_rescale_q_rnd(
+			packet.dts,
+			v_time_base,
+			_v_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+		);
+
+		packet.pos = -1;
+		packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
 
 		if (key_frame == true)
 			packet.flags = AV_PKT_FLAG_KEY;
 
-		_v_stream->cur_pts++;
-
-		printf("pts:%ld dts:%ld\r\n", packet.pts, packet.dts);
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
 
@@ -601,17 +631,36 @@ namespace am {
 		AVPacket packet;
 		av_init_packet(&packet);
 
+		AVRational a_time_base = { 1,48000 };
+
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _a_stream->st->index;
 
-		packet.pts = av_rescale_q_rnd(_a_stream->cur_pts / _a_stream->st->codec->time_base.num,
-			_a_stream->st->codec->time_base, _a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-
+		packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
 		packet.dts = packet.pts;
+		packet.duration = 1024;
 
-		_a_stream->cur_pts++;
+		_a_stream->cur_frame_index++;
+		_a_stream->cur_pts = packet.pts;
+
+
+		packet.pts = av_rescale_q_rnd(
+			packet.pts,
+			a_time_base,
+			_a_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+		);
+
+		packet.dts = av_rescale_q_rnd(
+			packet.dts,
+			a_time_base,
+			_a_stream->st->time_base,
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+		);
+
+		packet.pos = -1;
+		packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
@@ -634,12 +683,16 @@ namespace am {
 		int ret = 0;
 		int buf_size = 1024 * 1024 * 2;
 		uint8_t *buf = new uint8_t[buf_size];
+
+		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
+		AVRational a_time_base = { 1,48000 };
+
 		while (_running) {
 			av_init_packet(&packet);
 
 			if (av_compare_ts(
-				_v_stream->cur_pts, _v_stream->st->time_base,
-				_a_stream->cur_pts, _a_stream->st->time_base
+				_v_stream->cur_pts, v_time_base,
+				_a_stream->cur_pts, a_time_base
 			) <= 0) {//write video
 				ret = _v_stream->buffer->get(buf, buf_size);
 				if (ret) {
@@ -647,15 +700,35 @@ namespace am {
 					packet.size = ret;
 					packet.stream_index = _v_stream->st->index;
 
-					int64_t duration = (double)AV_TIME_BASE / av_q2d({ 1,_v_stream->v_src->get_frame_rate() });
-
-					packet.pts = av_rescale_q_rnd(_v_stream->cur_pts / _v_stream->st->codec->time_base.num,
-						_v_stream->st->codec->time_base, _v_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-
+					int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
+					packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 					packet.dts = packet.pts;
+					packet.pos = -1;
+					packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 
-					_v_stream->cur_pts++;
+					_v_stream->cur_pts = packet.pts;
+					_v_stream->cur_frame_index++;
+
+					//convert pts/dts to out_put timebase
+
+					packet.pts = av_rescale_q_rnd(
+						packet.pts,
+						v_time_base,
+						_v_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+					);
+
+					packet.dts = av_rescale_q_rnd(
+						packet.dts,
+						v_time_base,
+						_v_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+					);
+
+					packet.pos = -1;
+					packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
+
+					av_bitstream_filter_filter(_v_stream->filter, _v_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
 
 					av_interleaved_write_frame(_fmt_ctx, &packet);
 				}
@@ -667,13 +740,35 @@ namespace am {
 					packet.size = ret;
 					packet.stream_index = _a_stream->st->index;
 
-					packet.pts = av_rescale_q_rnd(_a_stream->cur_pts / _a_stream->st->codec->time_base.num,
-						_a_stream->st->codec->time_base, _a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
+					//int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(a_time_base);
+
+					packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
 					packet.dts = packet.pts;
+					packet.duration = 1024;
 
-					_a_stream->cur_pts++;
+					_a_stream->cur_frame_index++;
+					_a_stream->cur_pts = packet.pts;
+
+
+					packet.pts = av_rescale_q_rnd(
+						packet.pts,
+						a_time_base,
+						_a_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+					);
+
+					packet.dts = av_rescale_q_rnd(
+						packet.dts,
+						a_time_base,
+						_a_stream->st->time_base,
+						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
+					);
+
+					packet.pos = -1;
+					packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
+
+					//av_bitstream_filter_filter(_a_stream->filter, _a_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
 
 					av_interleaved_write_frame(_fmt_ctx, &packet);
 				}

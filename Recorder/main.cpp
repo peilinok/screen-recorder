@@ -49,6 +49,7 @@ void on_encoder_aac_error(int error)
 
 void on_record_audio_data(const uint8_t *data, int length,int extra_index)
 {
+	al_debug("on audio data:%d", length);
 
 	if (data && length) {
 
@@ -82,11 +83,11 @@ void on_record_audio_error(int error,int index)
 int start_record_audio() {
 	int error = 0;
 
-	error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_audio);
+	error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio);
 	if (error != AE_NO)
 		goto exit;
 
-	error = _recorder_audio->init("");
+	error = _recorder_audio->init("audio=virtual-audio-capturer");
 	if (error != AE_NO)
 		goto exit;
 
@@ -108,7 +109,7 @@ int start_record_audio() {
 	_sample_setting.nb_samples = 1024;//output_codec_context->frame_size,size of pcm per frame
 	_sample_setting.nb_channels = _recorder_audio->get_channel_num();
 	_sample_setting.channel_layout = av_get_default_channel_layout(_recorder_audio->get_channel_num());
-	_sample_setting.fmt = AV_SAMPLE_FMT_FLT;
+	_sample_setting.fmt = AV_SAMPLE_FMT_S16;
 
 	_sample_frame_size = av_samples_get_buffer_size(NULL, _sample_setting.nb_channels, _sample_setting.nb_samples, _sample_setting.fmt, 0);
 	_sample_frame = (uint8_t*)malloc(_sample_frame_size);
@@ -282,8 +283,8 @@ static am::muxer_mp4 *_muxer;
 static am::record_audio *audios[1];
 
 int start_muxer() {
-	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_audio);
-	_recorder_audio->init("");
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio);
+	_recorder_audio->init("audio=virtual-audio-capturer");
 
 
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
