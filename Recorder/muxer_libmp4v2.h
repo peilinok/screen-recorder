@@ -57,8 +57,6 @@ namespace am {
 
 		void on_enc_aac_error(int error);
 
-		int alloc_oc(const char *output_file, const MUX_SETTING_T &setting);
-
 		int add_video_stream(const MUX_SETTING_T &setting, record_desktop *source_desktop);
 
 		int add_audio_stream(const MUX_SETTING_T &setting, record_audio ** source_audios, const int source_audios_nb);
@@ -72,8 +70,6 @@ namespace am {
 		int write_video(const uint8_t *data, int len, bool key_frame);
 
 		int write_audio(const uint8_t *data, int len);
-
-		void mux_loop();
 
 	private:
 		std::atomic_bool _inited;
@@ -89,9 +85,9 @@ namespace am {
 		AVOutputFormat *_fmt;
 		AVFormatContext *_fmt_ctx;
 
-		MP4FileHandle _file_h;
-		MP4TrackId _v_track;
-		MP4TrackId _a_track;
+		MP4FileHandle _mp4v2_file;
+		MP4TrackId _mp4v2_v_track;
+		MP4TrackId _mp4v2_a_track;
 	};
 
 

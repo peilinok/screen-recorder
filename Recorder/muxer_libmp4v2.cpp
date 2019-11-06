@@ -19,6 +19,7 @@ extern "C" {
 #include <libavutil\mathematics.h>
 #include <libavutil\timestamp.h>
 #include <libavutil\error.h>
+#include <libavcodec\adts_parser.h>
 }
 
 namespace am {
@@ -40,6 +41,10 @@ namespace am {
 
 		_inited = false;
 		_running = false;
+
+		_mp4v2_file = NULL;
+		_mp4v2_v_track = -1;
+		_mp4v2_a_track = -1;
 	}
 
 	muxer_libmp4v2::~muxer_libmp4v2()
@@ -60,27 +65,17 @@ namespace am {
 		int ret = 0;
 
 		do {
-			error = alloc_oc(output_file, setting);
-			if (error != AE_NO)
-				break;
-
-			if (_fmt->video_codec != AV_CODEC_ID_NONE) {
-				error = add_video_stream(setting, source_desktop);
-				if (error != AE_NO)
-					break;
-			}
-
-			if (_fmt->audio_codec != AV_CODEC_ID_NONE) {
-				error = add_audio_stream(setting, source_audios, source_audios_nb);
-				if (error != AE_NO)
-					break;
-			}
-
 			error = open_output(output_file, setting);
 			if (error != AE_NO)
 				break;
 
-			av_dump_format(_fmt_ctx, 0, NULL, 1);
+			error = add_video_stream(setting, source_desktop);
+			if (error != AE_NO)
+				break;
+
+			error = add_audio_stream(setting, source_audios, source_audios_nb);
+			if (error != AE_NO)
+				break;
 
 			_inited = true;
 
@@ -123,7 +118,6 @@ namespace am {
 
 
 		_running = true;
-		_thread = std::thread(std::bind(&muxer_libmp4v2::mux_loop, this));
 
 		return error;
 	}
@@ -132,23 +126,19 @@ namespace am {
 	{
 		_running = false;
 
-		/*if (_v_stream && _v_stream->v_src)
-		_v_stream->v_src->stop();
-
-		if (_v_stream && _v_stream->v_enc)
-		_v_stream->v_enc->stop();*/
 
 		if (_a_stream) {
-			/*for (int i = 0; i < _a_stream->a_nb; i++) {
-			_a_stream->a_src[i]->stop();
-			}*/
-
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
 		}
 
 		if (_thread.joinable())
 			_thread.join();
+
+		if(_mp4v2_file)
+			MP4Close(_mp4v2_file);
+
+		_mp4v2_file = NULL;
 
 		return AE_NO;
 	}
@@ -225,10 +215,8 @@ namespace am {
 
 	void muxer_libmp4v2::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
 	{
-		//al_debug("on video data:%d", len);
-		if (_running && _v_stream && _v_stream->buffer) {
-			//write_video(data, len, key_frame);
-			_v_stream->buffer->put(data, len);
+		if (_running ) {
+			write_video(data, len, key_frame);
 		}
 	}
 
@@ -240,35 +228,14 @@ namespace am {
 	void muxer_libmp4v2::on_enc_aac_data(const uint8_t * data, int len)
 	{
 		//al_debug("on audio data:%d", len);
-		if (_running && _a_stream && _a_stream->buffer) {
-			//write_audio(data, len);
-			_a_stream->buffer->put(data, len);
+		if (_running ) {
+			write_audio(data, len);
 		}
 	}
 
 	void muxer_libmp4v2::on_enc_aac_error(int error)
 	{
 		al_fatal("on audio encode error:%d", error);
-	}
-
-	int muxer_libmp4v2::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
-	{
-		_output_file = std::string(output_file);
-
-		int error = AE_NO;
-		int ret = 0;
-
-		do {
-			ret = avformat_alloc_output_context2(&_fmt_ctx, NULL, NULL, output_file);
-			if (ret < 0 || !_fmt_ctx) {
-				error = AE_FFMPEG_ALLOC_CONTEXT_FAILED;
-				break;
-			}
-
-			_fmt = _fmt_ctx->oformat;
-		} while (0);
-
-		return error;
 	}
 
 	int muxer_libmp4v2::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
@@ -291,6 +258,7 @@ namespace am {
 
 		do {
 			_v_stream->v_enc = new encoder_264();
+
 			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate, setting.v_bit_rate, NULL);
 			if (error != AE_NO)
 				break;
@@ -300,47 +268,44 @@ namespace am {
 				std::bind(&muxer_libmp4v2::on_enc_264_error, this, std::placeholders::_1)
 			);
 
-			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
-			if (!codec) {
-				error = AE_FFMPEG_FIND_ENCODER_FAILED;
+			const uint8_t *extradata = _v_stream->v_enc->get_extradata();
+			int extradata_size = _v_stream->v_enc->get_extradata_size();
+
+			int sps, pps;
+			for (sps = 0; sps < extradata_size; sps++) {
+				if (extradata[sps] == 0x00 && extradata[sps + 1] == 0x00 && extradata[sps + 2] == 0x00 && extradata[sps + 3] == 0x01) {
+					sps += 4;
+					break;
+				}
+			}
+
+			for (pps = sps; pps < extradata_size; pps++) {
+				if (extradata[pps] == 0x00 && extradata[pps + 1] == 0x00 && extradata[pps + 2] == 0x00 && extradata[pps + 3] == 0x01) {
+					pps += 4;
+					break;
+				}
+			}
+
+			_mp4v2_v_track = MP4AddH264VideoTrack(
+				_mp4v2_file,
+				90000,
+				90000/25,
+				width,
+				height,
+				extradata[sps + 1], 
+				extradata[sps + 2], 
+				extradata[sps + 3], 
+				3
+			);
+
+			if (_mp4v2_v_track == MP4_INVALID_TRACK_ID) {
+				error = AE_MP4V2_ADD_TRACK_FAILED;
 				break;
 			}
 
-			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
-			}
-
-			st->codec->codec_id = AV_CODEC_ID_H264;
-			st->codec->bit_rate_tolerance = setting.v_bit_rate;
-			st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-			st->codec->time_base.den = setting.v_frame_rate;
-			st->codec->time_base.num = 1;
-			st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-
-			st->codec->coded_width = width;
-			st->codec->coded_height = height;
-			st->codec->width = width;
-			st->codec->height = height;
-			//st->codec->max_b_frames = 2;
-			//st->codec->extradata = 
-			//st->codec->extradata_size = 
-			st->time_base = st->codec->time_base;
-			st->avg_frame_rate = av_inv_q(st->codec->time_base);
-
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
-				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				st->codec->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
-			}
-
-			_v_stream->st = st;
-
-			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
-
-			_v_stream->buffer = new ring_buffer(1024 * 1024 * 10);
+			MP4SetVideoProfileLevel(_mp4v2_file, 1);
+			MP4AddH264SequenceParameterSet(_mp4v2_file, _mp4v2_v_track, extradata + sps, pps - sps - 4);
+			MP4AddH264PictureParameterSet(_mp4v2_file, _mp4v2_v_track, extradata + pps, extradata_size - pps);
 		} while (0);
 
 		return error;
@@ -427,43 +392,17 @@ namespace am {
 				std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
-			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
-			if (!codec) {
-				error = AE_FFMPEG_FIND_ENCODER_FAILED;
+			_mp4v2_a_track = MP4AddAudioTrack(_mp4v2_file, 48000, 1024, MP4_MPEG4_AUDIO_TYPE);
+			if (_mp4v2_a_track == MP4_INVALID_TRACK_ID) {
+				error = AE_MP4V2_ADD_TRACK_FAILED;
 				break;
 			}
 
-			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
-			}
+			const uint8_t *extradata = _a_stream->a_enc->get_extradata();
+			int extradata_size = _a_stream->a_enc->get_extradata_size();
 
-			st->time_base.num = 1;
-			st->time_base.den = setting.a_sample_rate;
-
-			st->codec->bit_rate = setting.a_bit_rate;
-			st->codec->channels = setting.a_nb_channel;
-			st->codec->sample_rate = setting.a_sample_rate;
-			st->codec->sample_fmt = setting.a_sample_fmt;
-			st->codec->time_base = st->time_base;
-			//st->codec->extradata = 
-			//st->codec->extradata_size = 
-			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
-
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
-				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-				st->codec->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
-			}
-
-			_a_stream->st = st;
-
-			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
-
-			_a_stream->buffer = new ring_buffer(1024 * 1024 * 10);
-
+			MP4SetAudioProfileLevel(_mp4v2_file, 2);
+			MP4SetTrackESConfiguration(_mp4v2_file, _mp4v2_a_track, extradata, extradata_size);
 		} while (0);
 
 		return error;
@@ -475,13 +414,13 @@ namespace am {
 		int ret = 0;
 
 		do {
-			ret = avio_open(&_fmt_ctx->pb, output_file, AVIO_FLAG_WRITE);
-			if (ret < 0) {
-				error = AE_FFMPEG_OPEN_IO_FAILED;
+			_mp4v2_file = MP4Create(output_file, 0);
+			if (_mp4v2_file == MP4_INVALID_FILE_HANDLE) {
+				error = AE_MP4V2_CREATE_FAILED;
 				break;
 			}
 
-			ret = avformat_write_header(_fmt_ctx, NULL);
+			MP4SetTimeScale(_mp4v2_file, 90000);
 		} while (0);
 
 		return error;
@@ -583,201 +522,23 @@ namespace am {
 
 	int muxer_libmp4v2::write_video(const uint8_t * data, int len, bool key_frame)
 	{
-		AVPacket packet;
-		av_init_packet(&packet);
+		static uint8_t *tmp_buf = new uint8_t[1024 * 1024 * 8];
+		memcpy(tmp_buf, data, len);
 
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
+		tmp_buf[0] = (len - 4) >> 24;
+		tmp_buf[1] = (len - 4) >> 16;
+		tmp_buf[2] = (len - 4) >> 8;
+		tmp_buf[3] = len - 4;
 
-		packet.data = (uint8_t*)data;
-		packet.size = len;
-		packet.stream_index = _v_stream->st->index;
 
-		int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-		packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-		packet.dts = packet.pts;
-		packet.pos = -1;
-		packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 
-		_v_stream->cur_pts = packet.pts;
-		_v_stream->cur_frame_index++;
-
-		//convert pts/dts to out_put timebase
-
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
-
-		if (key_frame == true)
-			packet.flags = AV_PKT_FLAG_KEY;
-
-		return av_interleaved_write_frame(_fmt_ctx, &packet);
+		return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
 	}
 
 	int muxer_libmp4v2::write_audio(const uint8_t * data, int len)
 	{
-		AVPacket packet;
-		av_init_packet(&packet);
-
-		AVRational a_time_base = { 1,48000 };
-
-		packet.data = (uint8_t*)data;
-		packet.size = len;
-		packet.stream_index = _a_stream->st->index;
-
-		packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
-		packet.dts = packet.pts;
-		packet.duration = 1024;
-
-		_a_stream->cur_frame_index++;
-		_a_stream->cur_pts = packet.pts;
-
-
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
-
-		return av_interleaved_write_frame(_fmt_ctx, &packet);
+		return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
 	}
 
-	//static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
-	//{
-	//	AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
-
-	//	printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
-	//		av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
-	//		av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
-	//		av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
-	//		pkt->stream_index);
-	//}
-
-	void muxer_libmp4v2::mux_loop()
-	{
-		AVPacket packet = { 0 };
-
-		int ret = 0;
-		int buf_size = 1024 * 1024 * 2;
-		uint8_t *buf = new uint8_t[buf_size];
-
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
-		AVRational a_time_base = { 1,48000 };
-
-		while (_running) {
-			av_init_packet(&packet);
-
-			if (av_compare_ts(
-				_v_stream->cur_pts, v_time_base,
-				_a_stream->cur_pts, a_time_base
-			) <= 0) {//write video
-				ret = _v_stream->buffer->get(buf, buf_size);
-				if (ret) {
-					packet.data = buf;
-					packet.size = ret;
-					packet.stream_index = _v_stream->st->index;
-
-					int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-					packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-					packet.dts = packet.pts;
-					packet.pos = -1;
-					packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-
-					_v_stream->cur_pts = packet.pts;
-					_v_stream->cur_frame_index++;
-
-					//convert pts/dts to out_put timebase
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts,
-						v_time_base,
-						_v_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts,
-						v_time_base,
-						_v_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
-
-					av_bitstream_filter_filter(_v_stream->filter, _v_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
-
-					av_interleaved_write_frame(_fmt_ctx, &packet);
-				}
-			}
-			else {//write audio
-				ret = _a_stream->buffer->get(buf, buf_size);
-				if (ret) {
-					packet.data = buf;
-					packet.size = ret;
-					packet.stream_index = _a_stream->st->index;
-
-
-					//int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(a_time_base);
-
-					packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
-					packet.dts = packet.pts;
-					packet.duration = 1024;
-
-					_a_stream->cur_frame_index++;
-					_a_stream->cur_pts = packet.pts;
-
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
-
-					//av_bitstream_filter_filter(_a_stream->filter, _a_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
-
-					av_interleaved_write_frame(_fmt_ctx, &packet);
-				}
-			}
-		}
-
-		delete[] buf;
-
-		av_write_trailer(_fmt_ctx);
-	}
 
 }

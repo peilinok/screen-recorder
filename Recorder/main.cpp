@@ -278,8 +278,14 @@ exit:
 	return error;
 }
 
+//#define MUXE_MP4
 
+
+#ifdef MUXE_MP4
 static am::muxer_mp4 *_muxer;
+#else
+static am::muxer_libmp4v2 *_muxer;
+#endif
 static am::record_audio *audios[1];
 
 int start_muxer() {
@@ -298,7 +304,11 @@ int start_muxer() {
 
 	audios[0] =  _recorder_audio ;
 
+#ifdef MUXE_MP4
 	_muxer = new am::muxer_mp4();
+#else 
+	_muxer = new am::muxer_libmp4v2();
+#endif
 
 	am::MUX_SETTING setting;
 	setting.v_frame_rate = FRAME_RATE;

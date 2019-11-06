@@ -31,16 +31,15 @@ enum AM_ERROR{
 	AE_FFMPEG_ALLOC_CONTEXT_FAILED,
 	AE_FFMPEG_ENCODE_FRAME_FAILED,
 	AE_FFMPEG_ALLOC_FRAME_FAILED,
-
 	AE_FFMPEG_OPEN_IO_FAILED,
 	AE_FFMPEG_CREATE_STREAM_FAILED,
 	AE_FFMPEG_COPY_PARAMS_FAILED,
-
 	AE_RESAMPLE_INIT_FAILED,
-
 	AE_FFMPEG_NEW_STREAM_FAILED,
-
 	AE_FFMPEG_FIND_INPUT_FMT_FAILED,
+
+	AE_MP4V2_CREATE_FAILED,
+	AE_MP4V2_ADD_TRACK_FAILED,
 
 };
 
@@ -78,11 +77,12 @@ static const char *ERRORS_STR[] = {
 	"ffmpeg open io ctx failed",        //AE_FFMPEG_OPEN_IO_FAILED
 	"ffmpeg new stream failed",         //AE_FFMPEG_CREATE_STREAM_FAILED
 	"ffmpeg copy parameters failed",    //AE_FFMPEG_COPY_PARAMS_FAILED
-
 	"resampler init failed",            //AE_RESAMPLE_INIT_FAILED
-
 	"ffmpeg new out stream failed",     //AE_FFMPEG_NEW_STREAM_FAILED
 	"ffmpeg find input format failed",  //AE_FFMPEG_FIND_INPUT_FMT_FAILED
+
+	"mp4v2 create new handle failed",   //AE_MP4V2_CREATE_FAILED
+	"mp4v2 create new track failed",    //AE_MP4V2_ADD_TRACK_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]
