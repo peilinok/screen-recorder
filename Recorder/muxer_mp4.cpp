@@ -329,8 +329,11 @@ namespace am {
 			st->time_base = st->codec->time_base;
 			st->avg_frame_rate = av_inv_q(st->codec->time_base);
 
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
 				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
 			}
 
 			_v_stream->st = st;
@@ -448,8 +451,11 @@ namespace am {
 			//st->codec->extradata_size = 
 			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
 
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
 				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
 			}
 
 			_a_stream->st = st;

@@ -44,4 +44,15 @@ namespace am {
 		AUDIO_SAMPLE **a_samples;   // audio sample data
 		AUDIO_SAMPLE **a_resamples; // audio resampled data
 	}MUX_STREAM;
+
+	typedef struct MUX_SETTING_T{
+		int v_frame_rate;
+		int v_bit_rate;
+
+		int a_nb_samples;
+		int a_nb_channel;
+		int a_sample_rate;
+		AVSampleFormat a_sample_fmt;
+		int a_bit_rate;
+	}MUX_SETTING;
 }

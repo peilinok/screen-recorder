@@ -31,6 +31,9 @@ namespace am {
 			int bit_rate
 		);
 
+		int get_extradata_size();
+		const uint8_t* get_extradata();
+
 		int start();
 
 		void stop();

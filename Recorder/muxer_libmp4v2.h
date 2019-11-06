@@ -18,17 +18,7 @@ namespace am {
 	class record_desktop;
 
 	struct MUX_STREAM_T;
-
-	typedef struct {
-		int v_frame_rate;
-		int v_bit_rate;
-
-		int a_nb_samples;
-		int a_nb_channel;
-		int a_sample_rate;
-		AVSampleFormat a_sample_fmt;
-		int a_bit_rate;
-	}MUX_SETTING;
+	struct MUX_SETTING_T;
 
 	class muxer_libmp4v2
 	{
@@ -41,7 +31,7 @@ namespace am {
 			record_desktop *source_desktop,
 			record_audio ** source_audios,
 			const int source_audios_nb,
-			const MUX_SETTING &setting
+			const MUX_SETTING_T &setting
 		);
 
 		int start();
@@ -67,13 +57,13 @@ namespace am {
 
 		void on_enc_aac_error(int error);
 
-		int alloc_oc(const char *output_file, const MUX_SETTING &setting);
+		int alloc_oc(const char *output_file, const MUX_SETTING_T &setting);
 
-		int add_video_stream(const MUX_SETTING &setting, record_desktop *source_desktop);
+		int add_video_stream(const MUX_SETTING_T &setting, record_desktop *source_desktop);
 
-		int add_audio_stream(const MUX_SETTING &setting, record_audio ** source_audios, const int source_audios_nb);
+		int add_audio_stream(const MUX_SETTING_T &setting, record_audio ** source_audios, const int source_audios_nb);
 
-		int open_output(const char *output_file, const MUX_SETTING &setting);
+		int open_output(const char *output_file, const MUX_SETTING_T &setting);
 
 		void cleanup_video();
 		void cleanup_audio();

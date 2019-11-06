@@ -70,13 +70,7 @@ namespace am {
 			_encoder_ctx->qmin = 10;
 			_encoder_ctx->qmax = 51;
 			_encoder_ctx->max_b_frames = 0;//NO B Frame
-			//_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-			_encoder = avcodec_find_encoder(_encoder_ctx->codec_id);
-			if (!_encoder) {
-				err = AE_FFMPEG_FIND_ENCODER_FAILED;
-				break;
-			}
+			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 			ret = avcodec_open2(_encoder_ctx, _encoder, &options);
 			if (ret != 0) {
@@ -117,6 +111,16 @@ namespace am {
 			av_dict_free(&options);
 
 		return err;
+	}
+
+	int encoder_264::get_extradata_size()
+	{
+		return _encoder_ctx->extradata_size;
+	}
+
+	const uint8_t * encoder_264::get_extradata()
+	{
+		return (const uint8_t*)_encoder_ctx->extradata;
 	}
 
 	int encoder_264::start()

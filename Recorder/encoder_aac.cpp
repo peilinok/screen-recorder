@@ -71,6 +71,7 @@ namespace am {
 			_encoder_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 			_encoder_ctx->time_base.den = sample_rate;
 			_encoder_ctx->time_base.num = 1;
+			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 			ret = avcodec_open2(_encoder_ctx, _encoder, NULL);
 			if (ret < 0) {
@@ -139,6 +140,16 @@ namespace am {
 
 		return err;
 	}
+
+		int encoder_aac::get_extradata_size()
+		{
+			return _encoder_ctx->extradata_size;
+		}
+
+		const uint8_t * encoder_aac::get_extradata()
+		{
+			return (const uint8_t*)_encoder_ctx->extradata;
+		}
 
 	int encoder_aac::start()
 	{

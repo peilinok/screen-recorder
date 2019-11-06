@@ -6,7 +6,9 @@
 #include "record_desktop_factory.h"
 #include "encoder_264.h"
 
+#include "muxer_define.h"
 #include "muxer_mp4.h"
+#include "muxer_libmp4v2.h"
 
 #include "error_define.h"
 #include "log_helper.h"

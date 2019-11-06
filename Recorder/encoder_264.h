@@ -24,6 +24,9 @@ namespace am {
 
 		int init(int pic_width, int pic_height, int frame_rate, int bit_rate, int *buff_size, int gop_size = 28);
 
+		int get_extradata_size();
+		const uint8_t* get_extradata();
+
 		inline void registe_cb(
 			cb_264_data on_data,
 			cb_264_error on_error) {

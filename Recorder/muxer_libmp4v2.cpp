@@ -1,5 +1,4 @@
 #include "muxer_libmp4v2.h"
-#include "muxer_libmp4v2.h"
 #include "muxer_define.h"
 
 #include "record_audio.h"
