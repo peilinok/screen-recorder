@@ -4,6 +4,8 @@
 #include <atomic>
 #include <thread>
 #include <functional>
+#include <mutex>
+#include <condition_variable>
 
 extern "C" {
 #include <libavformat\avformat.h>
@@ -65,6 +67,10 @@ namespace am {
 		uint8_t *_buff;
 		int _buff_size;
 		int _y_size;
+
+		std::mutex _mutex;
+		std::condition_variable _cond_var;
+		bool _cond_notify;
 	};
 }
 

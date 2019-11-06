@@ -46,6 +46,8 @@ namespace am {
 		_mp4v2_v_track = -1;
 		_mp4v2_a_track = -1;
 
+		_cond_notify = false;
+
 		_buffer = new ring_buffer(1024 * 1024 * 10);
 	}
 
@@ -128,6 +130,9 @@ namespace am {
 	int muxer_libmp4v2::stop()
 	{
 		_running = false;
+
+		_cond_notify = true;
+		_cond_var.notify_all();
 
 
 		if (_a_stream) {
@@ -525,6 +530,8 @@ namespace am {
 
 	int muxer_libmp4v2::write_video(const uint8_t * data, int len, bool key_frame)
 	{
+		std::unique_lock<std::mutex> lock(_mutex);
+
 		static uint8_t *tmp_buf = new uint8_t[1024 * 1024 * 8];
 		memcpy(tmp_buf, data, len);
 
@@ -533,14 +540,23 @@ namespace am {
 		tmp_buf[2] = (len - 4) >> 8;
 		tmp_buf[3] = len - 4;
 
-		_buffer->put(tmp_buf, len, 1);
+		_buffer->put(tmp_buf, len, key_frame == true ? 2 : 1);
+
+		_cond_notify = true;
+		_cond_var.notify_all();
+
 		return 0;
 		//return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
 	}
 
 	int muxer_libmp4v2::write_audio(const uint8_t * data, int len)
 	{
+		std::unique_lock<std::mutex> lock(_mutex);
+
 		_buffer->put(data, len, 0);
+
+		_cond_notify = true;
+		_cond_var.notify_all();
 
 		return 0;
 		//return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
@@ -553,18 +569,26 @@ namespace am {
 		int ret = 0;
 		uint8_t type = 0;
 		while (_running) {
-			ret = _buffer->get(buff, 1024 * 1024 * 8, &type);
-			if (ret) {
-				if (type == 1) {//video
-					MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
-				}
-				else {//audio
-					MP4WriteSample(_mp4v2_file, _mp4v2_a_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
+
+			std::unique_lock<std::mutex> lock(_mutex);
+			while (!_cond_notify)
+				_cond_var.wait(lock);
+
+			while ((ret = _buffer->get(buff, 1024 * 1024 * 8, &type))) {
+				if (ret) {
+					if (type == 1) {//normal video
+						MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 0);
+					}
+					else if (type == 2) {//key video
+						MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 2);
+					}
+					else {//audio
+						MP4WriteSample(_mp4v2_file, _mp4v2_a_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
+					}
 				}
 			}
-			else {
-				//_sleep(10);
-			}
+
+			_cond_notify = false;
 		}
 
 

@@ -18,7 +18,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define FRAME_RATE 25
+#define V_FRAME_RATE 15
+#define V_BIT_RATE 128000
 
 
 
@@ -38,7 +39,7 @@ static am::encoder_aac *_encoder_aac = nullptr;
 
 void on_encoder_aac_data(const uint8_t *data, int length)
 {
-	al_debug("on aac data:%d", length);
+	//al_debug("on aac data:%d", length);
 }
 
 void on_encoder_aac_error(int error)
@@ -49,7 +50,7 @@ void on_encoder_aac_error(int error)
 
 void on_record_audio_data(const uint8_t *data, int length,int extra_index)
 {
-	al_debug("on audio data:%d", length);
+	//al_debug("on audio data:%d", length);
 
 	if (data && length) {
 
@@ -202,7 +203,7 @@ void on_encode_264_error(int error) {
 void init_encoder() {
 	_encoder_264 = new am::encoder_264();
 
-	int error = _encoder_264->init(1920, 1080, FRAME_RATE, 400000, &_buff_264_len);
+	int error = _encoder_264->init(1920, 1080, V_FRAME_RATE, V_BIT_RATE, &_buff_264_len);
 	if (error != AE_NO)
 		goto exit;
 
@@ -262,7 +263,7 @@ int start_record_desktop() {
 	rect.top = 0;
 	rect.right = 1920;
 	rect.bottom = 1080;
-	error = _recorder_desktop->init(rect, FRAME_RATE);
+	error = _recorder_desktop->init(rect, V_FRAME_RATE);
 
 	_recorder_desktop->registe_cb(on_record_desktop_data, on_record_desktop_error);
 
@@ -278,7 +279,7 @@ exit:
 	return error;
 }
 
-//#define MUXE_MP4
+#define MUXE_MP4
 
 
 #ifdef MUXE_MP4
@@ -300,7 +301,7 @@ int start_muxer() {
 	rect.right = 1920;
 	rect.bottom = 1080;
 
-	_recorder_desktop->init(rect, FRAME_RATE);
+	_recorder_desktop->init(rect, V_FRAME_RATE);
 
 	audios[0] =  _recorder_audio ;
 
@@ -311,8 +312,8 @@ int start_muxer() {
 #endif
 
 	am::MUX_SETTING setting;
-	setting.v_frame_rate = FRAME_RATE;
-	setting.v_bit_rate = 400000;
+	setting.v_frame_rate = V_FRAME_RATE;
+	setting.v_bit_rate = V_BIT_RATE;
 
 	setting.a_nb_channel = 2;
 	setting.a_nb_samples = 1024;

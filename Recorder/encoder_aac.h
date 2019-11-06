@@ -4,6 +4,8 @@
 #include <atomic>
 #include <thread>
 #include <functional>
+#include <mutex>
+#include <condition_variable>
 
 extern "C" {
 #include <libavformat\avformat.h>
@@ -68,6 +70,10 @@ namespace am {
 		AVFrame *_frame;
 		uint8_t *_buff;
 		int _buff_size;
+
+		std::mutex _mutex;
+		std::condition_variable _cond_var;
+		bool _cond_notify;
 
 #ifdef SAVE_AAC
 		AVIOContext *_aac_io_ctx;

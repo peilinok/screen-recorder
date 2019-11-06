@@ -19,6 +19,8 @@ namespace am {
 		_buff_size = 0;
 		_y_size = 0;
 
+		_cond_notify = false;
+
 		_ring_buffer = new ring_buffer();
 	}
 
@@ -144,6 +146,10 @@ namespace am {
 	void encoder_264::stop()
 	{
 		_running = false;
+
+		_cond_notify = true;
+		_cond_var.notify_all();
+
 		if (_thread.joinable())
 			_thread.join();
 
@@ -151,7 +157,12 @@ namespace am {
 
 	int encoder_264::put(const uint8_t * data, int data_len)
 	{
+		std::unique_lock<std::mutex> lock(_mutex);
+
 		_ring_buffer->put(data, data_len);
+
+		_cond_notify = true;
+		_cond_var.notify_all();
 		return 0;
 	}
 
@@ -215,13 +226,15 @@ namespace am {
 
 		while (_running)
 		{
-			len = _ring_buffer->get(_buff, _buff_size);
+			std::unique_lock<std::mutex> lock(_mutex);
+			while (!_cond_notify)
+				_cond_var.wait(lock);
 
-			_frame->data[0] = _buff;
-			_frame->data[1] = _buff + _y_size;
-			_frame->data[2] = _buff + _y_size * 5 / 4;
+			while (_ring_buffer->get(_buff, _buff_size)) {
+				_frame->data[0] = _buff;
+				_frame->data[1] = _buff + _y_size;
+				_frame->data[2] = _buff + _y_size * 5 / 4;
 
-			if (len) {
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {
 					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
@@ -247,8 +260,8 @@ namespace am {
 					av_packet_unref(packet);
 				}
 			}
-			else
-				_sleep(10);//should use condition_variable instead
+			
+			_cond_notify = false;
 		}
 
 		av_free_packet(packet);

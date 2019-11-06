@@ -20,6 +20,8 @@ namespace am {
 		_buff = NULL;
 		_buff_size = 0;
 
+		_cond_notify = false;
+
 #ifdef SAVE_AAC
 		_aac_io_ctx = NULL;
 		_aac_stream = NULL;
@@ -172,13 +174,22 @@ namespace am {
 	void encoder_aac::stop()
 	{
 		_running = false;
+
+		_cond_notify = true;
+		_cond_var.notify_all();
+
 		if (_thread.joinable())
 			_thread.join();
 	}
 
 	int encoder_aac::put(const uint8_t * data, int data_len)
 	{
+		std::unique_lock<std::mutex> lock(_mutex);
+		
 		_ring_buffer->put(data, data_len);
+		
+		_cond_notify = true;
+		_cond_var.notify_all();
 		return 0;
 	}
 
@@ -194,40 +205,43 @@ namespace am {
 
 		while (_running)
 		{
-			len = _ring_buffer->get(_buff, _buff_size);
-			if (!len) {
-				_sleep(10);
-				continue;
-			}
+			std::unique_lock<std::mutex> lock(_mutex);
+			while (!_cond_notify)
+				_cond_var.wait(lock);
 
-			ret = avcodec_send_frame(_encoder_ctx, _frame);
-			if (ret < 0) {
-				if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
-				al_fatal("encode pcm failed:%d", ret);
-				continue;
-			}
+			while ((len = _ring_buffer->get(_buff, _buff_size))) {
 
-			while (ret >= 0) {
-				ret = avcodec_receive_packet(_encoder_ctx, packet);
-				if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-					break;
-				}
-
+				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {
-					if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
-
-					al_fatal("read aac packet failed:%d", ret);
-					break;
+					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
+					al_fatal("encode pcm failed:%d", ret);
+					continue;
 				}
 
-				if (_on_data) _on_data(packet->data, packet->size);
+				while (ret >= 0) {
+					ret = avcodec_receive_packet(_encoder_ctx, packet);
+					if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+						break;
+					}
+
+					if (ret < 0) {
+						if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
+
+						al_fatal("read aac packet failed:%d", ret);
+						break;
+					}
+
+					if (_on_data) _on_data(packet->data, packet->size);
 
 #ifdef SAVE_AAC
-				av_write_frame(_aac_fmt_ctx, packet);
+					av_write_frame(_aac_fmt_ctx, packet);
 #endif
 
-				av_packet_unref(packet);
+					av_packet_unref(packet);
+				}
 			}
+
+			_cond_notify = false;
 		}
 
 		av_packet_free(&packet);

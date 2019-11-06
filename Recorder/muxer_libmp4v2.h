@@ -5,6 +5,8 @@
 #include <list>
 #include <functional>
 #include <math.h>
+#include <mutex>
+#include <condition_variable>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -92,6 +94,10 @@ namespace am {
 		MP4TrackId _mp4v2_a_track;
 
 		ring_buffer *_buffer;
+
+		std::mutex _mutex;
+		std::condition_variable _cond_var;
+		bool _cond_notify;
 	};
 
 
