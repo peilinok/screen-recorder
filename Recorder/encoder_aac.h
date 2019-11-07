@@ -27,7 +27,6 @@ namespace am {
 
 		int init(
 			int nb_channels,
-			int nb_samples,
 			int sample_rate,
 			AVSampleFormat fmt,
 			int bit_rate
@@ -35,6 +34,8 @@ namespace am {
 
 		int get_extradata_size();
 		const uint8_t* get_extradata();
+
+		int get_nb_samples();
 
 		int start();
 

@@ -431,6 +431,21 @@ namespace am {
 		_a_stream->a_src = source_audios;
 
 		do {
+			_a_stream->a_enc = new encoder_aac();
+			error = _a_stream->a_enc->init(
+				setting.a_nb_channel,
+				setting.a_sample_rate,
+				setting.a_sample_fmt,
+				setting.a_bit_rate
+			);
+			if (error != AE_NO)
+				break;
+
+			_a_stream->a_enc->registe_cb(
+				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
+				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
+			);
+
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->registe_cb(
 					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
@@ -439,14 +454,14 @@ namespace am {
 				);
 
 				SAMPLE_SETTING src_setting = {
-					1024,
+					_a_stream->a_enc->get_nb_samples(),
 					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
 					_a_stream->a_src[i]->get_channel_num(),
 					AFTypeTrans2AVType(_a_stream->a_src[i]->get_fmt()),
 					_a_stream->a_src[i]->get_sample_rate()
 				};
 				SAMPLE_SETTING dst_setting = {
-					setting.a_nb_samples,
+					_a_stream->a_enc->get_nb_samples(),
 					av_get_default_channel_layout(setting.a_nb_channel),
 					setting.a_nb_channel,
 					setting.a_sample_fmt,
@@ -459,25 +474,9 @@ namespace am {
 				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 
 				_a_stream->a_samples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 0);
+				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 1);
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
-
-			_a_stream->a_enc = new encoder_aac();
-			error = _a_stream->a_enc->init(
-				setting.a_nb_channel, 
-				setting.a_nb_samples, 
-				setting.a_sample_rate, 
-				setting.a_sample_fmt, 
-				setting.a_bit_rate
-			);
-			if (error != AE_NO)
-				break;
-
-			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
-				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
-			);
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
 			if (!codec) {

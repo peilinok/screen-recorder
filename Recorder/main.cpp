@@ -96,6 +96,19 @@ int start_record_audio() {
 	if (error != AE_NO)
 		goto exit;
 
+	_encoder_aac = new am::encoder_aac();
+
+	_encoder_aac->registe_cb(on_encoder_aac_data, on_encoder_aac_error);
+
+	error = _encoder_aac->init(
+		_recorder_audio->get_channel_num(),
+		A_SAMPLE_RATE,
+		AV_SAMPLE_FMT_FLTP,
+		A_BIT_RATE);
+	if (error != AE_NO) {
+		goto exit;
+	}
+
 	al_info(
 		"audio sample info: \r\n   \
 		 sample_rate: %d\r\n       \
@@ -111,17 +124,17 @@ int start_record_audio() {
 		_recorder_audio->get_fmt());
 
 	_sample_setting.sample_rate = _recorder_audio->get_sample_rate();
-	_sample_setting.nb_samples = 1024;//output_codec_context->frame_size,size of pcm per frame
+	_sample_setting.nb_samples = _encoder_aac->get_nb_samples();
 	_sample_setting.nb_channels = _recorder_audio->get_channel_num();
 	_sample_setting.channel_layout = av_get_default_channel_layout(_recorder_audio->get_channel_num());
 	_sample_setting.fmt = AV_SAMPLE_FMT_S16;
 
-	_sample_frame_size = av_samples_get_buffer_size(NULL, _sample_setting.nb_channels, _sample_setting.nb_samples, _sample_setting.fmt, 0);
+	_sample_frame_size = av_samples_get_buffer_size(NULL, _sample_setting.nb_channels, _sample_setting.nb_samples, _sample_setting.fmt, 1);
 	_sample_frame = (uint8_t*)malloc(_sample_frame_size);
 
 	_resample_setting.sample_rate = A_SAMPLE_RATE;
-	_resample_setting.nb_samples = 1024;
-	_resample_setting.nb_channels = 2;
+	_resample_setting.nb_samples = _encoder_aac->get_nb_samples();
+	_resample_setting.nb_channels = _recorder_audio->get_channel_num();
 	_resample_setting.channel_layout = av_get_default_channel_layout(_resample_setting.nb_channels);
 	_resample_setting.fmt = AV_SAMPLE_FMT_FLTP;
 
@@ -133,20 +146,6 @@ int start_record_audio() {
 	error = _resample_pcm->init(&_sample_setting,&_resample_setting,&_resampled_frame_size);
 	if (error == AE_NO && _resampled_frame_size) {
 		_resampled_frame = (uint8_t*)malloc(_resampled_frame_size);
-	}
-
-	_encoder_aac = new am::encoder_aac();
-
-	_encoder_aac->registe_cb(on_encoder_aac_data, on_encoder_aac_error);
-
-	error = _encoder_aac->init(
-		_resample_setting.nb_channels,
-		_resample_setting.nb_samples,
-		A_SAMPLE_RATE,
-		_resample_setting.fmt,
-		A_BIT_RATE);
-	if (error != AE_NO) {
-		goto exit;
 	}
 
 	_encoder_aac->start();
@@ -323,7 +322,6 @@ int start_muxer() {
 	setting.v_bit_rate = V_BIT_RATE;
 
 	setting.a_nb_channel = 2;
-	setting.a_nb_samples = 1024;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
 	setting.a_sample_rate = A_SAMPLE_RATE;
 	setting.a_bit_rate = A_BIT_RATE;

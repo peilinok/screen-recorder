@@ -22,7 +22,6 @@ namespace am {
 		int v_frame_rate;
 		int v_bit_rate;
 
-		int a_nb_samples;
 		int a_nb_channel;
 		int a_sample_rate;
 		AVSampleFormat a_sample_fmt;

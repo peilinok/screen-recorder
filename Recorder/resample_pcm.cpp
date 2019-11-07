@@ -47,7 +47,7 @@ namespace am {
 				break;
 			}
 
-			*resapmled_frame_size = av_samples_get_buffer_size(NULL, _sample_dst->nb_channels, _sample_dst->nb_samples, _sample_dst->fmt, 0);
+			*resapmled_frame_size = av_samples_get_buffer_size(NULL, _sample_dst->nb_channels, _sample_dst->nb_samples, _sample_dst->fmt, 1);
 
 		} while (0);
 
@@ -82,7 +82,7 @@ namespace am {
 		avcodec_fill_audio_frame(sample_frame, _sample_dst->nb_channels, _sample_dst->fmt, src, src_len, 0);
 		*/
 
-		return swr_convert(_ctx, out, 1024, in1, 1024);
+		return swr_convert(_ctx, out, _sample_dst->nb_samples, in1, _sample_src->nb_samples);
 	}
 	void resample_pcm::cleanup()
 	{

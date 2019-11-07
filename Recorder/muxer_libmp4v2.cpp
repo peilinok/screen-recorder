@@ -359,15 +359,30 @@ namespace am {
 					i
 				);
 
+				_a_stream->a_enc = new encoder_aac();
+				error = _a_stream->a_enc->init(
+					setting.a_nb_channel,
+					setting.a_sample_rate,
+					setting.a_sample_fmt,
+					setting.a_bit_rate
+				);
+				if (error != AE_NO)
+					break;
+
+				_a_stream->a_enc->registe_cb(
+					std::bind(&muxer_libmp4v2::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
+				);
+
 				SAMPLE_SETTING src_setting = {
-					1024,
+					_a_stream->a_enc->get_nb_samples(),
 					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
 					_a_stream->a_src[i]->get_channel_num(),
 					AFTypetrans2AVType(_a_stream->a_src[i]->get_fmt()),
 					_a_stream->a_src[i]->get_sample_rate()
 				};
 				SAMPLE_SETTING dst_setting = {
-					setting.a_nb_samples,
+					_a_stream->a_enc->get_nb_samples(),
 					av_get_default_channel_layout(setting.a_nb_channel),
 					setting.a_nb_channel,
 					setting.a_sample_fmt,
@@ -380,29 +395,13 @@ namespace am {
 				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 
 				_a_stream->a_samples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 0);
+				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 1);
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
-			_a_stream->a_enc = new encoder_aac();
-			error = _a_stream->a_enc->init(
-				setting.a_nb_channel,
-				setting.a_nb_samples,
-				setting.a_sample_rate,
-				setting.a_sample_fmt,
-				setting.a_bit_rate
-			);
-			if (error != AE_NO)
-				break;
-
-			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_libmp4v2::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
-				std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
-			);
-
 			_a_stream->setting = setting;
 
-			_mp4v2_a_track = MP4AddAudioTrack(_mp4v2_file, setting.a_sample_rate, 1024, MP4_MPEG4_AUDIO_TYPE);
+			_mp4v2_a_track = MP4AddAudioTrack(_mp4v2_file, setting.a_sample_rate, _a_stream->a_enc->get_nb_samples(), MP4_MPEG4_AUDIO_TYPE);
 			if (_mp4v2_a_track == MP4_INVALID_TRACK_ID) {
 				error = AE_MP4V2_ADD_TRACK_FAILED;
 				break;

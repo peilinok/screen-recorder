@@ -38,12 +38,7 @@ namespace am {
 		delete _ring_buffer;
 	}
 
-	int encoder_aac::init(
-		int nb_channels, 
-		int nb_samples,
-		int sample_rate, 
-		AVSampleFormat fmt,
-		int bit_rate)
+	int encoder_aac::init(int nb_channels, int sample_rate, AVSampleFormat fmt,int bit_rate)
 	{
 		int err = AE_NO;
 		int ret = 0;
@@ -81,7 +76,7 @@ namespace am {
 				break;
 			}
 
-			_buff_size = av_samples_get_buffer_size(NULL, nb_channels, nb_samples, fmt, 0);
+			_buff_size = av_samples_get_buffer_size(NULL, nb_channels, _encoder_ctx->frame_size, fmt, 1);
 			_buff = (uint8_t*)av_malloc(_buff_size);
 
 			_frame = av_frame_alloc();
@@ -90,7 +85,7 @@ namespace am {
 				break;
 			}
 
-			_frame->nb_samples = nb_samples;
+			_frame->nb_samples = _encoder_ctx->frame_size;
 			_frame->channel_layout = av_get_default_channel_layout(nb_channels);
 			_frame->format = fmt;
 			_frame->sample_rate = sample_rate;
@@ -114,10 +109,6 @@ namespace am {
 			_aac_fmt_ctx->oformat = av_guess_format(NULL, "save.aac", NULL);
 			_aac_fmt_ctx->url = av_strdup("save.aac");
 
-			if (_aac_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
-				_aac_fmt_ctx->oformat->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-			}
-
 			_aac_stream = avformat_new_stream(_aac_fmt_ctx, NULL);
 			if (!_aac_stream) {
 				err = AE_FFMPEG_CREATE_STREAM_FAILED;
@@ -128,6 +119,10 @@ namespace am {
 			if (ret < 0) {
 				err = AE_FFMPEG_COPY_PARAMS_FAILED;
 				break;
+			}
+
+			if (_aac_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
+				_aac_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 			}
 #endif
 
@@ -151,6 +146,11 @@ namespace am {
 		const uint8_t * encoder_aac::get_extradata()
 		{
 			return (const uint8_t*)_encoder_ctx->extradata;
+		}
+
+		int encoder_aac::get_nb_samples()
+		{
+			return _encoder_ctx->frame_size;
 		}
 
 	int encoder_aac::start()
