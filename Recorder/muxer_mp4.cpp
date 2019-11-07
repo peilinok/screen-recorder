@@ -179,7 +179,7 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-#if 1
+#if 0
 	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
 	{
 		if (_running == false 
@@ -248,7 +248,7 @@ namespace am {
 			//cache pcm
 			copied_len = min(samples->size - samples->sample_in, remain_len);
 			if (copied_len) {
-				memcpy(samples->buff + samples->sample_in, data, copied_len);
+				memcpy(samples->buff + samples->sample_in, data + len - remain_len, copied_len);
 				samples->sample_in += copied_len;
 				remain_len = remain_len - copied_len;
 			}
@@ -265,12 +265,6 @@ namespace am {
 
 				samples->sample_in = 0;
 			}
-
-			////copy last pcms
-			//if (len - copied_len > 0) {
-			//	memcpy(samples->buff + samples->sample_in, data + copied_len, len - copied_len);
-			//	samples->sample_in += len - copied_len;
-			//}
 		}
 	}
 
