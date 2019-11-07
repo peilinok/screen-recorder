@@ -19,7 +19,10 @@
 #include <stdint.h>
 
 #define V_FRAME_RATE 20
-#define V_BIT_RATE 128000
+#define V_BIT_RATE 64000
+
+#define A_SAMPLE_RATE 48000
+#define A_BIT_RATE 128000
 
 
 
@@ -115,7 +118,7 @@ int start_record_audio() {
 	_sample_frame_size = av_samples_get_buffer_size(NULL, _sample_setting.nb_channels, _sample_setting.nb_samples, _sample_setting.fmt, 0);
 	_sample_frame = (uint8_t*)malloc(_sample_frame_size);
 
-	_resample_setting.sample_rate = 48000;
+	_resample_setting.sample_rate = A_SAMPLE_RATE;
 	_resample_setting.nb_samples = 1024;
 	_resample_setting.nb_channels = 2;
 	_resample_setting.channel_layout = av_get_default_channel_layout(_resample_setting.nb_channels);
@@ -138,9 +141,9 @@ int start_record_audio() {
 	error = _encoder_aac->init(
 		_resample_setting.nb_channels,
 		_resample_setting.nb_samples,
-		48000,
+		A_SAMPLE_RATE,
 		_resample_setting.fmt,
-		128000);
+		A_BIT_RATE);
 	if (error != AE_NO) {
 		goto exit;
 	}
@@ -318,8 +321,8 @@ int start_muxer() {
 	setting.a_nb_channel = 2;
 	setting.a_nb_samples = 1024;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
-	setting.a_sample_rate = 48000;
-	setting.a_bit_rate = 128000;
+	setting.a_sample_rate = A_SAMPLE_RATE;
+	setting.a_bit_rate = A_BIT_RATE;
 
 	int error = _muxer->init("save.mp4", _recorder_desktop, audios, 1, setting);
 	if (error != AE_NO) {

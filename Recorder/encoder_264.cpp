@@ -67,10 +67,10 @@ namespace am {
 			_encoder_ctx->time_base.num = 1;
 			_encoder_ctx->time_base.den = frame_rate;
 			_encoder_ctx->framerate = { frame_rate,1 };
-			_encoder_ctx->bit_rate_tolerance = bit_rate;
+			_encoder_ctx->bit_rate = bit_rate;
 			_encoder_ctx->gop_size = gop_size;
-			_encoder_ctx->qmin = 10;
-			_encoder_ctx->qmax = 51;
+			_encoder_ctx->qmin = 30;
+			_encoder_ctx->qmax = 35;
 			_encoder_ctx->max_b_frames = 0;//NO B Frame
 			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
