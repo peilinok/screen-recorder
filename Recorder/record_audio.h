@@ -10,7 +10,7 @@
 #include <functional>
 
 namespace am {
-	typedef std::function<void(const uint8_t*, int, int)> cb_audio_data;
+	typedef std::function<void(AVFrame *packet, int index)> cb_audio_data;
 	typedef std::function<void(int,int)> cb_audio_error;
 
 	class record_audio

@@ -178,7 +178,7 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
+	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
 			|| !_a_stream
@@ -195,13 +195,14 @@ namespace am {
 		resample_pcm *resampler = _a_stream->a_rs[index];
 
 		int copied_len = 0;
-		int remain_len = len;
+		int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+		int remain_len = sample_len;
 
 		while (remain_len > 0) {
 			//cache pcm
 			copied_len = min(samples->size - samples->sample_in, remain_len);
 			if (copied_len) {
-				memcpy(samples->buff + samples->sample_in, data + len - remain_len, copied_len);
+				memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
 				samples->sample_in += copied_len;
 				remain_len = remain_len - copied_len;
 			}
@@ -393,7 +394,7 @@ namespace am {
 
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->registe_cb(
-					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
 					std::bind(&muxer_mp4::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
 					i
 				);

@@ -41,7 +41,7 @@ namespace am {
 
 		void on_desktop_error(int error);
 
-		void on_audio_data(const uint8_t *data, int len, int index);
+		void on_audio_data(AVFrame *frame, int index);
 
 		void on_audio_error(int error, int index);
 

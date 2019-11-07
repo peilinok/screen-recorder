@@ -160,7 +160,7 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-	void muxer_libmp4v2::on_audio_data(const uint8_t * data, int len, int index)
+	void muxer_libmp4v2::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
 			|| !_a_stream
@@ -174,12 +174,16 @@ namespace am {
 
 		AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
 		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
+
+		record_audio *recorder = _a_stream->a_src[index];
 		resample_pcm *resampler = _a_stream->a_rs[index];
 
+		int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+
 		//cache pcm
-		int copied_len = min(samples->size - samples->sample_in, len);
+		int copied_len = min(samples->size - samples->sample_in, sample_len);
 		if (copied_len) {
-			memcpy(samples->buff + samples->sample_in, data, copied_len);
+			memcpy(samples->buff + samples->sample_in, frame->data[0], copied_len);
 			samples->sample_in += copied_len;
 		}
 
@@ -197,9 +201,9 @@ namespace am {
 		}
 
 		//copy last pcms
-		if (len - copied_len > 0) {
-			memcpy(samples->buff + samples->sample_in, data + copied_len, len - copied_len);
-			samples->sample_in += len - copied_len;
+		if (sample_len - copied_len > 0) {
+			memcpy(samples->buff + samples->sample_in, frame->data[0] + copied_len, sample_len - copied_len);
+			samples->sample_in += sample_len - copied_len;
 		}
 	}
 
@@ -343,7 +347,7 @@ namespace am {
 		do {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->registe_cb(
-					std::bind(&muxer_libmp4v2::on_audio_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+					std::bind(&muxer_libmp4v2::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
 					std::bind(&muxer_libmp4v2::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
 					i
 				);

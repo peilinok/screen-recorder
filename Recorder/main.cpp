@@ -52,32 +52,9 @@ void on_encoder_aac_error(int error)
 }
 
 
-void on_record_audio_data(const uint8_t *data, int length,int extra_index)
+void on_record_audio_data(AVFrame *frame,int extra_index)
 {
 	//al_debug("on audio data:%d", length);
-
-	if (data && length) {
-
-		int copy_len = min(_sample_frame_size - _sample_in_frame, length);
-		if (copy_len > 0) {
-			memcpy(_sample_frame + _sample_in_frame, data, copy_len);
-			_sample_in_frame += copy_len;
-		}
-
-		if (_sample_in_frame == _sample_frame_size) {
-			int ret = _resample_pcm->convert(_sample_frame, _sample_frame_size, _resampled_frame, _resampled_frame_size);
-			_encoder_aac->put(_resampled_frame, _resampled_frame_size);
-			_sample_in_frame = 0;
-		}
-
-		if (length - copy_len > 0) {
-			memcpy(_sample_frame + _sample_in_frame, data + copy_len, length - copy_len);
-
-			_sample_in_frame += length - copy_len;
-		}
-	}
-	else
-		al_debug("on silence data:%d\r\n", length);
 }
 
 void on_record_audio_error(int error,int index)

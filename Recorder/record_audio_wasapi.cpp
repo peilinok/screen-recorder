@@ -219,7 +219,7 @@ namespace am {
 				}
 
 				if (_on_data && data) {
-					_on_data(data, frame_num*frame_size, _cb_extra_index);
+					//_on_data(data, frame_num*frame_size, _cb_extra_index);
 				}
 
 				if(data)

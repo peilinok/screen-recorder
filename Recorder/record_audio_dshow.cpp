@@ -227,8 +227,7 @@ namespace am {
 					}
 
 					if (_on_data) {
-						sample_len = av_samples_get_buffer_size(NULL, _codec_ctx->channels, frame->nb_samples, _codec_ctx->sample_fmt, 1);
-						_on_data(frame->data[0], sample_len, _cb_extra_index);
+						_on_data(frame, _cb_extra_index);
 					}
 				}
 			}
