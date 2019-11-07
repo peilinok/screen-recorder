@@ -3,6 +3,8 @@
 
 #include "record_audio_define.h"
 
+#include "headers_ffmpeg.h"
+
 #include <atomic>
 #include <thread>
 #include <functional>
@@ -26,6 +28,8 @@ namespace am {
 		virtual int resume() = 0;
 		
 		virtual int stop() = 0;
+
+		virtual const AVRational & get_time_base() = 0;
 
 	public:
 		inline bool is_recording() { return _running; }

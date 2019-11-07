@@ -84,6 +84,9 @@
     <ClInclude Include="record_audio_dshow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="headers_ffmpeg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

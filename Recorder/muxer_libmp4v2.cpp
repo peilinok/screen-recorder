@@ -12,17 +12,6 @@
 #include "log_helper.h"
 #include "error_define.h"
 
-extern "C" {
-#include <libavutil\avassert.h>
-#include <libavutil\channel_layout.h>
-#include <libavutil\opt.h>
-#include <libavutil\mathematics.h>
-#include <libavutil\timestamp.h>
-#include <libavutil\error.h>
-#include <libavcodec\adts_parser.h>
-#include <libavutil\time.h>
-}
-
 namespace am {
 
 	muxer_libmp4v2::muxer_libmp4v2()

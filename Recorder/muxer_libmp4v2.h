@@ -8,9 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
+#include "headers_ffmpeg.h"
 
 #include <mp4v2\mp4v2.h>
 

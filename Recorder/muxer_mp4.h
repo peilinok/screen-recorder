@@ -6,10 +6,9 @@
 #include <list>
 #include <functional>
 #include <math.h>
+#include <mutex>
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
+#include "headers_ffmpeg.h"
 
 namespace am {
 	class record_audio;
@@ -86,6 +85,8 @@ namespace am {
 		int64_t _base_time;
 
 		char ff_error[4096];
+
+		std::mutex _mutex;
 	};
 }
 

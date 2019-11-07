@@ -3,6 +3,8 @@
 
 #include "record_desktop_define.h"
 
+#include "headers_ffmpeg.h"
+
 #include <atomic>
 #include <thread>
 #include <functional>

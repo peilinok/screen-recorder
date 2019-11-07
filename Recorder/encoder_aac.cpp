@@ -1,5 +1,7 @@
 #include "encoder_aac.h"
 
+#include "ring_buffer.h"
+
 #include "error_define.h"
 #include "log_helper.h"
 

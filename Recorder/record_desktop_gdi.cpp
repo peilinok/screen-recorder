@@ -216,10 +216,9 @@ namespace am {
 						0, _codec_ctx->height,
 						frame_yuv->data, frame_yuv->linesize);
 
-					if (_on_data) _on_data(buff_yuv, size_yuv);
+					if (_on_data) 
+						_on_data(buff_yuv, size_yuv);
 				}
-
-				//_sleep(1000 / _fps);
 			}
 
 			av_free_packet(packet);

@@ -1,5 +1,7 @@
 #include "encoder_264.h"
 
+#include "ring_buffer.h"
+
 #include "log_helper.h"
 #include "error_define.h"
 

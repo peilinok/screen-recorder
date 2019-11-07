@@ -179,6 +179,16 @@ namespace am {
 		return AE_NO;
 	}
 
+	const AVRational & record_audio_dshow::get_time_base()
+	{
+		if (_inited && _fmt_ctx && _stream_index != -1) {
+			return _fmt_ctx->streams[_stream_index]->time_base;
+		}
+		else {
+			return{ 1,90000 };
+		}
+	}
+
 	void record_audio_dshow::record_loop()
 	{
 		int ret = 0;

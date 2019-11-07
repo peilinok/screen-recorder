@@ -7,16 +7,13 @@
 #include <mutex>
 #include <condition_variable>
 
-extern "C" {
-#include <libavformat\avformat.h>
-#include <libavcodec\avcodec.h>
-}
-
-#include "ring_buffer.h"
+#include "headers_ffmpeg.h"
 
 namespace am {
 	typedef std::function<void(const uint8_t*, int, bool)> cb_264_data;
 	typedef std::function<void(int)> cb_264_error;
+
+	class ring_buffer;
 
 	class encoder_264 
 	{

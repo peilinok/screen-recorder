@@ -152,6 +152,7 @@
     <ClInclude Include="encoder_aac.h" />
     <ClInclude Include="error_define.h" />
     <ClInclude Include="filter_amix.h" />
+    <ClInclude Include="headers_ffmpeg.h" />
     <ClInclude Include="log_helper.h" />
     <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_libmp4v2.h" />

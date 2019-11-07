@@ -3,9 +3,8 @@
 
 #include <stdint.h>
 
-extern "C" {
-#include <libswresample\swresample.h>
-}
+#include "headers_ffmpeg.h"
+
 namespace am {
 	typedef struct {
 		int nb_samples;

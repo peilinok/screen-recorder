@@ -29,6 +29,8 @@ namespace am {
 
 		virtual int stop();
 
+		virtual const AVRational & get_time_base();
+
 	private:
 		void record_func();
 

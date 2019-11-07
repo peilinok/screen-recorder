@@ -183,6 +183,11 @@ namespace am {
 		return AE_NO;
 	}
 
+	const AVRational & record_audio_wasapi::get_time_base()
+	{
+		return{ 1,90000 };
+	}
+
 
 	void record_audio_wasapi::record_func()
 	{

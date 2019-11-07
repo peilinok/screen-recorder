@@ -3,10 +3,6 @@
 #include "log_helper.h"
 #include "error_define.h"
 
-extern "C" {
-#include <libavcodec\avcodec.h>
-}
-
 namespace am {
 	resample_pcm::resample_pcm()
 	{

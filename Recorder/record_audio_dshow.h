@@ -2,12 +2,6 @@
 
 #include "record_audio.h"
 
-extern "C" {
-#include <libavformat\avformat.h>
-#include <libavdevice\avdevice.h>
-#include <libavcodec\avcodec.h>
-}
-
 namespace am {
 
 	class record_audio_dshow :public record_audio
@@ -25,6 +19,8 @@ namespace am {
 		virtual int resume();
 
 		virtual int stop();
+
+		virtual const AVRational & get_time_base();
 
 	private:
 		void record_loop();

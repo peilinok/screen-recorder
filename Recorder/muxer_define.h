@@ -2,10 +2,6 @@
 
 namespace am {
 	typedef struct {
-
-	}EXTRA_DATA;
-
-	typedef struct {
 		uint8_t *buff;
 		int size;
 		int sample_in;
