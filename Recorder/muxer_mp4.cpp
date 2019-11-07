@@ -109,6 +109,8 @@ namespace am {
 			return AE_NEED_INIT;
 		}
 
+		_base_time = -1;
+
 		if (_v_stream && _v_stream->v_enc)
 			_v_stream->v_enc->start();
 
@@ -126,7 +128,6 @@ namespace am {
 
 
 		_running = true;
-		_thread = std::thread(std::bind(&muxer_mp4::mux_loop, this));
 
 		return error;
 	}
@@ -149,9 +150,6 @@ namespace am {
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
 		}
-
-		if (_thread.joinable())
-			_thread.join();
 
 		return AE_NO;
 	}
@@ -228,10 +226,8 @@ namespace am {
 
 	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
 	{
-		//al_debug("on video data:%d", len);
-		if (_running && _v_stream && _v_stream->buffer) {
+		if (_running && _v_stream) {
 			write_video(data, len, key_frame);
-			//_v_stream->buffer->put(data, len, key_frame);
 		}
 	}
 
@@ -242,10 +238,8 @@ namespace am {
 
 	void muxer_mp4::on_enc_aac_data(const uint8_t * data, int len)
 	{
-		//al_debug("on audio data:%d", len);
-		if (_running && _a_stream && _a_stream->buffer) {
+		if (_running && _a_stream) {
 			write_audio(data, len);
-			//_a_stream->buffer->put(data, len);
 		}
 	}
 
@@ -340,10 +334,8 @@ namespace am {
 			}
 
 			_v_stream->st = st;
-
+			_v_stream->setting = setting;
 			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
-
-			_v_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 		} while (0);
 
 		return error;
@@ -461,10 +453,8 @@ namespace am {
 			}
 
 			_a_stream->st = st;
-
+			_a_stream->setting = setting;
 			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
-
-			_a_stream->buffer = new ring_buffer(1024 * 1024 * 10);
 
 		} while (0);
 
@@ -500,9 +490,6 @@ namespace am {
 		if (_v_stream->tmp_frame)
 			av_frame_free(&_v_stream->tmp_frame);
 
-		if (_v_stream->buffer)
-			delete _v_stream->buffer;
-
 		if (_v_stream->v_enc)
 			delete _v_stream->v_enc;
 
@@ -521,9 +508,6 @@ namespace am {
 
 		if (_a_stream->tmp_frame)
 			av_frame_free(&_a_stream->tmp_frame);
-
-		if (_a_stream->buffer)
-			delete _a_stream->buffer;
 
 		if (_a_stream->a_enc)
 			delete _a_stream->a_enc;
@@ -585,25 +569,21 @@ namespace am {
 
 	int muxer_mp4::write_video(const uint8_t * data, int len, bool key_frame)
 	{
+		if (_base_time < 0)
+			return 0;
+
 		AVPacket packet;
 		av_init_packet(&packet);
-
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
 
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
 		int64_t cur_time = av_gettime() / 1000;
-		if (_base_time < 0)
-			return 0;
 
 		packet.pts = cur_time - _base_time;
 		packet.pts = av_rescale_q_rnd(packet.pts, { 1,1000 }, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
-
-		_v_stream->cur_pts = packet.pts;
-		_v_stream->cur_frame_index++;
 
 		if (key_frame == true)
 			packet.flags = AV_PKT_FLAG_KEY;
@@ -626,141 +606,12 @@ namespace am {
 		if (_base_time < 0)
 			_base_time = cur_time;
 
-		//packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
 		packet.pts = cur_time - _base_time;
 		packet.pts = av_rescale_q_rnd(packet.pts, {1,1000}, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
-		//packet.duration = 1024;
-
-		_a_stream->cur_frame_index++;
-
-		//packet.flags = AV_PKT_FLAG_KEY;
 
 		al_debug("A:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
-
-	//static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
-	//{
-	//	AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
-
-	//	printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
-	//		av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
-	//		av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
-	//		av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
-	//		pkt->stream_index);
-	//}
-
-	void muxer_mp4::mux_loop()
-	{
-		AVPacket packet = { 0 };
-
-		int ret = 0;
-		int buf_size = 1024 * 1024 * 2;
-		uint8_t *buf = new uint8_t[buf_size];
-
-		AVRational v_time_base = { 1,90000 };//should be input AVStream time base
-		AVRational a_time_base = { 1,48000 };
-
-		uint8_t key_frame = 0;
-		while (_running) {
-
-			_sleep(10);
-			continue;
-			av_init_packet(&packet);
-
-			if (av_compare_ts(
-				_v_stream->cur_pts, v_time_base,
-				_a_stream->cur_pts, a_time_base
-			) <= 0) {//write video
-				ret = _v_stream->buffer->get(buf, buf_size, &key_frame);
-				if (ret) {
-					packet.data = buf;
-					packet.size = ret;
-					packet.stream_index = _v_stream->st->index;
-					
-					int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-					packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-					packet.dts = packet.pts;
-					packet.pos = -1;
-					packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
-
-					_v_stream->cur_pts = packet.pts;
-					_v_stream->cur_frame_index++;
-
-					//convert pts/dts to out_put timebase
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts, 
-						v_time_base, 
-						_v_stream->st->time_base, 
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts, 
-						v_time_base, 
-						_v_stream->st->time_base, 
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
-
-					if (key_frame == 1)
-						packet.flags = AV_PKT_FLAG_KEY;
-
-					av_bitstream_filter_filter(_v_stream->filter, _v_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
-
-					av_interleaved_write_frame(_fmt_ctx, &packet);
-				}
-			}
-			else {//write audio
-				ret = _a_stream->buffer->get(buf, buf_size);
-				if (ret) {
-					packet.data = buf;
-					packet.size = ret;
-					packet.stream_index = _a_stream->st->index;
-
-					
-					//int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(a_time_base);
-
-					packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
-					packet.dts = packet.pts;
-					packet.duration = 1024;
-
-					_a_stream->cur_frame_index++;
-					_a_stream->cur_pts = packet.pts;
-
-
-					packet.pts = av_rescale_q_rnd(
-						packet.pts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.dts = av_rescale_q_rnd(
-						packet.dts,
-						a_time_base,
-						_a_stream->st->time_base,
-						(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-					);
-
-					packet.pos = -1;
-					packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
-
-					//av_bitstream_filter_filter(_a_stream->filter, _a_stream->st->codec, NULL, &packet.data, &packet.size, packet.data, packet.size, 0);
-
-					av_interleaved_write_frame(_fmt_ctx, &packet);
-				}
-			}
-		}
-
-		delete[] buf;
-
-		av_write_trailer(_fmt_ctx);
-	}
-
 }

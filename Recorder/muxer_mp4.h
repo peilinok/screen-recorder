@@ -70,19 +70,16 @@ namespace am {
 
 		int write_audio(const uint8_t *data,int len);
 
-		void mux_loop();
-
 	private:
 		std::atomic_bool _inited;
 		std::atomic_bool _running;
-
-		std::thread _thread;
 
 		bool _have_v, _have_a;
 
 		std::string _output_file;
 
 		struct MUX_STREAM_T *_v_stream, *_a_stream;
+
 		AVOutputFormat *_fmt;
 		AVFormatContext *_fmt_ctx;
 

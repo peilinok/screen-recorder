@@ -20,6 +20,7 @@ extern "C" {
 #include <libavutil\timestamp.h>
 #include <libavutil\error.h>
 #include <libavcodec\adts_parser.h>
+#include <libavutil\time.h>
 }
 
 namespace am {
@@ -46,9 +47,7 @@ namespace am {
 		_mp4v2_v_track = -1;
 		_mp4v2_a_track = -1;
 
-		_cond_notify = false;
-
-		_buffer = new ring_buffer(1024 * 1024 * 10);
+		_base_time = -1;
 	}
 
 	muxer_libmp4v2::~muxer_libmp4v2()
@@ -105,6 +104,8 @@ namespace am {
 			return AE_NEED_INIT;
 		}
 
+		_base_time = -1;
+
 		if (_v_stream && _v_stream->v_enc)
 			_v_stream->v_enc->start();
 
@@ -122,7 +123,6 @@ namespace am {
 
 
 		_running = true;
-		_thread = std::thread(std::bind(&muxer_libmp4v2::mux_loop, this));
 
 		return error;
 	}
@@ -131,17 +131,15 @@ namespace am {
 	{
 		_running = false;
 
-		_cond_notify = true;
-		_cond_var.notify_all();
-
-
 		if (_a_stream) {
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
 		}
 
-		if (_thread.joinable())
-			_thread.join();
+		if (_v_stream) {
+			if (_v_stream->v_enc)
+				_v_stream->v_enc->stop();
+		}
 
 		if(_mp4v2_file)
 			MP4Close(_mp4v2_file);
@@ -276,6 +274,8 @@ namespace am {
 				std::bind(&muxer_libmp4v2::on_enc_264_error, this, std::placeholders::_1)
 			);
 
+			_v_stream->setting = setting;
+
 			const uint8_t *extradata = _v_stream->v_enc->get_extradata();
 			int extradata_size = _v_stream->v_enc->get_extradata_size();
 
@@ -297,7 +297,7 @@ namespace am {
 			_mp4v2_v_track = MP4AddH264VideoTrack(
 				_mp4v2_file,
 				90000,
-				90000/25,
+				90000/setting.v_frame_rate,
 				width,
 				height,
 				extradata[sps + 1], 
@@ -400,7 +400,9 @@ namespace am {
 				std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
-			_mp4v2_a_track = MP4AddAudioTrack(_mp4v2_file, 48000, 1024, MP4_MPEG4_AUDIO_TYPE);
+			_a_stream->setting = setting;
+
+			_mp4v2_a_track = MP4AddAudioTrack(_mp4v2_file, setting.a_sample_rate, 1024, MP4_MPEG4_AUDIO_TYPE);
 			if (_mp4v2_a_track == MP4_INVALID_TRACK_ID) {
 				error = AE_MP4V2_ADD_TRACK_FAILED;
 				break;
@@ -445,9 +447,6 @@ namespace am {
 		if (_v_stream->tmp_frame)
 			av_frame_free(&_v_stream->tmp_frame);
 
-		if (_v_stream->buffer)
-			delete _v_stream->buffer;
-
 		if (_v_stream->v_enc)
 			delete _v_stream->v_enc;
 
@@ -466,9 +465,6 @@ namespace am {
 
 		if (_a_stream->tmp_frame)
 			av_frame_free(&_a_stream->tmp_frame);
-
-		if (_a_stream->buffer)
-			delete _a_stream->buffer;
 
 		if (_a_stream->a_enc)
 			delete _a_stream->a_enc;
@@ -530,7 +526,8 @@ namespace am {
 
 	int muxer_libmp4v2::write_video(const uint8_t * data, int len, bool key_frame)
 	{
-		std::unique_lock<std::mutex> lock(_mutex);
+		if (_base_time < 0)
+			return 0;
 
 		static uint8_t *tmp_buf = new uint8_t[1024 * 1024 * 8];
 		memcpy(tmp_buf, data, len);
@@ -540,59 +537,21 @@ namespace am {
 		tmp_buf[2] = (len - 4) >> 8;
 		tmp_buf[3] = len - 4;
 
-		_buffer->put(tmp_buf, len, key_frame == true ? 2 : 1);
+		int64_t cur_time = av_gettime() / 1000;
+		int64_t time_stamp = av_rescale_q_rnd(cur_time - _base_time, { 1,1000 }, {1,90000 }, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		_cond_notify = true;
-		_cond_var.notify_all();
-
-		return 0;
-		//return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
+		return MP4WriteSample(_mp4v2_file, _mp4v2_v_track, tmp_buf, len, MP4_INVALID_DURATION, 0, key_frame);
 	}
 
 	int muxer_libmp4v2::write_audio(const uint8_t * data, int len)
 	{
-		std::unique_lock<std::mutex> lock(_mutex);
+		int64_t cur_time = av_gettime() / 1000;
+		if (_base_time < 0)
+			_base_time = cur_time;
 
-		_buffer->put(data, len, 0);
+		int64_t time_stamp = av_rescale_q_rnd(cur_time - _base_time, { 1,1000 }, { 1,_a_stream->setting.a_sample_rate }, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		_cond_notify = true;
-		_cond_var.notify_all();
-
-		return 0;
-		//return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
-	}
-
-	void muxer_libmp4v2::mux_loop()
-	{
-
-		uint8_t *buff = new uint8_t[1024 * 1024 * 8];
-		int ret = 0;
-		uint8_t type = 0;
-		while (_running) {
-
-			std::unique_lock<std::mutex> lock(_mutex);
-			while (!_cond_notify)
-				_cond_var.wait(lock);
-
-			while ((ret = _buffer->get(buff, 1024 * 1024 * 8, &type))) {
-				if (ret) {
-					if (type == 1) {//normal video
-						MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 0);
-					}
-					else if (type == 2) {//key video
-						MP4WriteSample(_mp4v2_file, _mp4v2_v_track, buff, ret, MP4_INVALID_DURATION, 0, 2);
-					}
-					else {//audio
-						MP4WriteSample(_mp4v2_file, _mp4v2_a_track, buff, ret, MP4_INVALID_DURATION, 0, 1);
-					}
-				}
-			}
-
-			_cond_notify = false;
-		}
-
-
-		delete[] buff;
+		return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
 	}
 
 

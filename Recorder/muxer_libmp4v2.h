@@ -21,7 +21,7 @@ namespace am {
 	class ring_buffer;
 
 	struct MUX_STREAM_T;
-	struct MUX_SETTING_T;
+	typedef struct MUX_SETTING_T MUX_SETTING;
 
 	class muxer_libmp4v2
 	{
@@ -74,12 +74,9 @@ namespace am {
 
 		int write_audio(const uint8_t *data, int len);
 
-		void mux_loop();
 	private:
 		std::atomic_bool _inited;
 		std::atomic_bool _running;
-
-		std::thread _thread;
 
 		bool _have_v, _have_a;
 
@@ -93,11 +90,8 @@ namespace am {
 		MP4TrackId _mp4v2_v_track;
 		MP4TrackId _mp4v2_a_track;
 
-		ring_buffer *_buffer;
+		int64_t _base_time;
 
-		std::mutex _mutex;
-		std::condition_variable _cond_var;
-		bool _cond_notify;
 	};
 
 

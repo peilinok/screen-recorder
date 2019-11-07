@@ -18,7 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define V_FRAME_RATE 15
+#define V_FRAME_RATE 20
 #define V_BIT_RATE 128000
 
 
@@ -279,7 +279,7 @@ exit:
 	return error;
 }
 
-#define MUXE_MP4
+//#define MUXE_MP4
 
 
 #ifdef MUXE_MP4
