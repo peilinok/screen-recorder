@@ -255,7 +255,8 @@ namespace am {
 						al_fatal("read aac packet failed:%d", ret);
 					}
 
-					if (_on_data) _on_data(packet->data, packet->size,packet->flags == AV_PKT_FLAG_KEY);
+					if (_on_data) 
+						_on_data(packet->data, packet->size,packet->flags == AV_PKT_FLAG_KEY);
 
 					av_packet_unref(packet);
 				}

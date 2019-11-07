@@ -114,18 +114,18 @@ namespace am {
 		if (_v_stream && _v_stream->v_enc)
 			_v_stream->v_enc->start();
 
-		if (_v_stream && _v_stream->v_src)
-			_v_stream->v_src->start();
+		if (_a_stream && _a_stream->a_enc)
+			_a_stream->a_enc->start();
 
-		if (_a_stream) {
-			if (_a_stream->a_enc)
-				_a_stream->a_enc->start();
-
+		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				_a_stream->a_src[i]->start();
+				if(_a_stream->a_src[i])
+					_a_stream->a_src[i]->start();
 			}
 		}
 
+		if (_v_stream && _v_stream->v_src)
+			_v_stream->v_src->start();
 
 		_running = true;
 
@@ -134,22 +134,27 @@ namespace am {
 
 	int muxer_mp4::stop()
 	{
+		if (_running == false)
+			return AE_NO;
+
 		if(_running == true && _fmt_ctx)
-			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mpr can not play
+			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mp4 can not play
 
 		_running = false;
 
-		/*if (_v_stream && _v_stream->v_src)
+		if (_a_stream && _a_stream->a_src) {
+			for (int i = 0; i < _a_stream->a_nb; i++) {
+				_a_stream->a_src[i]->stop();
+			}
+		}
+
+		if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
 		if (_v_stream && _v_stream->v_enc)
-			_v_stream->v_enc->stop();*/
+			_v_stream->v_enc->stop();
 
 		if (_a_stream) {
-			/*for (int i = 0; i < _a_stream->a_nb; i++) {
-				_a_stream->a_src[i]->stop();
-			}*/
-
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
 		}
@@ -567,9 +572,6 @@ namespace am {
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				/*if (_a_stream->a_src && _a_stream->a_src[i])
-					delete _a_stream->a_src[i];*/
-
 				if (_a_stream->a_rs && _a_stream->a_rs[i])
 					delete _a_stream->a_rs[i];
 
@@ -629,10 +631,10 @@ namespace am {
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
-		int64_t cur_time = av_gettime() / 1000;
+		int64_t cur_time = av_gettime_relative();
 
 		packet.pts = cur_time - _base_time;
-		packet.pts = av_rescale_q_rnd(packet.pts, { 1,1000 }, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet.pts = av_rescale_q_rnd(packet.pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
 
 		if (key_frame == true)
@@ -652,15 +654,15 @@ namespace am {
 		packet.size = len;
 		packet.stream_index = _a_stream->st->index;
 
-		int64_t cur_time = av_gettime() / 1000;
+		int64_t cur_time = av_gettime_relative();
 		if (_base_time < 0)
 			_base_time = cur_time;
 
 		packet.pts = cur_time - _base_time;
-		packet.pts = av_rescale_q_rnd(packet.pts, {1,1000}, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet.pts = av_rescale_q_rnd(packet.pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
 
-		//al_debug("A:%ld", packet.pts);
+		al_debug("A:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}

@@ -341,7 +341,13 @@ void stop_muxer()
 	_muxer->stop();
 
 	delete _recorder_desktop;
-	delete _recorder_audio;
+
+	if(_recorder_audio)
+		delete _recorder_audio;
+
+	if (_recorder_audio1)
+		delete _recorder_audio1;
+
 	delete _muxer;
 }
 

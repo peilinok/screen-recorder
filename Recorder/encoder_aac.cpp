@@ -231,7 +231,8 @@ namespace am {
 						break;
 					}
 
-					if (_on_data) _on_data(packet->data, packet->size);
+					if (_on_data) 
+						_on_data(packet->data, packet->size);
 
 #ifdef SAVE_AAC
 					av_write_frame(_aac_fmt_ctx, packet);
