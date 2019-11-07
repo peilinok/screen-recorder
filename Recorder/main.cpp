@@ -27,6 +27,7 @@
 
 
 static am::record_audio *_recorder_audio = nullptr;
+static am::record_audio *_recorder_audio1 = nullptr;
 static uint8_t* _sample_frame = NULL;
 static int _sample_frame_size = 0;
 static int _sample_in_frame = 0;
@@ -290,11 +291,14 @@ static am::muxer_mp4 *_muxer;
 #else
 static am::muxer_libmp4v2 *_muxer;
 #endif
-static am::record_audio *audios[1];
+static am::record_audio *audios[2];
 
 int start_muxer() {
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio);
 	_recorder_audio->init("audio=virtual-audio-capturer");
+
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio1);
+	//_recorder_audio1->init("audio=Âó¿Ë·ç (Realtek(R) Audio)");
 
 
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
@@ -306,7 +310,7 @@ int start_muxer() {
 
 	_recorder_desktop->init(rect, V_FRAME_RATE);
 
-	audios[0] =  _recorder_audio ;
+	audios[0] = _recorder_audio;
 
 #ifdef MUXE_MP4
 	_muxer = new am::muxer_mp4();

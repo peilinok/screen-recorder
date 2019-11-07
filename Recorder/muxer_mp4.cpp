@@ -179,6 +179,7 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
+#if 1
 	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
 	{
 		if (_running == false 
@@ -221,6 +222,59 @@ namespace am {
 			samples->sample_in += len - copied_len;
 		}
 	}
+#else
+	void muxer_mp4::on_audio_data(const uint8_t * data, int len, int index)
+	{
+		if (_running == false
+			|| !_a_stream
+			|| !_a_stream->a_samples
+			|| !_a_stream->a_samples[index]
+			|| !_a_stream->a_resamples
+			|| !_a_stream->a_resamples[index]
+			|| !_a_stream->a_rs
+			|| !_a_stream->a_rs[index])
+			return;
+
+		al_debug("on audio data");
+
+		AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
+		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
+		resample_pcm *resampler = _a_stream->a_rs[index];
+
+		int copied_len = 0;
+		int remain_len = len;
+
+		while (remain_len > 0) {
+			//cache pcm
+			copied_len = min(samples->size - samples->sample_in, remain_len);
+			if (copied_len) {
+				memcpy(samples->buff + samples->sample_in, data, copied_len);
+				samples->sample_in += copied_len;
+				remain_len = remain_len - copied_len;
+			}
+
+			//got enough pcm to encoder,resample and mix
+			if (samples->sample_in == samples->size) {
+				int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
+				if (ret > 0) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size);
+				}
+				else {
+					al_debug("resample audio %d failed,%d", index, ret);
+				}
+
+				samples->sample_in = 0;
+			}
+
+			////copy last pcms
+			//if (len - copied_len > 0) {
+			//	memcpy(samples->buff + samples->sample_in, data + copied_len, len - copied_len);
+			//	samples->sample_in += len - copied_len;
+			//}
+		}
+	}
+
+#endif
 
 	void muxer_mp4::on_audio_error(int error, int index)
 	{
