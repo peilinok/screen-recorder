@@ -41,7 +41,7 @@ static am::SAMPLE_SETTING _resample_setting;
 
 static am::encoder_aac *_encoder_aac = nullptr;
 
-void on_encoder_aac_data(const uint8_t *data, int length)
+void on_encoder_aac_data(AVPacket *packet)
 {
 	//al_debug("on aac data:%d", length);
 }
@@ -168,12 +168,9 @@ static am::encoder_264 *_encoder_264 = nullptr;
 static uint8_t *_buff_264 = NULL;
 static int _buff_264_len = 0;
 
-void on_encode_264_data(const uint8_t *data, int length,bool key_frame)
+void on_encode_264_data(AVPacket *packet)
 {
-	static FILE * fp = fopen("a.264", "wb+");
-	fwrite(data, 1, length, fp);
-
-	fflush(fp);
+	
 }
 
 void on_encode_264_error(int error) {

@@ -31,6 +31,8 @@ namespace am {
 
 		virtual const AVRational & get_time_base() = 0;
 
+		virtual int64_t get_start_time() = 0;
+
 	public:
 		inline bool is_recording() { return _running; }
 		

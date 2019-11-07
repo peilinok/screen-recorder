@@ -189,6 +189,11 @@ namespace am {
 		}
 	}
 
+	int64_t record_audio_dshow::get_start_time()
+	{
+		return _fmt_ctx->streams[_stream_index]->start_time;
+	}
+
 	void record_audio_dshow::record_loop()
 	{
 		int ret = 0;

@@ -227,10 +227,10 @@ namespace am {
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
+	void muxer_mp4::on_enc_264_data(AVPacket *packet)
 	{
 		if (_running && _v_stream) {
-			write_video(data, len, key_frame);
+			write_video(packet);
 		}
 	}
 
@@ -239,10 +239,10 @@ namespace am {
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(const uint8_t * data, int len)
+	void muxer_mp4::on_enc_aac_data(AVPacket *packet)
 	{
 		if (_running && _a_stream) {
-			write_audio(data, len);
+			write_audio(packet);
 		}
 	}
 
@@ -296,7 +296,7 @@ namespace am {
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1),
 				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
 			);
 
@@ -388,7 +388,7 @@ namespace am {
 				break;
 
 			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
+				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1),
 				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
@@ -566,55 +566,44 @@ namespace am {
 		_inited = false;
 	}
 
-	int muxer_mp4::write_video(const uint8_t * data, int len, bool key_frame)
+	int muxer_mp4::write_video(AVPacket *packet)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
 		if (_base_time < 0)
 			return 0;
 
-		AVPacket packet;
-		av_init_packet(&packet);
-
-		packet.data = (uint8_t*)data;
-		packet.size = len;
-		packet.stream_index = _v_stream->st->index;
+		packet->stream_index = _v_stream->st->index;
 
 		int64_t cur_time = av_gettime_relative();
 
-		packet.pts = cur_time - _base_time;
-		packet.pts = av_rescale_q_rnd(packet.pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet.dts = packet.pts;
+		packet->pts = cur_time - _base_time;
+		packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet->dts = packet->pts;
 
-		if (key_frame == true)
-			packet.flags = AV_PKT_FLAG_KEY;
+		al_debug("V:%ld", packet->pts);
 
-		//al_debug("V:%ld", packet.pts);
-
-		return av_interleaved_write_frame(_fmt_ctx, &packet);
+		
+		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}
 
-	int muxer_mp4::write_audio(const uint8_t * data, int len)
+	int muxer_mp4::write_audio(AVPacket *packet)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
-		AVPacket packet;
-		av_init_packet(&packet);
-
-		packet.data = (uint8_t*)data;
-		packet.size = len;
-		packet.stream_index = _a_stream->st->index;
+		
+		packet->stream_index = _a_stream->st->index;
 
 		int64_t cur_time = av_gettime_relative();
 		if (_base_time < 0)
 			_base_time = cur_time;
 
-		packet.pts = cur_time - _base_time;
-		packet.pts = av_rescale_q_rnd(packet.pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet.dts = packet.pts;
+		packet->pts = cur_time - _base_time;
+		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet->dts = packet->pts;
 
 		//al_debug("A:%ld", packet.pts);
 
-		return av_interleaved_write_frame(_fmt_ctx, &packet);
+		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}
 }

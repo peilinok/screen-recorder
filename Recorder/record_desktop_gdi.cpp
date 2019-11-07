@@ -142,6 +142,21 @@ namespace am {
 		return AE_NO;
 	}
 
+	const AVRational & record_desktop_gdi::get_time_base()
+	{
+		if (_inited && _fmt_ctx && _stream_index != -1) {
+			return _fmt_ctx->streams[_stream_index]->time_base;
+		}
+		else {
+			return{ 1,90000 };
+		}
+	}
+
+	int64_t record_desktop_gdi::get_start_time()
+	{
+		return _fmt_ctx->streams[_stream_index]->start_time;
+	}
+
 	void record_desktop_gdi::clean_up()
 	{
 		if (_codec_ctx)

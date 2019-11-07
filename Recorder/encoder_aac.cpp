@@ -87,6 +87,7 @@ namespace am {
 				break;
 			}
 
+			_frame->channels = nb_channels;
 			_frame->nb_samples = _encoder_ctx->frame_size;
 			_frame->channel_layout = av_get_default_channel_layout(nb_channels);
 			_frame->format = fmt;
@@ -217,6 +218,12 @@ namespace am {
 
 			while ((len = _ring_buffer->get(_buff, _buff_size, frame))) {
 
+				//avcodec_fill_audio_frame(&frame, _frame->channels, (AVSampleFormat)_frame->format, _buff, _buff_size, 0);
+
+				_frame->pts = frame.pts;
+				_frame->pkt_pts = frame.pkt_pts;
+				_frame->pkt_dts = frame.pkt_dts;
+
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {
 					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
@@ -238,7 +245,7 @@ namespace am {
 					}
 
 					if (_on_data) 
-						_on_data(packet->data, packet->size);
+						_on_data(packet);
 
 #ifdef SAVE_AAC
 					av_write_frame(_aac_fmt_ctx, packet);

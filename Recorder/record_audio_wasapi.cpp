@@ -188,6 +188,11 @@ namespace am {
 		return{ 1,90000 };
 	}
 
+	int64_t record_audio_wasapi::get_start_time()
+	{
+		return 0;
+	}
+
 
 	void record_audio_wasapi::record_func()
 	{

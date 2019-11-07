@@ -240,6 +240,9 @@ namespace am {
 				_frame->data[0] = _buff;
 				_frame->data[1] = _buff + _y_size;
 				_frame->data[2] = _buff + _y_size * 5 / 4;
+				_frame->pkt_dts = frame.pkt_dts;
+				_frame->pkt_dts = frame.pkt_dts;
+				_frame->pts = frame.pts;
 
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {
@@ -262,7 +265,7 @@ namespace am {
 					}
 
 					if (_on_data) 
-						_on_data(packet->data, packet->size,packet->flags == AV_PKT_FLAG_KEY);
+						_on_data(packet);
 
 					av_packet_unref(packet);
 				}

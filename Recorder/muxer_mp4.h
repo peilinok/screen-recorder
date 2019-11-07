@@ -45,11 +45,11 @@ namespace am {
 
 		void on_audio_error(int error, int index);
 
-		void on_enc_264_data(const uint8_t *data, int len, bool key_frame);
+		void on_enc_264_data(AVPacket *packet);
 
 		void on_enc_264_error(int error);
 
-		void on_enc_aac_data(const uint8_t *data, int len);
+		void on_enc_aac_data(AVPacket *packet);
 
 		void on_enc_aac_error(int error);
 
@@ -65,9 +65,9 @@ namespace am {
 		void cleanup_audio();
 		void cleanup();
 
-		int write_video(const uint8_t *data, int len, bool key_frame);
+		int write_video(AVPacket *packet);
 
-		int write_audio(const uint8_t *data,int len);
+		int write_audio(AVPacket *packet);
 
 	private:
 		std::atomic_bool _inited;

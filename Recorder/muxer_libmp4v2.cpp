@@ -212,10 +212,10 @@ namespace am {
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_libmp4v2::on_enc_264_data(const uint8_t * data, int len, bool key_frame)
+	void muxer_libmp4v2::on_enc_264_data(AVPacket *packet)
 	{
 		if (_running ) {
-			write_video(data, len, key_frame);
+			write_video(packet->data, packet->size, packet->flags == AV_PKT_FLAG_KEY);
 		}
 	}
 
@@ -224,11 +224,11 @@ namespace am {
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_libmp4v2::on_enc_aac_data(const uint8_t * data, int len)
+	void muxer_libmp4v2::on_enc_aac_data(AVPacket *packet)
 	{
 		//al_debug("on audio data:%d", len);
 		if (_running ) {
-			write_audio(data, len);
+			write_audio(packet->data, packet->size);
 		}
 	}
 
@@ -263,7 +263,7 @@ namespace am {
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_libmp4v2::on_enc_264_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+				std::bind(&muxer_libmp4v2::on_enc_264_data, this, std::placeholders::_1),
 				std::bind(&muxer_libmp4v2::on_enc_264_error, this, std::placeholders::_1)
 			);
 
@@ -363,7 +363,7 @@ namespace am {
 					break;
 
 				_a_stream->a_enc->registe_cb(
-					std::bind(&muxer_libmp4v2::on_enc_aac_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_libmp4v2::on_enc_aac_data, this, std::placeholders::_1),
 					std::bind(&muxer_libmp4v2::on_enc_aac_error, this, std::placeholders::_1)
 				);
 

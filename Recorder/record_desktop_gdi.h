@@ -19,6 +19,8 @@ namespace am {
 		virtual int pause();
 		virtual int resume();
 		virtual int stop();
+		virtual const AVRational & get_time_base();
+		virtual int64_t get_start_time();
 
 	protected:
 		virtual void clean_up();
