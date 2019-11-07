@@ -279,7 +279,7 @@ exit:
 	return error;
 }
 
-//#define MUXE_MP4
+#define MUXE_MP4
 
 
 #ifdef MUXE_MP4

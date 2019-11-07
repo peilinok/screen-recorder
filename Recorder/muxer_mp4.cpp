@@ -134,6 +134,9 @@ namespace am {
 
 	int muxer_mp4::stop()
 	{
+		if(_running == true && _fmt_ctx)
+			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mpr can not play
+
 		_running = false;
 
 		/*if (_v_stream && _v_stream->v_src)
@@ -588,7 +591,7 @@ namespace am {
 		if (key_frame == true)
 			packet.flags = AV_PKT_FLAG_KEY;
 
-		al_debug("V:%ld", packet.pts);
+		//al_debug("V:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
@@ -610,7 +613,7 @@ namespace am {
 		packet.pts = av_rescale_q_rnd(packet.pts, {1,1000}, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
 
-		al_debug("A:%ld", packet.pts);
+		//al_debug("A:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
