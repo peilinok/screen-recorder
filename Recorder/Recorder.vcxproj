@@ -188,7 +188,6 @@
     <ClCompile Include="record_desktop_factory.cpp" />
     <ClCompile Include="record_devices.cpp" />
     <ClCompile Include="resample_pcm.cpp" />
-    <ClCompile Include="ring_buffer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -8,12 +8,11 @@
 #include <condition_variable>
 
 #include "headers_ffmpeg.h"
+#include "ring_buffer.h"
 
 namespace am {
 	typedef std::function<void(const uint8_t*, int, bool)> cb_264_data;
 	typedef std::function<void(int)> cb_264_error;
-
-	class ring_buffer;
 
 	class encoder_264 
 	{
@@ -37,7 +36,7 @@ namespace am {
 
 		void stop();
 
-		int put(const uint8_t *data,int data_len);
+		int put(const uint8_t *data, int data_len, AVFrame *frame);
 
 		int encode(const uint8_t *src, int src_len,unsigned char *dst,int dst_len,int *got_pic);
 
@@ -51,7 +50,7 @@ namespace am {
 		cb_264_data _on_data;
 		cb_264_error _on_error;
 
-		ring_buffer *_ring_buffer;
+		ring_buffer<AVFrame> *_ring_buffer;
 
 		std::atomic_bool _inited;
 		std::atomic_bool _running;

@@ -209,12 +209,12 @@ exit:
 
 static am::record_desktop *_recorder_desktop = nullptr;
 
-void on_record_desktop_data(const uint8_t *data, int data_len) {
+void on_record_desktop_data(const uint8_t *data, int data_len,AVFrame *frame) {
 	//al_debug("on desktop data:%d \r\n", data_len);
 	if (_encoder_264) {
 		
 #if 1
-		_encoder_264->put(data, data_len);
+//		_encoder_264->put(data, data_len);
 #else
 		int got_pic = 0;
 		int err = _encoder_264->encode(data, data_len, _buff_264, _buff_264_len, &got_pic);

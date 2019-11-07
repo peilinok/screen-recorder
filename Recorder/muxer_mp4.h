@@ -37,7 +37,7 @@ namespace am {
 		int resume();
 
 	private:
-		void on_desktop_data(const uint8_t *data, int len);
+		void on_desktop_data(const uint8_t *data, int len, AVFrame *frame);
 
 		void on_desktop_error(int error);
 

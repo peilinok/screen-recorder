@@ -122,9 +122,6 @@
     <ClCompile Include="encoder_264.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ring_buffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="muxer_mp4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

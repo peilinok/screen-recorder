@@ -16,7 +16,6 @@ namespace am {
 
 	class record_audio;
 	class record_desktop;
-	class ring_buffer;
 
 	struct MUX_STREAM_T;
 	typedef struct MUX_SETTING_T MUX_SETTING;
@@ -42,7 +41,7 @@ namespace am {
 		int resume();
 
 	private:
-		void on_desktop_data(const uint8_t *data, int len);
+		void on_desktop_data(const uint8_t *data, int len, AVFrame *frame);
 
 		void on_desktop_error(int error);
 

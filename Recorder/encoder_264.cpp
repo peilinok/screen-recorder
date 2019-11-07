@@ -23,7 +23,7 @@ namespace am {
 
 		_cond_notify = false;
 
-		_ring_buffer = new ring_buffer();
+		_ring_buffer = new ring_buffer<AVFrame>();
 	}
 
 	encoder_264::~encoder_264()
@@ -157,11 +157,14 @@ namespace am {
 
 	}
 
-	int encoder_264::put(const uint8_t * data, int data_len)
+	int encoder_264::put(const uint8_t * data, int data_len, AVFrame *frame)
 	{
 		std::unique_lock<std::mutex> lock(_mutex);
 
-		_ring_buffer->put(data, data_len);
+		AVFrame frame_cp;
+		memcpy(&frame_cp, frame, sizeof(AVFrame));
+
+		_ring_buffer->put(data, data_len, frame_cp);
 
 		_cond_notify = true;
 		_cond_var.notify_all();
@@ -225,6 +228,7 @@ namespace am {
 		int len, ret, got_pic = 0;
 
 		AVPacket *packet = av_packet_alloc();
+		AVFrame frame;
 
 		while (_running)
 		{
@@ -232,7 +236,7 @@ namespace am {
 			while (!_cond_notify)
 				_cond_var.wait(lock);
 
-			while (_ring_buffer->get(_buff, _buff_size)) {
+			while (_ring_buffer->get(_buff, _buff_size, frame)) {
 				_frame->data[0] = _buff;
 				_frame->data[1] = _buff + _y_size;
 				_frame->data[2] = _buff + _y_size * 5 / 4;

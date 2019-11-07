@@ -148,10 +148,10 @@ namespace am {
 		return 0;
 	}
 
-	void muxer_libmp4v2::on_desktop_data(const uint8_t * data, int len)
+	void muxer_libmp4v2::on_desktop_data(const uint8_t * data, int len, AVFrame *frame)
 	{
 		if (_running && _v_stream && _v_stream->v_enc) {
-			_v_stream->v_enc->put(data, len);
+			_v_stream->v_enc->put(data, len, frame);
 		}
 	}
 
@@ -191,7 +191,7 @@ namespace am {
 		if (samples->sample_in == samples->size) {
 			int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
 			if (ret > 0) {
-				_a_stream->a_enc->put(resamples->buff, resamples->size);
+				_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
 			}
 			else {
 				al_debug("resample audio %d failed,%d", index, ret);
@@ -248,7 +248,7 @@ namespace am {
 		_v_stream->v_src = source_desktop;
 
 		_v_stream->v_src->registe_cb(
-			std::bind(&muxer_libmp4v2::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2),
+			std::bind(&muxer_libmp4v2::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 			std::bind(&muxer_libmp4v2::on_desktop_error, this, std::placeholders::_1)
 		);
 

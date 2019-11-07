@@ -11,7 +11,7 @@ namespace am {
 	{
 		av_register_all();
 
-		_ring_buffer = new ring_buffer(1024 * 1024 * 10);
+		_ring_buffer = new ring_buffer<AVFrame>(1024 * 1024 * 10);
 
 		_inited = false;
 		_running = false;
@@ -184,11 +184,14 @@ namespace am {
 			_thread.join();
 	}
 
-	int encoder_aac::put(const uint8_t * data, int data_len)
+	int encoder_aac::put(const uint8_t * data, int data_len, AVFrame *frame)
 	{
 		std::unique_lock<std::mutex> lock(_mutex);
 		
-		_ring_buffer->put(data, data_len);
+		AVFrame frame_cp;
+		memcpy(&frame_cp, frame, sizeof(AVFrame));
+
+		_ring_buffer->put(data, data_len,frame_cp);
 		
 		_cond_notify = true;
 		_cond_var.notify_all();
@@ -200,6 +203,7 @@ namespace am {
 		int len, ret = 0;
 
 		AVPacket *packet = av_packet_alloc();
+		AVFrame frame;
 
 #ifdef SAVE_AAC
 		avformat_write_header(_aac_fmt_ctx, NULL);
@@ -211,7 +215,7 @@ namespace am {
 			while (!_cond_notify)
 				_cond_var.wait(lock);
 
-			while ((len = _ring_buffer->get(_buff, _buff_size))) {
+			while ((len = _ring_buffer->get(_buff, _buff_size, frame))) {
 
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {

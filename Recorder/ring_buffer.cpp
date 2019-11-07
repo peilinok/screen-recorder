@@ -5,7 +5,8 @@
 
 namespace am {
 
-	ring_buffer::ring_buffer(unsigned int size)
+	template<typename T>
+	ring_buffer<T>::ring_buffer(unsigned int size)
 	{
 		_size = size;
 		_head = _tail = 0;
@@ -13,13 +14,15 @@ namespace am {
 		_buf = new uint8_t[size];
 	}
 
-	ring_buffer::~ring_buffer()
+	template<typename T>
+	ring_buffer<T>::~ring_buffer()
 	{
 		if (_buf)
 			delete[] _buf;
 	}
 
-	void ring_buffer::put(const void * data, int len, uint8_t type)
+	template<typename T>
+	void ring_buffer<T>::put(const void * data, int len, const T & type)
 	{
 		std::lock_guard<std::mutex> locker(_lock);
 
@@ -39,14 +42,15 @@ namespace am {
 			_head = remain;
 		}
 
-		ring_frame frame;
+		struct ring_frame<T> frame;
 		frame.len = len;
 		frame.type = type;
 
 		_frames.push(frame);
 	}
 
-	int ring_buffer::get(void * data, int len, uint8_t * type)
+	template<typename T>
+	int ring_buffer<T>::get(void * data, int len, T & type)
 	{
 		std::lock_guard<std::mutex> locker(_lock);
 
@@ -57,7 +61,7 @@ namespace am {
 			return retLen;
 		}
 
-		ring_frame frame = _frames.front();
+		struct ring_frame<T> frame = _frames.front();
 		_frames.pop();
 
 		if (frame.len > len) {
@@ -65,9 +69,7 @@ namespace am {
 			return 0;
 		}
 
-
-		if (type != NULL)
-			*type = frame.type;
+		type = frame.type
 
 		retLen = frame.len;
 
@@ -91,5 +93,4 @@ namespace am {
 
 		return retLen;
 	}
-
 }

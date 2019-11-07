@@ -10,7 +10,7 @@
 #include <functional>
 
 namespace am {
-	typedef std::function<void(const uint8_t*, int)> cb_desktop_data;
+	typedef std::function<void(const uint8_t* yuv, int len, AVFrame *frame)> cb_desktop_data;
 	typedef std::function<void(int)> cb_desktop_error;
 
 	class record_desktop

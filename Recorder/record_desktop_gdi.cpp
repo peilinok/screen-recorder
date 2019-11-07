@@ -217,7 +217,7 @@ namespace am {
 						frame_yuv->data, frame_yuv->linesize);
 
 					if (_on_data) 
-						_on_data(buff_yuv, size_yuv);
+						_on_data(buff_yuv, size_yuv, frame_rgb);
 				}
 			}
 

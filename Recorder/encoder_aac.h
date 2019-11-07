@@ -8,6 +8,7 @@
 #include <condition_variable>
 
 #include "headers_ffmpeg.h"
+#include "ring_buffer.h"
 
 //#define SAVE_AAC
 
@@ -15,7 +16,6 @@ namespace am {
 	typedef std::function<void(const uint8_t*, int)> cb_aac_data;
 	typedef std::function<void(int)> cb_aac_error;
 
-	class ring_buffer;
 
 	class encoder_aac {
 	public:
@@ -38,7 +38,7 @@ namespace am {
 
 		void stop();
 		
-		int put(const uint8_t *data,int data_len);
+		int put(const uint8_t *data,int data_len,AVFrame *frame);
 
 		inline void registe_cb(
 			cb_aac_data on_data,
@@ -56,7 +56,7 @@ namespace am {
 		cb_aac_data _on_data;
 		cb_aac_error _on_error;
 
-		ring_buffer *_ring_buffer;
+		ring_buffer<AVFrame> *_ring_buffer;
 
 		std::atomic_bool _inited;
 		std::atomic_bool _running;
