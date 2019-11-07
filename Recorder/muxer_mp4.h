@@ -86,6 +86,8 @@ namespace am {
 		AVOutputFormat *_fmt;
 		AVFormatContext *_fmt_ctx;
 
+		int64_t _base_time;
+
 		char ff_error[4096];
 	};
 }

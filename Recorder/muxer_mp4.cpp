@@ -18,6 +18,7 @@ extern "C" {
 #include <libavutil\opt.h>
 #include <libavutil\mathematics.h>
 #include <libavutil\timestamp.h>
+#include <libavutil\time.h>
 #include <libavutil\error.h>
 }
 
@@ -40,6 +41,8 @@ namespace am {
 
 		_inited = false;
 		_running = false;
+
+		_base_time = -1;
 	}
 
 	muxer_mp4::~muxer_mp4()
@@ -227,8 +230,8 @@ namespace am {
 	{
 		//al_debug("on video data:%d", len);
 		if (_running && _v_stream && _v_stream->buffer) {
-			//write_video(data, len, key_frame);
-			_v_stream->buffer->put(data, len, key_frame);
+			write_video(data, len, key_frame);
+			//_v_stream->buffer->put(data, len, key_frame);
 		}
 	}
 
@@ -241,8 +244,8 @@ namespace am {
 	{
 		//al_debug("on audio data:%d", len);
 		if (_running && _a_stream && _a_stream->buffer) {
-			//write_audio(data, len);
-			_a_stream->buffer->put(data, len);
+			write_audio(data, len);
+			//_a_stream->buffer->put(data, len);
 		}
 	}
 
@@ -326,7 +329,7 @@ namespace am {
 			//st->codec->max_b_frames = 2;
 			//st->codec->extradata = 
 			//st->codec->extradata_size = 
-			st->time_base = st->codec->time_base;
+			st->time_base = { 1,90000 };
 			st->avg_frame_rate = av_inv_q(st->codec->time_base);
 
 			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
@@ -439,14 +442,13 @@ namespace am {
 				break;
 			}
 
-			st->time_base.num = 1;
-			st->time_base.den = setting.a_sample_rate;
+			st->time_base = { 1,setting.a_sample_rate };
 
 			st->codec->bit_rate = setting.a_bit_rate;
 			st->codec->channels = setting.a_nb_channel;
 			st->codec->sample_rate = setting.a_sample_rate;
 			st->codec->sample_fmt = setting.a_sample_fmt;
-			st->codec->time_base = st->time_base;
+			st->codec->time_base = { 1,setting.a_sample_rate };
 			//st->codec->extradata = 
 			//st->codec->extradata_size = 
 			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
@@ -592,36 +594,21 @@ namespace am {
 		packet.size = len;
 		packet.stream_index = _v_stream->st->index;
 
-		int64_t calc_duration = (double)AV_TIME_BASE / (double)_v_stream->v_src->get_frame_rate();
-		packet.pts = (double)(_v_stream->cur_frame_index *calc_duration) / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
+		int64_t cur_time = av_gettime() / 1000;
+		if (_base_time < 0)
+			return 0;
+
+		packet.pts = cur_time - _base_time;
+		packet.pts = av_rescale_q_rnd(packet.pts, { 1,1000 }, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
-		packet.pos = -1;
-		packet.duration = (double)calc_duration / (double)(av_q2d(v_time_base)*AV_TIME_BASE);
 
 		_v_stream->cur_pts = packet.pts;
 		_v_stream->cur_frame_index++;
 
-		//convert pts/dts to out_put timebase
-
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			v_time_base,
-			_v_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, v_time_base, _v_stream->st->time_base);
-
 		if (key_frame == true)
 			packet.flags = AV_PKT_FLAG_KEY;
+
+		al_debug("V:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
@@ -631,36 +618,25 @@ namespace am {
 		AVPacket packet;
 		av_init_packet(&packet);
 
-		AVRational a_time_base = { 1,48000 };
-
 		packet.data = (uint8_t*)data;
 		packet.size = len;
 		packet.stream_index = _a_stream->st->index;
 
-		packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
+		int64_t cur_time = av_gettime() / 1000;
+		if (_base_time < 0)
+			_base_time = cur_time;
+
+		//packet.pts = 1024 * 2 * _a_stream->cur_frame_index;//nb_samples * nb_channels * current frame index
+		packet.pts = cur_time - _base_time;
+		packet.pts = av_rescale_q_rnd(packet.pts, {1,1000}, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet.dts = packet.pts;
-		packet.duration = 1024;
+		//packet.duration = 1024;
 
 		_a_stream->cur_frame_index++;
-		_a_stream->cur_pts = packet.pts;
 
+		//packet.flags = AV_PKT_FLAG_KEY;
 
-		packet.pts = av_rescale_q_rnd(
-			packet.pts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.dts = av_rescale_q_rnd(
-			packet.dts,
-			a_time_base,
-			_a_stream->st->time_base,
-			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)
-		);
-
-		packet.pos = -1;
-		packet.duration = av_rescale_q(packet.duration, a_time_base, _a_stream->st->time_base);
+		al_debug("A:%ld", packet.pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, &packet);
 	}
@@ -689,6 +665,9 @@ namespace am {
 
 		uint8_t key_frame = 0;
 		while (_running) {
+
+			_sleep(10);
+			continue;
 			av_init_packet(&packet);
 
 			if (av_compare_ts(
