@@ -21,7 +21,7 @@
 #define V_FRAME_RATE 20
 #define V_BIT_RATE 64000
 
-#define A_SAMPLE_RATE 48000
+#define A_SAMPLE_RATE 44100
 #define A_BIT_RATE 128000
 
 

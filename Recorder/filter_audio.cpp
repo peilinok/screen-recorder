@@ -216,6 +216,11 @@ namespace am {
 		return error;
 	}
 
+	const AVRational & filter_audio::get_time_base()
+	{
+		return av_buffersink_get_time_base(_ctx_out.ctx);
+	}
+
 	void filter_audio::cleanup()
 	{
 		if (_filter_graph)
@@ -243,20 +248,25 @@ namespace am {
 			while (!_cond_notify)
 				_cond_var.wait(lock);
 
-			ret = av_buffersink_get_frame(_ctx_out.ctx, frame);
-			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-				continue;
+			while (_running && _cond_notify) {
+				ret = av_buffersink_get_frame(_ctx_out.ctx, frame);
+				if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+					break;;
+				}
+
+				if (ret < 0) {
+					al_fatal("avfilter get frame error:%d", ret);
+					if (_on_filter_error) _on_filter_error(ret);
+					break;
+				}
+
+				if (_on_filter_data) 
+					_on_filter_data(frame);
+
+				av_frame_unref(frame);
 			}
 
-			if (ret < 0) {
-				al_fatal("avfilter get frame error:%d", ret);
-				if (_on_filter_error) _on_filter_error(ret);
-				break;
-			}
-
-			if (_on_filter_data) _on_filter_data(frame);
-
-			av_frame_unref(frame);
+			_cond_notify = false;
 		}
 
 		av_frame_free(&frame);

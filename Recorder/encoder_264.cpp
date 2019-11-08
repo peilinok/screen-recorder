@@ -127,6 +127,11 @@ namespace am {
 		return (const uint8_t*)_encoder_ctx->extradata;
 	}
 
+	const AVRational & encoder_264::get_time_base()
+	{
+		return _encoder_ctx->time_base;
+	}
+
 	int encoder_264::start()
 	{
 		int error = AE_NO;

@@ -370,6 +370,7 @@ namespace am {
 		int width = _v_stream->v_src->get_rect().right - _v_stream->v_src->get_rect().left;
 		int height = _v_stream->v_src->get_rect().bottom - _v_stream->v_src->get_rect().top;
 
+		_v_stream->start_time = _v_stream->v_src->get_start_time();
 		do {
 			_v_stream->v_enc = new encoder_264();
 			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate,setting.v_bit_rate, NULL);
@@ -450,12 +451,13 @@ namespace am {
 		_a_stream = new MUX_STREAM();
 		memset(_a_stream, 0, sizeof(MUX_STREAM));
 
-
 		_a_stream->a_nb = source_audios_nb;
 		_a_stream->a_rs = new resample_pcm*[_a_stream->a_nb];
 		_a_stream->a_resamples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_samples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_src = source_audios;
+
+		_a_stream->start_time = _a_stream->a_src[0]->get_start_time();
 
 		do {
 			_a_stream->a_enc = new encoder_aac();
@@ -697,11 +699,17 @@ namespace am {
 
 		packet->pts = cur_time - _base_time;
 		packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet->dts = packet->pts;
 
-		al_debug("V:%ld", packet->pts);
+		//packet->pts = av_rescale_q(packet->pts, _v_stream->v_enc->get_time_base(), _v_stream->v_src->get_time_base());
+		//packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		
+
+
+
+		packet->dts = packet->pts;//make sure that dts is equal to pts
+
+		al_debug("V:%lld %lld %lld", packet->pts, packet->dts,_v_stream->v_src->get_start_time());
+
 		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}
 
@@ -717,10 +725,23 @@ namespace am {
 			_base_time = cur_time;
 
 		packet->pts = cur_time - _base_time;
-		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet->dts = packet->pts;
 
-		al_debug("A:%ld", packet->pts);
+		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+		if (packet->pts <= _a_stream->pre_pts) {
+			packet->pts += av_rescale_q(packet->duration, _a_stream->a_enc->get_time_base(), _a_stream->st->time_base);
+		}
+
+		_a_stream->pre_pts = packet->pts;
+
+
+		//packet->pts = av_rescale_q(packet->pts,_a_stream->a_filter->get_time_base(), _a_stream->a_src[0]->get_time_base());
+		//packet->pts = av_rescale_q_rnd(packet->pts, _a_stream->a_src[0]->get_time_base(), _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+
+
+		packet->dts = packet->pts;//make sure that dts is equal to pts
+		al_debug("A:%lld %lld %lld", packet->pts, packet->dts,_a_stream->a_src[0]->get_start_time());
 
 		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}

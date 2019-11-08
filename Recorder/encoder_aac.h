@@ -47,6 +47,8 @@ namespace am {
 			_on_error = on_error;
 		}
 
+		const AVRational &get_time_base();
+
 	protected:
 		void encode_loop();
 

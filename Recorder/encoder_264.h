@@ -32,6 +32,8 @@ namespace am {
 			_on_error = on_error;
 		}
 
+		const AVRational &get_time_base();
+
 		int start();
 
 		void stop();

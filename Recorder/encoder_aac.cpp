@@ -199,6 +199,11 @@ namespace am {
 		return 0;
 	}
 
+	const AVRational & encoder_aac::get_time_base()
+	{
+		return _encoder_ctx->time_base;
+	}
+
 	void encoder_aac::encode_loop()
 	{
 		int len, ret = 0;
@@ -218,11 +223,9 @@ namespace am {
 
 			while ((len = _ring_buffer->get(_buff, _buff_size, frame))) {
 
-				//avcodec_fill_audio_frame(&frame, _frame->channels, (AVSampleFormat)_frame->format, _buff, _buff_size, 0);
-
-				/*_frame->pts = frame.pts;
+				_frame->pts = frame.pts;
 				_frame->pkt_pts = frame.pkt_pts;
-				_frame->pkt_dts = frame.pkt_dts;*/
+				_frame->pkt_dts = frame.pkt_dts;
 
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {
