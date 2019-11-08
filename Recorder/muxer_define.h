@@ -10,7 +10,7 @@ namespace am {
 	class encoder_264;
 	class record_desktop;
 	class encoder_aac;
-	class filter_amix;
+	class filter_audio;
 	class record_audio;
 	class resample_pcm;
 
@@ -40,7 +40,7 @@ namespace am {
 
 									//audio
 		encoder_aac *a_enc;         // audio encoder
-		filter_amix *a_filter;      // audio mixer
+		filter_audio *a_filter;      // audio mixer
 		int a_nb;                   // audio source num
 		record_audio **a_src;       // audio sources
 		resample_pcm **a_rs;        // audio resamplers

@@ -41,6 +41,12 @@ enum AM_ERROR{
 	AE_MP4V2_CREATE_FAILED,
 	AE_MP4V2_ADD_TRACK_FAILED,
 
+	AE_FILTER_ALLOC_GRAPH_FAILED,
+	AE_FILTER_CREATE_FILTER_FAILED,
+	AE_FILTER_PARSE_PTR_FAILED,
+	AE_FILTER_CONFIG_FAILED,
+	AE_FILTER_INVALID_CTX_INDEX,
+	AE_FILTER_ADD_FRAME_FAILED,
 };
 
 static const char *ERRORS_STR[] = {
@@ -83,6 +89,13 @@ static const char *ERRORS_STR[] = {
 
 	"mp4v2 create new handle failed",   //AE_MP4V2_CREATE_FAILED
 	"mp4v2 create new track failed",    //AE_MP4V2_ADD_TRACK_FAILED
+
+	"avfilter alloc avfilter failed",   //AE_FILTER_ALLOC_GRAPH_FAILED
+	"avfilter create graph failed",     //AE_FILTER_CREATE_FILTER_FAILED
+	"avfilter parse ptr failed",        //AE_FILTER_PARSE_PTR_FAILED
+	"avfilter config graph failed",     //AE_FILTER_CONFIG_FAILED
+	"avfilter invalid ctx index",       //AE_FILTER_INVALID_CTX_INDEX
+	"avfilter add frame failed",        //AE_FILTER_ADD_FRAME_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]

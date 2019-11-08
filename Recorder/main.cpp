@@ -271,7 +271,7 @@ int start_muxer() {
 	_recorder_audio->init("audio=virtual-audio-capturer");
 
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio1);
-	//_recorder_audio1->init("audio=麦克风 (Realtek(R) Audio)");
+	_recorder_audio1->init("audio=麦克风 (Realtek(R) Audio)");
 
 
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
@@ -284,6 +284,7 @@ int start_muxer() {
 	_recorder_desktop->init(rect, V_FRAME_RATE);
 
 	audios[0] = _recorder_audio;
+	audios[1] = _recorder_audio1;
 
 #ifdef MUXE_MP4
 	_muxer = new am::muxer_mp4();
@@ -300,7 +301,7 @@ int start_muxer() {
 	setting.a_sample_rate = A_SAMPLE_RATE;
 	setting.a_bit_rate = A_BIT_RATE;
 
-	int error = _muxer->init("save.mp4", _recorder_desktop, audios, 1, setting);
+	int error = _muxer->init("save.mp4", _recorder_desktop, audios, 2, setting);
 	if (error != AE_NO) {
 		return error;
 	}
@@ -551,4 +552,6 @@ int main(int argc, char **argv)
 	stop_muxer();
 
 	system("pause");
+
+	return 0;
 }

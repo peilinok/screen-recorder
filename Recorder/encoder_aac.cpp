@@ -220,9 +220,9 @@ namespace am {
 
 				//avcodec_fill_audio_frame(&frame, _frame->channels, (AVSampleFormat)_frame->format, _buff, _buff_size, 0);
 
-				_frame->pts = frame.pts;
+				/*_frame->pts = frame.pts;
 				_frame->pkt_pts = frame.pkt_pts;
-				_frame->pkt_dts = frame.pkt_dts;
+				_frame->pkt_dts = frame.pkt_dts;*/
 
 				ret = avcodec_send_frame(_encoder_ctx, _frame);
 				if (ret < 0) {

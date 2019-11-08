@@ -6,7 +6,7 @@
 #include "encoder_264.h"
 #include "encoder_aac.h"
 #include "resample_pcm.h"
-#include "filter_amix.h"
+#include "filter_audio.h"
 #include "ring_buffer.h"
 
 #include "log_helper.h"
@@ -109,6 +109,9 @@ namespace am {
 		if (_a_stream && _a_stream->a_enc)
 			_a_stream->a_enc->start();
 
+		if (_a_stream && _a_stream->a_filter)
+			_a_stream->a_filter->start();
+
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				if(_a_stream->a_src[i])
@@ -145,6 +148,9 @@ namespace am {
 		if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
+		if (_a_stream && _a_stream->a_filter)
+			_a_stream->a_filter->stop();
+
 		if (_v_stream && _v_stream->v_enc)
 			_v_stream->v_enc->stop();
 
@@ -178,6 +184,24 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
+#if 1
+	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
+	{
+		if (_running == false
+			|| !_a_stream
+			|| !_a_stream->a_samples
+			|| !_a_stream->a_samples[index]
+			|| !_a_stream->a_resamples
+			|| !_a_stream->a_resamples[index]
+			|| !_a_stream->a_rs
+			|| !_a_stream->a_rs[index])
+			return;
+
+		_a_stream->a_filter->add_frame(frame, index);
+
+		return;
+	}
+#else
 	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
@@ -198,7 +222,7 @@ namespace am {
 		int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
 		int remain_len = sample_len;
 
-		while (remain_len > 0) {
+		while (remain_len > 0) {//should add is_planner codes
 			//cache pcm
 			copied_len = min(samples->size - samples->sample_in, remain_len);
 			if (copied_len) {
@@ -221,10 +245,67 @@ namespace am {
 			}
 		}
 	}
+#endif
 
 	void muxer_mp4::on_audio_error(int error, int index)
 	{
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
+	}
+
+	void muxer_mp4::on_filter_audio_data(AVFrame * frame)
+	{
+		if (_running == false || !_a_stream->a_enc)
+			return;
+
+
+		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[0];
+
+		int copied_len = 0;
+		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+			sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+
+		int remain_len = sample_len;
+
+		//for data is planar,should copy data[0] data[1] to correct buff pos
+		if (av_sample_fmt_is_planar((AVSampleFormat)frame->format) == 0) {
+			while (remain_len > 0) {
+				//cache pcm
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				//got enough pcm to encoder,resample and mix
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+		else {
+			while (remain_len > 0) {
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
+					memcpy(resamples->buff + resamples->size/2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+	}
+
+	void muxer_mp4::on_filter_audio_error(int error)
+	{
 	}
 
 	void muxer_mp4::on_enc_264_data(AVPacket *packet)
@@ -424,6 +505,43 @@ namespace am {
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
+			_a_stream->a_filter = new am::filter_audio();
+			error = _a_stream->a_filter->init(
+			{
+				NULL,NULL,
+				_a_stream->a_src[0]->get_time_base(),
+				_a_stream->a_src[0]->get_sample_rate(),
+				AFTypeTrans2AVType(_a_stream->a_src[0]->get_fmt()),
+				_a_stream->a_src[0]->get_channel_num(),
+				av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
+			},
+			{
+				NULL,NULL,
+				_a_stream->a_src[1]->get_time_base(),
+				_a_stream->a_src[1]->get_sample_rate(),
+				AFTypeTrans2AVType(_a_stream->a_src[1]->get_fmt()),
+				_a_stream->a_src[1]->get_channel_num(),
+				av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
+			},
+			{
+				NULL,NULL,
+				{ 1,1000000 },
+				setting.a_sample_rate,
+				setting.a_sample_fmt,
+				setting.a_nb_channel,
+				av_get_default_channel_layout(setting.a_nb_channel)
+			}
+			);
+
+			if (error != AE_NO) {
+				break;
+			}
+
+			_a_stream->a_filter->registe_cb(
+				std::bind(&muxer_mp4::on_filter_audio_data, this, std::placeholders::_1),
+				std::bind(&muxer_mp4::on_filter_audio_error, this, std::placeholders::_1)
+			);
+
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
 			if (!codec) {
 				error = AE_FFMPEG_FIND_ENCODER_FAILED;
@@ -602,7 +720,7 @@ namespace am {
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet->dts = packet->pts;
 
-		//al_debug("A:%ld", packet.pts);
+		al_debug("A:%ld", packet->pts);
 
 		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}

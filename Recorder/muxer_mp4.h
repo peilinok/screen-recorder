@@ -45,6 +45,12 @@ namespace am {
 
 		void on_audio_error(int error, int index);
 
+		void on_filter_audio_data(AVFrame *frame);
+
+		void on_filter_audio_error(int error);
+
+
+
 		void on_enc_264_data(AVPacket *packet);
 
 		void on_enc_264_error(int error);
@@ -52,6 +58,8 @@ namespace am {
 		void on_enc_aac_data(AVPacket *packet);
 
 		void on_enc_aac_error(int error);
+
+
 
 		int alloc_oc(const char *output_file, const MUX_SETTING_T &setting);
 

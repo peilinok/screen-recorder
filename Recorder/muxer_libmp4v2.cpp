@@ -6,7 +6,7 @@
 #include "encoder_264.h"
 #include "encoder_aac.h"
 #include "resample_pcm.h"
-#include "filter_amix.h"
+#include "filter_audio.h"
 #include "ring_buffer.h"
 
 #include "log_helper.h"

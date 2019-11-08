@@ -13,4 +13,7 @@ extern "C" {
 #include <libavutil\error.h>
 #include <libavcodec\adts_parser.h>
 #include <libavutil\time.h>
+#include <libavfilter\avfilter.h>
+#include <libavfilter\buffersink.h>
+#include <libavfilter\buffersrc.h>
 }
