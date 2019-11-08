@@ -188,7 +188,6 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <ClCompile Include="encoder_264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="filter_audio.cpp" />
-    <ClCompile Include="filter_test.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="muxer_libmp4v2.cpp" />
     <ClCompile Include="muxer_mp4.cpp" />

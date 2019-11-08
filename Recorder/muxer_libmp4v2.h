@@ -14,6 +14,7 @@
 
 namespace am {
 
+	/*
 	class record_audio;
 	class record_desktop;
 
@@ -25,7 +26,7 @@ namespace am {
 	public:
 		muxer_libmp4v2();
 		~muxer_libmp4v2();
-
+		
 		int init(
 			const char *output_file,
 			record_desktop *source_desktop,
@@ -88,8 +89,8 @@ namespace am {
 		MP4TrackId _mp4v2_a_track;
 
 		int64_t _base_time;
-
+		
 	};
-
+	*/
 
 }

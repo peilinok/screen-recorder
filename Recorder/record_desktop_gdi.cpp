@@ -210,7 +210,7 @@ namespace am {
 			if (ret < 0) {
 				if (_on_error) _on_error(AE_FFMPEG_READ_FRAME_FAILED);
 
-				al_fatal("read frame failed:%d %ld", );
+				al_fatal("read frame failed:%d", ret);
 				break;
 			}
 

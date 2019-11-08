@@ -14,6 +14,7 @@
 
 namespace am {
 
+	/*
 	muxer_libmp4v2::muxer_libmp4v2()
 	{
 		av_register_all();
@@ -466,8 +467,6 @@ namespace am {
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				/*if (_a_stream->a_src && _a_stream->a_src[i])
-				delete _a_stream->a_src[i];*/
 
 				if (_a_stream->a_rs && _a_stream->a_rs[i])
 					delete _a_stream->a_rs[i];
@@ -546,5 +545,5 @@ namespace am {
 		return MP4WriteSample(_mp4v2_file, _mp4v2_a_track, data, len, MP4_INVALID_DURATION, 0, 1);
 	}
 
-
+	*/
 }
