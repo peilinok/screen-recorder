@@ -33,7 +33,6 @@ namespace am {
 		AVFrame *tmp_frame;         // tmp av frame 
 
 		uint64_t pre_pts;
-		uint64_t start_time;
 
 		MUX_SETTING setting;        // output setting
 

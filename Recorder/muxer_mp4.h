@@ -73,6 +73,8 @@ namespace am {
 		void cleanup_audio();
 		void cleanup();
 
+		uint64_t get_current_time();
+
 		int write_video(AVPacket *packet);
 
 		int write_audio(AVPacket *packet);
@@ -95,6 +97,7 @@ namespace am {
 		char ff_error[4096];
 
 		std::mutex _mutex;
+		std::mutex _time_mutex;
 	};
 }
 
