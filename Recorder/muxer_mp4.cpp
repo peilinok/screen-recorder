@@ -361,6 +361,8 @@ namespace am {
 		memset(_v_stream, 0, sizeof(MUX_STREAM));
 
 		_v_stream->v_src = source_desktop;
+
+		_v_stream->pre_pts = -1;
 		
 		_v_stream->v_src->registe_cb(
 			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
@@ -455,6 +457,7 @@ namespace am {
 		_a_stream->a_resamples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_samples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_src = source_audios;
+		_a_stream->pre_pts = -1;
 
 
 		do {
@@ -697,18 +700,16 @@ namespace am {
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
-		//if (_base_time < 0)
+		//if (_a_stream->pre_pts == (uint64_t)-1)
 		//	return 0;
 
 		packet->stream_index = _v_stream->st->index;
 
-		int64_t cur_time = av_gettime_relative();
-		if (_base_time < 0) {
-			_base_time = av_gettime_relative();
+		if (_v_stream->pre_pts == (uint64_t)-1) {
+			_v_stream->pre_pts = packet->pts;
 		}
 
-		//packet->pts = cur_time - _base_time;
-		
+		packet->pts = packet->pts - _v_stream->pre_pts;
 		packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
@@ -726,11 +727,11 @@ namespace am {
 		
 		packet->stream_index = _a_stream->st->index;
 
-		if (_base_time < 0) {
-			_base_time = av_gettime_relative();
+		if (_a_stream->pre_pts == (uint64_t)-1) {
 			_a_stream->pre_pts = packet->pts;
 		}
 
+		packet->pts = packet->pts - _a_stream->pre_pts;
 		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
