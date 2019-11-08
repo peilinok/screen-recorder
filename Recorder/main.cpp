@@ -390,8 +390,6 @@ int enum_audio_devices() {
 		goto error;
 	}
 
-	printf("PortAudio version: 0x%08X\n", Pa_GetVersion());
-	printf("Version text: '%s'\n", Pa_GetVersionInfo()->versionText);
 
 	numDevices = Pa_GetDeviceCount();
 	if (numDevices < 0)
