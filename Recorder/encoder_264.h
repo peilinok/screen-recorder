@@ -40,12 +40,11 @@ namespace am {
 
 		int put(const uint8_t *data, int data_len, AVFrame *frame);
 
-		int encode(const uint8_t *src, int src_len,unsigned char *dst,int dst_len,int *got_pic);
-
 	protected:
 		void cleanup();
 
 	private:
+		int encode(AVFrame *frame, AVPacket *packet);
 		void encode_loop();
 
 	private:

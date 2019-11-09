@@ -204,12 +204,43 @@ namespace am {
 		return _encoder_ctx->time_base;
 	}
 
+	int encoder_aac::encode(AVFrame * frame, AVPacket * packet)
+	{
+		int ret = avcodec_send_frame(_encoder_ctx, _frame);
+		if (ret < 0) {
+			return AE_FFMPEG_ENCODE_FRAME_FAILED;
+		}
+
+		while (ret >= 0) {
+			ret = avcodec_receive_packet(_encoder_ctx, packet);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+				break;
+			}
+
+			if (ret < 0) {
+				return AE_FFMPEG_READ_PACKET_FAILED;
+			}
+
+			if (_on_data)
+				_on_data(packet);
+
+#ifdef SAVE_AAC
+			av_write_frame(_aac_fmt_ctx, packet);
+#endif
+
+			av_packet_unref(packet);
+		}
+
+		return AE_NO;
+	}
+
 	void encoder_aac::encode_loop()
 	{
-		int len, ret = 0;
+		int len = 0;
+		int error = AE_NO;
 
 		AVPacket *packet = av_packet_alloc();
-		AVFrame frame;
+		AVFrame pcm_frame;
 
 #ifdef SAVE_AAC
 		avformat_write_header(_aac_fmt_ctx, NULL);
@@ -221,45 +252,27 @@ namespace am {
 			while (!_cond_notify)
 				_cond_var.wait(lock);
 
-			while ((len = _ring_buffer->get(_buff, _buff_size, frame))) {
+			while ((len = _ring_buffer->get(_buff, _buff_size, pcm_frame))) {
 
-				_frame->pts = frame.pts;
-				_frame->pkt_pts = frame.pkt_pts;
-				_frame->pkt_dts = frame.pkt_dts;
+				_frame->pts = pcm_frame.pts;
+				_frame->pkt_pts = pcm_frame.pkt_pts;
+				_frame->pkt_dts = pcm_frame.pkt_dts;
 
-				ret = avcodec_send_frame(_encoder_ctx, _frame);
-				if (ret < 0) {
-					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
-					al_fatal("encode pcm failed:%d", ret);
-					continue;
-				}
+				if ((error = encode(_frame, packet)) != AE_NO) {
+					if (_on_error) 
+						_on_error(error);
 
-				while (ret >= 0) {
-					ret = avcodec_receive_packet(_encoder_ctx, packet);
-					if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-						break;
-					}
+					al_fatal("read aac packet failed:%d", error);
 
-					if (ret < 0) {
-						if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
-
-						al_fatal("read aac packet failed:%d", ret);
-						break;
-					}
-
-					if (_on_data) 
-						_on_data(packet);
-
-#ifdef SAVE_AAC
-					av_write_frame(_aac_fmt_ctx, packet);
-#endif
-
-					av_packet_unref(packet);
+					break;
 				}
 			}
 
 			_cond_notify = false;
 		}
+
+		//flush pcm data in encoder
+		encode(NULL, packet);
 
 		av_packet_free(&packet);
 #ifdef SAVE_AAC

@@ -49,7 +49,9 @@ namespace am {
 
 		const AVRational &get_time_base();
 
-	protected:
+	private:
+		int encode(AVFrame *frame, AVPacket *packet);
+
 		void encode_loop();
 
 		void cleanup();

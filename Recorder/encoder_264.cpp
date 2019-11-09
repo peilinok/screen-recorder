@@ -86,7 +86,6 @@ namespace am {
 
 			_buff_size = avpicture_get_size(_encoder_ctx->pix_fmt, _encoder_ctx->width, _encoder_ctx->height);
 			
-			//may no need this
 			_buff = (uint8_t*)av_malloc(_buff_size);
 			if (!_buff) {
 				break;
@@ -176,36 +175,6 @@ namespace am {
 		return 0;
 	}
 
-	int encoder_264::encode(const uint8_t *src, int src_len, unsigned char * dst, int dst_len, int * got_pic)
-	{
-		if (_inited == false)
-			return AE_NEED_INIT;
-
-		int err = AE_NO;
-
-		AVPacket packet;
-		av_new_packet(&packet, _buff_size);
-
-		memcpy_s(_buff, _buff_size, src, src_len);
-
-		_frame->data[0] = _buff;
-		_frame->data[1] = _buff + _y_size;
-		_frame->data[2] = _buff + _y_size * 5 / 4;
-
-		int ret = avcodec_encode_video2(_encoder_ctx, &packet, _frame, got_pic);
-		if (ret != 0) {
-			err = AE_FFMPEG_ENCODE_FRAME_FAILED;
-		}
-		else if(*got_pic){
-			*got_pic = packet.size;
-			memcpy(dst, packet.data, min(packet.size, dst_len));
-		}
-
-		av_free_packet(&packet);
-
-		return err;
-	}
-
 	void encoder_264::cleanup()
 	{
 		if (_frame)
@@ -228,12 +197,38 @@ namespace am {
 		_encoder_ctx = NULL;
 	}
 
+	int encoder_264::encode(AVFrame * frame, AVPacket * packet)
+	{
+		int ret = avcodec_send_frame(_encoder_ctx, frame);
+		if (ret < 0) {
+			return AE_FFMPEG_ENCODE_FRAME_FAILED;
+		}
+
+		while (ret >= 0) {
+			ret = avcodec_receive_packet(_encoder_ctx, packet);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+				break;
+			}
+
+			if (ret < 0) {
+				return AE_FFMPEG_READ_PACKET_FAILED;
+			}
+
+			if (_on_data)
+				_on_data(packet);
+
+			av_packet_unref(packet);
+		}
+
+		return AE_NO;
+	}
+
 	void encoder_264::encode_loop()
 	{
-		int len, ret, got_pic = 0;
-
 		AVPacket *packet = av_packet_alloc();
-		AVFrame frame;
+		AVFrame yuv_frame;
+
+		int error = AE_NO;
 
 		while (_running)
 		{
@@ -241,45 +236,29 @@ namespace am {
 			while (!_cond_notify)
 				_cond_var.wait(lock);
 
-			while (_ring_buffer->get(_buff, _buff_size, frame)) {
-				_frame->data[0] = _buff;
-				_frame->data[1] = _buff + _y_size;
-				_frame->data[2] = _buff + _y_size * 5 / 4;
-				_frame->pkt_dts = frame.pkt_dts;
-				_frame->pkt_dts = frame.pkt_dts;
-				_frame->pts = frame.pts;
+			while (_ring_buffer->get(_buff, _buff_size, yuv_frame)) {
+				_frame->pkt_dts = yuv_frame.pkt_dts;
+				_frame->pkt_dts = yuv_frame.pkt_dts;
+				_frame->pts = yuv_frame.pts;
 
-				ret = avcodec_send_frame(_encoder_ctx, _frame);
-				if (ret < 0) {
-					if (_on_error) _on_error(AE_FFMPEG_ENCODE_FRAME_FAILED);
-					al_fatal("encode yuv frame failed:%d", ret);
+				if ((error = encode(_frame, packet)) != AE_NO) {
+					if (_on_error) 
+						_on_error(error);
 
-					continue;
+					al_fatal("encode 264 packet failed:%d", error);
+
+					break;
 				}
-
-				while (ret >= 0) {
-					ret = avcodec_receive_packet(_encoder_ctx, packet);
-					if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-						break;
-					}
-
-					if (ret < 0) {
-						if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED);
-
-						al_fatal("read aac packet failed:%d", ret);
-					}
-
-					if (_on_data) 
-						_on_data(packet);
-
-					av_packet_unref(packet);
-				}
+				
 			}
 			
 			_cond_notify = false;
 		}
 
-		av_free_packet(packet);
+		//flush frame in encoder
+		encode(NULL, packet);
+
+		av_packet_free(&packet);
 	}
 
 }
