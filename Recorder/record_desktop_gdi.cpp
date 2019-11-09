@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "record_desktop_gdi.h"
 
 #include "error_define.h"
@@ -157,6 +156,11 @@ namespace am {
 		return _fmt_ctx->streams[_stream_index]->start_time;
 	}
 
+	AVPixelFormat record_desktop_gdi::get_pixel_fmt()
+	{
+		return _fmt_ctx->streams[_stream_index]->codec->pix_fmt;
+	}
+
 	void record_desktop_gdi::clean_up()
 	{
 		if (_codec_ctx)
@@ -177,31 +181,9 @@ namespace am {
 	void record_desktop_gdi::record_func()
 	{
 		AVPacket *packet = (AVPacket*)av_malloc(sizeof(AVPacket));
-		AVFrame *frame_rgb = av_frame_alloc();
-		AVFrame *frame_yuv = av_frame_alloc();
+		AVFrame *frame = av_frame_alloc();
 
-		int size_yuv = avpicture_get_size(AV_PIX_FMT_YUV420P, _codec_ctx->width, _codec_ctx->height);
-		uint8_t *buff_yuv = (uint8_t *)av_malloc(size_yuv);
-		
 		int ret = 0;
-		ret = avpicture_fill((AVPicture *)frame_yuv, buff_yuv, AV_PIX_FMT_YUV420P, _codec_ctx->width, _codec_ctx->height);
-
-		struct SwsContext *_swscale_ctx = sws_getContext(
-			_codec_ctx->width,
-			_codec_ctx->height,
-			_codec_ctx->pix_fmt,
-			_codec_ctx->width,
-			_codec_ctx->height,
-			AV_PIX_FMT_YUV420P,
-			SWS_BICUBIC,
-			NULL,NULL,NULL
-		);
-
-		if (_swscale_ctx == NULL) {
-			if (_on_error) _on_error(AE_FFMPEG_NEW_SWSCALE_FAILED);
-			al_fatal("get swscale for gid recorder failed");
-			_running = false;
-		}
 
 		int got_pic = 0;
 		while (_running == true) {
@@ -216,7 +198,7 @@ namespace am {
 
 			if (packet->stream_index == _stream_index) {
 
-				ret = avcodec_decode_video2(_codec_ctx, frame_rgb, &got_pic, packet);
+				ret = avcodec_decode_video2(_codec_ctx, frame, &got_pic, packet);
 				if (ret < 0) {
 					if (_on_error) _on_error(AE_FFMPEG_DECODE_FRAME_FAILED);
 					al_fatal("decode desktop frame failed");
@@ -224,26 +206,14 @@ namespace am {
 				}
 
 				if (got_pic) {
-					sws_scale(
-						_swscale_ctx, 
-						(const uint8_t * const*)frame_rgb->data, 
-						frame_rgb->linesize, 
-						0, _codec_ctx->height,
-						frame_yuv->data, frame_yuv->linesize);
-
-					if (_on_data) 
-						_on_data(buff_yuv, size_yuv, frame_rgb);
+					if (_on_data) _on_data(frame);
 				}
 			}
 
 			av_free_packet(packet);
 		}
 
-		av_free(frame_rgb);
-		av_free(frame_yuv);
-
-		if (buff_yuv)
-			av_free(buff_yuv);
+		av_free(frame);
 	}
 
 }

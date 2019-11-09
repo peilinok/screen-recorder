@@ -20,6 +20,8 @@
 
 #define V_FRAME_RATE 20
 #define V_BIT_RATE 64000
+#define V_WIDTH 1920
+#define V_HEIGHT 1080
 
 #define A_SAMPLE_RATE 44100
 #define A_BIT_RATE 128000
@@ -180,7 +182,7 @@ void on_encode_264_error(int error) {
 void init_encoder() {
 	_encoder_264 = new am::encoder_264();
 
-	int error = _encoder_264->init(1920, 1080, V_FRAME_RATE, V_BIT_RATE, &_buff_264_len);
+	int error = _encoder_264->init(V_WIDTH, V_HEIGHT, V_FRAME_RATE, V_BIT_RATE, &_buff_264_len);
 	if (error != AE_NO)
 		goto exit;
 
@@ -206,7 +208,7 @@ exit:
 
 static am::record_desktop *_recorder_desktop = nullptr;
 
-void on_record_desktop_data(const uint8_t *data, int data_len,AVFrame *frame) {
+void on_record_desktop_data(AVFrame *frame) {
 	//al_debug("on desktop data:%d \r\n", data_len);
 	if (_encoder_264) {
 		
@@ -238,8 +240,8 @@ int start_record_desktop() {
 	RECORD_DESKTOP_RECT rect;
 	rect.left = 0;
 	rect.top = 0;
-	rect.right = 1920;
-	rect.bottom = 1080;
+	rect.right = V_WIDTH;
+	rect.bottom = V_HEIGHT;
 	error = _recorder_desktop->init(rect, V_FRAME_RATE);
 
 	_recorder_desktop->registe_cb(on_record_desktop_data, on_record_desktop_error);
@@ -278,8 +280,8 @@ int start_muxer() {
 	RECORD_DESKTOP_RECT rect;
 	rect.left = 0;
 	rect.top = 0;
-	rect.right = 1920;
-	rect.bottom = 1080;
+	rect.right = V_WIDTH;
+	rect.bottom = V_HEIGHT;
 
 	_recorder_desktop->init(rect, V_FRAME_RATE);
 
@@ -295,6 +297,8 @@ int start_muxer() {
 	am::MUX_SETTING setting;
 	setting.v_frame_rate = V_FRAME_RATE;
 	setting.v_bit_rate = V_BIT_RATE;
+	setting.v_width = V_WIDTH;
+	setting.v_height = V_HEIGHT;
 
 	setting.a_nb_channel = 2;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;

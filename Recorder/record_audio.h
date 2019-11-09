@@ -44,7 +44,7 @@ namespace am {
 
 		inline int get_channel_num() { return _channel_num; }
 		
-		inline RECORD_AUDIO_FORMAT get_fmt() { return _fmt; }
+		inline AVSampleFormat get_fmt() { return _fmt; }
 
 		inline const std::string & get_device_name() { return _device_name; }
 
@@ -71,7 +71,7 @@ namespace am {
 
 		int _bit_per_sample;
 		
-		RECORD_AUDIO_FORMAT _fmt;
+		AVSampleFormat _fmt;
 		
 		std::string _device_name;
 

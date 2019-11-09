@@ -69,3 +69,4 @@
 /Recorder/Debug/filter_audio.obj
 /Recorder/Debug/muxer_libmp4v2.obj
 /Recorder/Debug/record_audio_dshow.obj
+/Recorder/Debug/sws_helper.obj

@@ -9,6 +9,8 @@ namespace am {
 
 	class encoder_264;
 	class record_desktop;
+	class sws_helper;
+
 	class encoder_aac;
 	class filter_audio;
 	class record_audio;
@@ -17,6 +19,8 @@ namespace am {
 	typedef struct MUX_SETTING_T {
 		int v_frame_rate;
 		int v_bit_rate;
+		int v_width;
+		int v_height;
 
 		int a_nb_channel;
 		int a_sample_rate;
@@ -39,6 +43,7 @@ namespace am {
 		//video
 		encoder_264 *v_enc;         // video encoder
 		record_desktop *v_src;      // video source
+		sws_helper *v_sws;          // video sws
 
 									//audio
 		encoder_aac *a_enc;         // audio encoder

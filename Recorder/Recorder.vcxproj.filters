@@ -87,6 +87,9 @@
     <ClInclude Include="filter_audio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sws_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -135,6 +138,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="filter_audio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sws_helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

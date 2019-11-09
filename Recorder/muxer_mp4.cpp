@@ -1,12 +1,15 @@
 #include "muxer_mp4.h"
 #include "muxer_define.h"
 
-#include "record_audio.h"
 #include "record_desktop.h"
 #include "encoder_264.h"
+#include "sws_helper.h"
+
+#include "record_audio.h"
 #include "encoder_aac.h"
 #include "resample_pcm.h"
 #include "filter_audio.h"
+
 #include "ring_buffer.h"
 
 #include "log_helper.h"
@@ -173,10 +176,18 @@ namespace am {
 		return 0;
 	}
 
-	void muxer_mp4::on_desktop_data(const uint8_t * data, int len, AVFrame *frame)
+	void muxer_mp4::on_desktop_data(AVFrame *frame)
 	{
-		if (_running && _v_stream && _v_stream->v_enc) {
-			_v_stream->v_enc->put(data, len, frame);
+		if (_running == false || !_v_stream || !_v_stream->v_enc || !_v_stream->v_sws) {
+			return;
+		}
+
+		int len = 0, ret = AE_NO;
+		uint8_t *yuv_data = NULL;
+		
+		ret = _v_stream->v_sws->convert(frame, &yuv_data, &len);
+		if (ret == AE_NO && yuv_data && len) {
+			_v_stream->v_enc->put(yuv_data, len, frame);
 		}
 	}
 
@@ -286,7 +297,7 @@ namespace am {
 				}
 			}
 		}
-		else {
+		else {//resample size is channels*frame->linesize[0],for multi channels
 			while (remain_len > 0) {
 				copied_len = min(resamples->size - resamples->sample_in, remain_len);
 				if (copied_len) {
@@ -307,6 +318,7 @@ namespace am {
 
 	void muxer_mp4::on_filter_audio_error(int error)
 	{
+		al_fatal("on filter audio error:%d", error);
 	}
 
 	void muxer_mp4::on_enc_264_data(AVPacket *packet)
@@ -366,16 +378,15 @@ namespace am {
 		_v_stream->pre_pts = -1;
 		
 		_v_stream->v_src->registe_cb(
-			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1),
 			std::bind(&muxer_mp4::on_desktop_error, this, std::placeholders::_1)
 		);
 
-		int width = _v_stream->v_src->get_rect().right - _v_stream->v_src->get_rect().left;
-		int height = _v_stream->v_src->get_rect().bottom - _v_stream->v_src->get_rect().top;
+		RECORD_DESKTOP_RECT v_rect = _v_stream->v_src->get_rect();
 
 		do {
 			_v_stream->v_enc = new encoder_264();
-			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate,setting.v_bit_rate, NULL);
+			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, NULL);
 			if (error != AE_NO)
 				break;
 
@@ -383,6 +394,18 @@ namespace am {
 				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1),
 				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
 			);
+
+			_v_stream->v_sws = new sws_helper();
+			error = _v_stream->v_sws->init(
+				_v_stream->v_src->get_pixel_fmt(),
+				v_rect.right - v_rect.left,
+				v_rect.bottom - v_rect.top,
+				AV_PIX_FMT_YUV420P,
+				setting.v_width,
+				setting.v_height
+			);
+			if (error != AE_NO)
+				break;
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
 			if (!codec) {
@@ -403,17 +426,15 @@ namespace am {
 			st->codec->time_base.num = 1;
 			st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
 
-			st->codec->coded_width = width;
-			st->codec->coded_height = height;
-			st->codec->width = width;
-			st->codec->height = height;
-			//st->codec->max_b_frames = 2;
-			//st->codec->extradata = 
-			//st->codec->extradata_size = 
-			st->time_base = { 1,90000 };
+			st->codec->coded_width = setting.v_width;
+			st->codec->coded_height = setting.v_height;
+			st->codec->width = setting.v_width;
+			st->codec->height = setting.v_height;
+			st->codec->max_b_frames = 0;//NO B Frame
+			st->time_base = { 1,90000 };//fixed?
 			st->avg_frame_rate = av_inv_q(st->codec->time_base);
 
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play,extradata will write with avformat_write_header
 				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
@@ -426,23 +447,6 @@ namespace am {
 		} while (0);
 
 		return error;
-	}
-
-	static AVSampleFormat AFTypeTrans2AVType(RECORD_AUDIO_FORMAT af_format) {
-		switch (af_format) {
-		case AF_AUDIO_S16:
-			return AV_SAMPLE_FMT_S16;
-		case AF_AUDIO_S32:
-			return AV_SAMPLE_FMT_S32;
-		case AF_AUDIO_FLT:
-			return AV_SAMPLE_FMT_FLT;
-		case AF_AUDIO_S16P:
-			return AV_SAMPLE_FMT_S16P;
-		case AF_AUDIO_S32P:
-			return AV_SAMPLE_FMT_S32P;
-		case AF_AUDIO_FLTP:
-			return AV_SAMPLE_FMT_FLTP;
-		}
 	}
 
 	int muxer_mp4::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
@@ -488,7 +492,7 @@ namespace am {
 					_a_stream->a_enc->get_nb_samples(),
 					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
 					_a_stream->a_src[i]->get_channel_num(),
-					AFTypeTrans2AVType(_a_stream->a_src[i]->get_fmt()),
+					_a_stream->a_src[i]->get_fmt(),
 					_a_stream->a_src[i]->get_sample_rate()
 				};
 				SAMPLE_SETTING dst_setting = {
@@ -515,7 +519,7 @@ namespace am {
 				NULL,NULL,
 				_a_stream->a_src[0]->get_time_base(),
 				_a_stream->a_src[0]->get_sample_rate(),
-				AFTypeTrans2AVType(_a_stream->a_src[0]->get_fmt()),
+				_a_stream->a_src[0]->get_fmt(),
 				_a_stream->a_src[0]->get_channel_num(),
 				av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
 			},
@@ -523,7 +527,7 @@ namespace am {
 				NULL,NULL,
 				_a_stream->a_src[1]->get_time_base(),
 				_a_stream->a_src[1]->get_sample_rate(),
-				AFTypeTrans2AVType(_a_stream->a_src[1]->get_fmt()),
+				_a_stream->a_src[1]->get_fmt(),
 				_a_stream->a_src[1]->get_channel_num(),
 				av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
 			},
@@ -616,6 +620,9 @@ namespace am {
 
 		if (_v_stream->v_enc)
 			delete _v_stream->v_enc;
+
+		if (_v_stream->v_sws)
+			delete _v_stream->v_sws;
 
 		delete _v_stream;
 

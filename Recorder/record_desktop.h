@@ -10,7 +10,7 @@
 #include <functional>
 
 namespace am {
-	typedef std::function<void(const uint8_t* yuv, int len, AVFrame *frame)> cb_desktop_data;
+	typedef std::function<void(AVFrame *frame)> cb_desktop_data;
 	typedef std::function<void(int)> cb_desktop_error;
 
 	class record_desktop
@@ -32,6 +32,8 @@ namespace am {
 		virtual const AVRational & get_time_base() = 0;
 
 		virtual int64_t get_start_time() = 0;
+
+		virtual AVPixelFormat get_pixel_fmt() = 0;
 
 	public:
 		inline bool is_recording() { return _running; }

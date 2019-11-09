@@ -26,24 +26,6 @@ namespace am {
 		cleanup();
 	}
 
-	static RECORD_AUDIO_FORMAT AVTypeTrans2AFType(AVSampleFormat av_format)
-	{
-		switch (av_format) {
-		case AV_SAMPLE_FMT_S16:
-			return AF_AUDIO_S16;
-		case AV_SAMPLE_FMT_S32:
-			return AF_AUDIO_S32;
-		case AV_SAMPLE_FMT_FLT:
-			return AF_AUDIO_FLT;
-		case AV_SAMPLE_FMT_S16P:
-			return AF_AUDIO_S16P;
-		case AV_SAMPLE_FMT_S32P:
-			return AF_AUDIO_S32P;
-		case AV_SAMPLE_FMT_FLTP:
-			return AF_AUDIO_FLTP;
-		}
-	}
-
 	static std::string  unicode_utf8(const std::wstring& wstr)
 	{
 		int ansiiLen = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
@@ -129,7 +111,7 @@ namespace am {
 			_bit_rate = _codec_ctx->bit_rate;
 			_bit_per_sample = _codec_ctx->bits_per_coded_sample;
 			_channel_num = _codec_ctx->channels;
-			_fmt = AVTypeTrans2AFType(_codec_ctx->sample_fmt);
+			_fmt = _codec_ctx->sample_fmt;
 
 			_inited = true;
 		} while (0);
