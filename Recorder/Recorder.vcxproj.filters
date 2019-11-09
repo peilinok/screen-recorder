@@ -63,9 +63,6 @@
     <ClInclude Include="record_desktop_define.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="record_devices.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resample_pcm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -91,6 +88,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="record_desktop_dshow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="device_audios.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mmdevice_define.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -119,9 +125,6 @@
     <ClCompile Include="record_desktop_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="record_devices.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="resample_pcm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -147,6 +150,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="record_desktop_dshow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="device_audios.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_string.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

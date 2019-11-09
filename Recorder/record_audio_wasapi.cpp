@@ -5,10 +5,6 @@
 
 #ifdef _WIN32
 
-static const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
-static const IID IID_IAudioClient = __uuidof(IAudioClient);
-static const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 
 #define REFTIMES_PER_SEC  10000000
 #define REFTIMES_PER_MILLISEC  10000
@@ -26,7 +22,7 @@ namespace am {
 		if (hr != S_OK)
 			al_debug("%s,error:%ld",err2str(AE_CO_INITED_FAILED), GetLastError());
 
-		_co_inited = (hr == S_OK);
+		_co_inited = (hr == S_OK || hr == S_FALSE);//if already initialize will return S_FALSE
 
 		_wfex = NULL;
 		_enumerator = nullptr;
@@ -61,10 +57,10 @@ namespace am {
 
 		do {
 			HRESULT hr = CoCreateInstance(
-				CLSID_MMDeviceEnumerator,
+				__uuidof(MMDeviceEnumerator),
 				NULL,
 				CLSCTX_ALL,
-				IID_IMMDeviceEnumerator,
+				__uuidof(IMMDeviceEnumerator),
 				(void **)&_enumerator);
 
 			if (hr != S_OK) {
@@ -78,7 +74,7 @@ namespace am {
 				break;
 			}
 
-			hr = _device->Activate(IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&_client);
+			hr = _device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&_client);
 			if (hr != S_OK) {
 				error = AE_CO_ACTIVE_DEVICE_FAILED;
 				break;
@@ -103,7 +99,7 @@ namespace am {
 				break;
 			}
 
-			hr = _client->GetService(IID_IAudioCaptureClient, (void**)&_capture);
+			hr = _client->GetService(__uuidof(IAudioCaptureClient), (void**)&_capture);
 			if (hr != S_OK) {
 				error = AE_CO_GET_CAPTURE_FAILED;
 				break;

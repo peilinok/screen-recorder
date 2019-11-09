@@ -722,7 +722,7 @@ namespace am {
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
-		al_debug("V:%lld %lld", packet->pts, packet->dts);
+		//al_debug("V:%lld %lld", packet->pts, packet->dts);
 
 		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}
@@ -743,7 +743,7 @@ namespace am {
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
-		al_debug("A:%lld %lld", packet->pts, packet->dts);
+		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		return av_interleaved_write_frame(_fmt_ctx, packet);
 	}

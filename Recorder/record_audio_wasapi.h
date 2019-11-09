@@ -5,8 +5,9 @@
 
 #ifdef _WIN32
 
+#include "mmdevice_define.h"
 
-#include <MMDeviceAPI.h>
+
 #include <AudioClient.h>
 #include <AudioPolicy.h>
 

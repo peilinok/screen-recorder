@@ -4,6 +4,8 @@
 #include "log_helper.h"
 #include "error_define.h"
 
+#include "utils_string.h"
+
 namespace am {
 
 	record_audio_dshow::record_audio_dshow()
@@ -26,26 +28,6 @@ namespace am {
 		cleanup();
 	}
 
-	static std::string  unicode_utf8(const std::wstring& wstr)
-	{
-		int ansiiLen = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-		char *pAssii = (char*)malloc(sizeof(char)*ansiiLen);
-		WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, pAssii, ansiiLen, nullptr, nullptr);
-		std::string ret_str = pAssii;
-		free(pAssii);
-		return ret_str;
-	}
-
-	static std::wstring ascii_unicode(const std::string & str)
-	{
-		int unicodeLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
-		wchar_t *pUnicode = (wchar_t*)malloc(sizeof(wchar_t)*unicodeLen);
-		MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, pUnicode, unicodeLen);
-		std::wstring ret_str = pUnicode;
-		free(pUnicode);
-		return ret_str;
-	}
-
 	int record_audio_dshow::init(const std::string & device_name)
 	{
 		int error = AE_NO;
@@ -56,7 +38,7 @@ namespace am {
 
 		do {
 
-			_device_name = unicode_utf8(ascii_unicode(device_name));
+			_device_name = utils_string::ascii_utf8(device_name);
 
 			_input_fmt = av_find_input_format("dshow");
 			if (!_input_fmt) {
