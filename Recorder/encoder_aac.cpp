@@ -126,6 +126,8 @@ namespace am {
 
 			if (_aac_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
 				_aac_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+				_aac_stream->codec->extradata_size = _encoder_ctx->extradata_size;// +AV_INPUT_BUFFER_PADDING_SIZE;
+				_aac_stream->codec->extradata = (uint8_t*)av_memdup(_encoder_ctx->extradata, _encoder_ctx->extradata_size);
 			}
 #endif
 

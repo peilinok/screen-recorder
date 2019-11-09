@@ -46,8 +46,9 @@ int start_muxer() {
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_audio1);
 	_recorder_audio1->init("audio=Âó¿Ë·ç (Realtek(R) Audio)");
 
+	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
+	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
 
-	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
 	RECORD_DESKTOP_RECT rect;
 	rect.left = 0;
 	rect.top = 0;

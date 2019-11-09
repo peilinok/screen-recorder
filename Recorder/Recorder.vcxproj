@@ -176,6 +176,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <ClInclude Include="record_audio_wasapi.h" />
     <ClInclude Include="record_desktop.h" />
     <ClInclude Include="record_desktop_define.h" />
+    <ClInclude Include="record_desktop_dshow.h" />
     <ClInclude Include="record_desktop_factory.h" />
     <ClInclude Include="record_desktop_gdi.h" />
     <ClInclude Include="record_devices.h" />
@@ -197,6 +198,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <ClCompile Include="record_audio_dshow.cpp" />
     <ClCompile Include="record_audio_wasapi.cpp" />
     <ClCompile Include="record_desktop.cpp" />
+    <ClCompile Include="record_desktop_dshow.cpp" />
     <ClCompile Include="record_desktop_gdi.cpp" />
     <ClCompile Include="record_desktop_factory.cpp" />
     <ClCompile Include="record_devices.cpp" />

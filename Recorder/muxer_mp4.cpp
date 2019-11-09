@@ -569,8 +569,6 @@ namespace am {
 			st->codec->sample_rate = setting.a_sample_rate;
 			st->codec->sample_fmt = setting.a_sample_fmt;
 			st->codec->time_base = { 1,setting.a_sample_rate };
-			//st->codec->extradata = 
-			//st->codec->extradata_size = 
 			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
 
 			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
@@ -718,7 +716,8 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _v_stream->pre_pts;
-		packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		//packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
