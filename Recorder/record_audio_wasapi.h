@@ -55,6 +55,10 @@ namespace am {
 		HANDLE _ready_event;
 
 		bool _co_inited;
+
+		//define time stamps here
+		int64_t _start_time;
+		int64_t _pre_pts;
 	};
 }
 

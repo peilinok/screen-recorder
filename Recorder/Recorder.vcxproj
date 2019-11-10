@@ -89,13 +89,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)libmp4v2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)libmp4v2\include\;$(SolutionDir)portaudio\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;libmp4v2D.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2D.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
@@ -123,15 +123,15 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)libmp4v2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ffmpeg\include\;$(SolutionDir)libmp4v2\include\;$(SolutionDir)portaudio\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;libmp4v2.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -160,6 +160,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="device_videos.h" />
     <ClInclude Include="encoder_264.h" />
     <ClInclude Include="encoder_aac.h" />
     <ClInclude Include="error_define.h" />
@@ -189,6 +190,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <ClInclude Include="utils_string.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="device_videos.cpp" />
     <ClCompile Include="encoder_264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="filter_audio.cpp" />

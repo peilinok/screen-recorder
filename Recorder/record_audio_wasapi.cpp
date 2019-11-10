@@ -31,6 +31,9 @@ namespace am {
 		_capture = nullptr;
 
 		_ready_event = NULL;
+
+		_start_time = 0;
+		_pre_pts = 0;
 	}
 
 	record_audio_wasapi::~record_audio_wasapi()
@@ -151,6 +154,8 @@ namespace am {
 			return AE_CO_START_FAILED;
 		}
 
+		_start_time = av_gettime_relative();
+
 		_running = true;
 		_thread = std::thread(std::bind(&record_audio_wasapi::record_func, this));
 
@@ -181,12 +186,12 @@ namespace am {
 
 	const AVRational & record_audio_wasapi::get_time_base()
 	{
-		return{ 1,90000 };
+		return{ 1,AV_TIME_BASE };
 	}
 
 	int64_t record_audio_wasapi::get_start_time()
 	{
-		return 0;
+		return _start_time;
 	}
 
 
@@ -205,6 +210,8 @@ namespace am {
 
 		int frame_size = _bit_per_sample / 8 * _channel_num;
 
+		AVFrame *frame = av_frame_alloc();
+
 		while (_running)
 		{
 			ret = WaitForMultipleObjects(1, events, FALSE, 500);
@@ -220,15 +227,30 @@ namespace am {
 				}
 
 				if (_on_data && data) {
-					//_on_data(data, frame_num*frame_size, _cb_extra_index);
+					frame->pts = av_gettime_relative() -_start_time;
+					//frame->pts = av_rescale(frame->pts, 1, AV_TIME_BASE);
+					frame->pkt_dts = frame->pts;
+					frame->pkt_pts = frame->pts;
+					frame->data[0] = data;
+					frame->linesize[0] = frame_num*frame_size / _channel_num;
+					frame->nb_samples = frame_num;
+					frame->format = _fmt;
+					frame->sample_rate = _sample_rate;
+					frame->channels = _channel_num;
+					frame->pkt_size = frame_num*frame_size;
+
+					al_debug("%d %lld", _cb_extra_index, frame->pkt_pts);
+					_on_data(frame, _cb_extra_index);
 				}
 
-				if(data)
+				if (data)
 					hr = _capture->ReleaseBuffer(frame_num);
 				hr = _capture->GetNextPacketSize(&packet_num);
 			}
 
 		}//while(_running)
+
+		av_frame_free(&frame);
 	}
 
 	bool record_audio_wasapi::adjust_format_2_16bits(WAVEFORMATEX *pwfx)

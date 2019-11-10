@@ -542,7 +542,7 @@ namespace am {
 			},
 			{
 				NULL,NULL,
-				{ 1,1000000 },
+				{ 1,AV_TIME_BASE },
 				setting.a_sample_rate,
 				setting.a_sample_fmt,
 				setting.a_nb_channel,
