@@ -138,26 +138,35 @@ namespace am {
 		if (_running == false)
 			return AE_NO;
 
+		al_debug("try to stop muxer....");
+
+		al_debug("write mp4 trailer...");
 		if(_running == true && _fmt_ctx)
 			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mp4 can not play
 
 		_running = false;
 
+		al_debug("stop audio recorder...");
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 				_a_stream->a_src[i]->stop();
 			}
 		}
 
+		al_debug("stop video recorder...");
 		if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
+		al_debug("stop audio filter...");
 		if (_a_stream && _a_stream->a_filter)
 			_a_stream->a_filter->stop();
 
+
+		al_debug("stop video encoder...");
 		if (_v_stream && _v_stream->v_enc)
 			_v_stream->v_enc->stop();
 
+		al_debug("stop audio encoder...");
 		if (_a_stream) {
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();

@@ -119,6 +119,7 @@ void test_recorder()
 
 	getchar();
 
+	//stop have bug that sometime will stuck
 	stop_muxer();
 
 	al_info("record stoped...");
