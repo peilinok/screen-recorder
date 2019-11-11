@@ -11,6 +11,8 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 2.最长53分钟450MB，且声音画面完全同步支持各中播放器
 
+3.nodejs addon封装，可直接用于electron项目
+
 Features:
 
 1.重构整体组织，抽取mp4 muxer,对各个模块进行解耦
