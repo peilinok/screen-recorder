@@ -54,6 +54,9 @@ int start_muxer() {
 
 	//first audio resrouce must be speaker,otherwise the audio pts may be not correct,may need to change the filter amix descriptions with duration & sync option
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
+	
+	//to use wasapi ,need to modify the record loop,for silent will not have data
+	//record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
 	_recorder_speaker->init("audio=virtual-audio-capturer");
 	//_recorder_speaker->init("audio=" + out_name);
 
