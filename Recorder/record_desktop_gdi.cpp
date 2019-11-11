@@ -52,6 +52,7 @@ namespace am {
 			_fmt_ctx = avformat_alloc_context();
 			_input_fmt = av_find_input_format("gdigrab");
 
+			//the framerate must be same like encoder & muxer 's framerate,otherwise the video can not sync with audio
 			ret = avformat_open_input(&_fmt_ctx, "desktop", _input_fmt, &options);
 			if (ret != 0) {
 				error = AE_FFMPEG_OPEN_INPUT_FAILED;

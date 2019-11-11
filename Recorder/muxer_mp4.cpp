@@ -172,6 +172,8 @@ namespace am {
 				_a_stream->a_enc->stop();
 		}
 
+		al_debug("muxer stopped...");
+
 		return AE_NO;
 	}
 
@@ -395,7 +397,7 @@ namespace am {
 
 		do {
 			_v_stream->v_enc = new encoder_264();
-			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, NULL);
+			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, setting.v_qb);
 			if (error != AE_NO)
 				break;
 
@@ -470,7 +472,7 @@ namespace am {
 		_a_stream->a_rs = new resample_pcm*[_a_stream->a_nb];
 		_a_stream->a_resamples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_samples = new AUDIO_SAMPLE*[_a_stream->a_nb];
-		_a_stream->a_src = source_audios;
+		_a_stream->a_src = new record_audio*[_a_stream->a_nb];
 		_a_stream->pre_pts = -1;
 
 
@@ -491,6 +493,8 @@ namespace am {
 			);
 
 			for (int i = 0; i < _a_stream->a_nb; i++) {
+
+				_a_stream->a_src[i] = source_audios[i];
 				_a_stream->a_src[i]->registe_cb(
 					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
 					std::bind(&muxer_mp4::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),

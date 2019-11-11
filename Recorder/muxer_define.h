@@ -21,6 +21,7 @@ namespace am {
 		int v_bit_rate;
 		int v_width;
 		int v_height;
+		int v_qb;
 
 		int a_nb_channel;
 		int a_sample_rate;

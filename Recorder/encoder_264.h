@@ -20,7 +20,7 @@ namespace am {
 		encoder_264();
 		~encoder_264();
 
-		int init(int pic_width, int pic_height, int frame_rate, int bit_rate, int *buff_size, int gop_size = 35);
+		int init(int pic_width, int pic_height, int frame_rate, int bit_rate, int qb, int gop_size = 40);
 
 		int get_extradata_size();
 		const uint8_t* get_extradata();

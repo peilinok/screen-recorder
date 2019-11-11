@@ -35,7 +35,7 @@ namespace am {
 		delete _ring_buffer;
 	}
 
-	int encoder_264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int *buff_size, int gop_size)
+	int encoder_264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int qb, int gop_size)
 	{
 		if (_inited == true)
 			return AE_NO;
@@ -71,8 +71,12 @@ namespace am {
 			_encoder_ctx->framerate = { frame_rate,1 };
 			_encoder_ctx->bit_rate = bit_rate;
 			_encoder_ctx->gop_size = gop_size;
-			_encoder_ctx->qmin = 30;
-			_encoder_ctx->qmax = 35;
+			
+			_encoder_ctx->qmin = 20;
+			_encoder_ctx->qmax = 40;
+			int qb_float = (_encoder_ctx->qmax - _encoder_ctx->qmin) * (100 - qb) / 100;
+			_encoder_ctx->qmin = _encoder_ctx->qmin + qb_float;
+			_encoder_ctx->qmax = _encoder_ctx->qmax - qb_float;
 			_encoder_ctx->max_b_frames = 0;//NO B Frame
 			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -99,9 +103,7 @@ namespace am {
 			_frame->height = _encoder_ctx->height;
 
 			_y_size = _encoder_ctx->width * _encoder_ctx->height;
-			if(buff_size)
-				*buff_size = _buff_size;
-
+			
 			_inited = true;
 		} while (0);
 

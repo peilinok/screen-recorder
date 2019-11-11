@@ -100,4 +100,6 @@ static const char *ERRORS_STR[] = {
 
 #define err2str(e) ERRORS_STR[e]
 
+#define AMERROR_CHECK(err) if(err != AE_NO) return err
+
 #endif // !ERROR_DEFINE
