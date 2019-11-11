@@ -82,6 +82,7 @@ namespace am {
 	private:
 		std::atomic_bool _inited;
 		std::atomic_bool _running;
+		std::atomic_bool _paused;
 
 		bool _have_v, _have_a;
 

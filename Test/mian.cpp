@@ -42,6 +42,20 @@ int main()
 	err = recorder_start();
 
 
+
+	//CAN NOT PAUSE FOR NOW
+	/*getchar();
+
+	recorder_pause();
+
+	printf("recorder paused\r\n");
+
+	getchar();
+
+	recorder_resume();
+
+	printf("recorder resumed\r\n");*/
+
 	getchar();
 
 

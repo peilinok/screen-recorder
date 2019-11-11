@@ -35,6 +35,7 @@ namespace am {
 
 		_inited = false;
 		_running = false;
+		_paused = false;
 
 		_base_time = -1;
 	}
@@ -179,11 +180,14 @@ namespace am {
 
 	int muxer_mp4::pause()
 	{
+		_paused = true;
+
 		return 0;
 	}
 
 	int muxer_mp4::resume()
 	{
+		_paused = false;
 		return 0;
 	}
 
@@ -719,6 +723,8 @@ namespace am {
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
+		if (_paused) return AE_NO;
+
 		//if (_a_stream->pre_pts == (uint64_t)-1)
 		//	return 0;
 
@@ -744,6 +750,7 @@ namespace am {
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
+		if (_paused) return AE_NO;
 		
 		packet->stream_index = _a_stream->st->index;
 
