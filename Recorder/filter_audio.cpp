@@ -1,5 +1,7 @@
 #include "filter_audio.h"
 
+#include <chrono>
+
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -245,8 +247,8 @@ namespace am {
 		int ret = 0;
 		while (_running) {
 			std::unique_lock<std::mutex> lock(_mutex);
-			while (!_cond_notify)
-				_cond_var.wait(lock);
+			while (!_cond_notify && _running)
+				_cond_var.wait_for(lock,std::chrono::milliseconds(300));
 
 			while (_running && _cond_notify) {
 				ret = av_buffersink_get_frame(_ctx_out.ctx, frame);

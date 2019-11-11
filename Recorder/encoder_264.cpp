@@ -235,8 +235,8 @@ namespace am {
 		while (_running)
 		{
 			std::unique_lock<std::mutex> lock(_mutex);
-			while (!_cond_notify)
-				_cond_var.wait(lock);
+			while (!_cond_notify && _running)
+				_cond_var.wait_for(lock, std::chrono::milliseconds(300));
 
 			while (_ring_buffer->get(_buff, _buff_size, yuv_frame)) {
 				_frame->pkt_dts = yuv_frame.pkt_dts;
