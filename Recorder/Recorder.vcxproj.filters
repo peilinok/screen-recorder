@@ -102,6 +102,9 @@
     <ClInclude Include="device_videos.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -162,6 +165,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="device_videos.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="export.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
