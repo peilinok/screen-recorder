@@ -32,7 +32,16 @@ typedef struct {
 	AMRECORDER_DEVICE a_speaker;
 }AMRECORDER_SETTING;
 
+typedef void(*AMRECORDER_FUNC_DURATION)(uint64_t duration);
+
+typedef void(*AMRECORDER_FUNC_ERROR)(int error);
+
+typedef void(*AMRECORDER_FUNC_DEVICE_CHANGE)(int type);//0 video 1 speaker 2 mic
+
 typedef struct {
+	AMRECORDER_FUNC_DURATION func_duration;
+	AMRECORDER_FUNC_ERROR func_error;
+	AMRECORDER_FUNC_DEVICE_CHANGE func_device_change;
 }AMRECORDER_CALLBACK;
 
 
