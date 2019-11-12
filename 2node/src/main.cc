@@ -236,39 +236,6 @@ private:
     uv_async_send(&s_async);
   }
 
-  void OnRecorderDuration(uint64_t duration){
-    uvCallBackDataDruation *data = new uvCallBackDataDruation;
-    data->duration = duration;
-
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_duration;
-    uv_cb_chunk.data = (int*)data;
-
-    PushUvChunk(uv_cb_chunk);
-  }
-
-  void OnRecorderError(int error){
-    uvCallBackDataError *data = new uvCallBackDataError;
-    data->error = error;
-
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_error;
-    uv_cb_chunk.data = (int*)data;
-
-    PushUvChunk(uv_cb_chunk);
-  }
-
-  void OnRecorderDeviceChange(int type){
-    uvCallBackDataDeviceChange *data = new uvCallBackDataDeviceChange;
-    data->type = type;
-
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_device_change;
-    uv_cb_chunk.data = (int*)data;
-
-    PushUvChunk(uv_cb_chunk);
-  }
-
   void DispatchUvRecorderDuration(Isolate* isolate, uvCallBackDataDruation *data){
     if(!cb_uv_duration) return;
 
@@ -298,6 +265,55 @@ private:
 		};
 		Local<Function>::New(isolate, *cb_uv_device_change)->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
+
+  void OnRecorderDuration(uint64_t duration){
+    uvCallBackDataDruation *data = new uvCallBackDataDruation;
+    data->duration = duration;
+
+    DispatchUvRecorderDuration(Isolate::GetCurrent(),data);
+    delete data;
+
+    return;
+
+    uvCallBackChunk uv_cb_chunk;
+    uv_cb_chunk.type = uvcb_type_duration;
+    uv_cb_chunk.data = (int*)data;
+
+    PushUvChunk(uv_cb_chunk);
+  }
+
+  void OnRecorderError(int error){
+    uvCallBackDataError *data = new uvCallBackDataError;
+    data->error = error;
+
+    DispatchUvRecorderError(Isolate::GetCurrent(),data);
+    delete data;
+
+    return;
+
+    uvCallBackChunk uv_cb_chunk;
+    uv_cb_chunk.type = uvcb_type_error;
+    uv_cb_chunk.data = (int*)data;
+
+    PushUvChunk(uv_cb_chunk);
+  }
+
+  void OnRecorderDeviceChange(int type){
+    uvCallBackDataDeviceChange *data = new uvCallBackDataDeviceChange;
+    data->type = type;
+
+    DispatchUvRecorderDeviceChange(Isolate::GetCurrent(),data);
+    delete data;
+
+    return;
+
+    uvCallBackChunk uv_cb_chunk;
+    uv_cb_chunk.type = uvcb_type_device_change;
+    uv_cb_chunk.data = (int*)data;
+
+    PushUvChunk(uv_cb_chunk);
+  }
+
 
   void OnUvCallback(uv_async_t *handle){
     locker.Lock();
@@ -472,8 +488,8 @@ private:
 
     error = recorder_init(settings,callbacks);
 
-    if(error = 0)//registe all call back to uv callback
-      uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
+    //if(error = 0)//registe all call back to uv callback,this wont be succed,don't know why
+    //  uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
 
     args.GetReturnValue().Set(Int32::New(isolate, error));
   }
@@ -483,8 +499,8 @@ private:
 
     recorder_release();
 
-    //close uv call back
-    uv_close((uv_handle_t*)&s_async, NULL);
+    //close uv call back,this will crahs ,don't know why
+    //uv_close((uv_handle_t*)&s_async, NULL);
 
     locker.Lock();
     cb_uv_duration = NULL;
