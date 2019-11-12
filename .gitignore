@@ -174,3 +174,6 @@
 /Test/Release_DLL/vc140.pdb
 /Test/Test.vcxproj.user
 /2node/build
+/2node/node_modules/.yarn-integrity
+/2node/yarn.lock
+/Recorder/Release_DLL/recorder.Build.CppClean.log

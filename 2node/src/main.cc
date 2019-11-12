@@ -498,9 +498,9 @@ private:
   void Start(const FunctionCallbackInfo<Value> &args){
     Isolate* isolate = args.GetIsolate();
 
-    recorder_start();
+    int error = recorder_start();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
+    args.GetReturnValue().Set(Int32::New(isolate, error));
   }
 
   void Stop(const FunctionCallbackInfo<Value> &args){
