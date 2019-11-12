@@ -27,3 +27,15 @@ Features:
 
 6.增加更多filter对视频、音频进行预处理
 
+
+How to use?
+
+use with dll,just compile with visual studio
+
+use in nodejs
+
+npm install ffmpeg-recorder
+
+or
+
+yarn add ffmpeg-recorder --save
