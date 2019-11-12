@@ -219,11 +219,9 @@ namespace am {
 		{
 			al_info("audio input name:%s id:%s", device.name.c_str(), device.id.c_str());
 
-			devices[index] = new AMRECORDER_DEVICE;
-
-			devices[index]->is_default = device.is_default;
-			sprintf_s(devices[index]->id, 260, "%s", device.id.c_str());
-			sprintf_s(devices[index]->name, 260, "%s", device.name.c_str());
+			(*devices)[index].is_default = device.is_default;
+			sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
+			sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
 
 			index++;
 		}
@@ -246,11 +244,10 @@ namespace am {
 		for each (auto device in device_list)
 		{
 			al_info("audio output name:%s id:%s", device.name.c_str(), device.id.c_str());
-			devices[index] = new AMRECORDER_DEVICE;
 			
-			devices[index]->is_default = device.is_default;
-			sprintf_s(devices[index]->id, 260, "%s", device.id.c_str());
-			sprintf_s(devices[index]->name, 260, "%s", device.name.c_str());
+			(*devices)[index].is_default = device.is_default;
+			sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
+			sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
 
 			index++;
 		}

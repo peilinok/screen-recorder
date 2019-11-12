@@ -258,7 +258,9 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
 xcopy /r /y $(SolutionDir)libmp4v2\bin\$(Configuration) $(TargetDir)
-xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
+xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)
+xcopy /r /y $(TargetDir)$(TargetName).dll $(SolutionDir)2node\platform\win32\$(TargetName).dll
+xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(TargetName).lib</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

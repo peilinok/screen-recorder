@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node-gyp rebuild"
+    "install": "node-gyp rebuild && xcopy /r /y \".\\build\\Release\\recorder.node\" \".\\platform\\win32\\recorder.node\"",
+    "copy":"xcopy /r /y \".\\build\\Release\\recorder.node\" \".\\platform\\win32\\recorder.node\""
   },
   "repository": {
     "type": "git",

@@ -334,9 +334,9 @@ private:
     if(ret > 0){
 
       Local<Array> array = Array::New(isolate,ret);
-      Local<Object> device = Object::New(isolate);
 
       for(int i=0;i<ret;i++){
+        Local<Object> device = Object::New(isolate);
         device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].id).c_str()));
         device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].name).c_str()));
         device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
@@ -360,9 +360,9 @@ private:
     if(ret > 0){
 
       Local<Array> array = Array::New(isolate,ret);
-      Local<Object> device = Object::New(isolate);
 
       for(int i=0;i<ret;i++){
+        Local<Object> device = Object::New(isolate);
         device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].id).c_str()));
         device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].name).c_str()));
         device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
