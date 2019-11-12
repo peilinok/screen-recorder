@@ -23,7 +23,7 @@ int main()
 	setting.v_height = 1080;
 	setting.v_qb = 60;
 	setting.v_bit_rate = 64000;
-	setting.v_frame_rate = 15;
+	setting.v_frame_rate = 20;
 
 	sprintf(setting.output, "save.mp4");
 

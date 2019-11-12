@@ -721,7 +721,8 @@ namespace am {
 
 	int muxer_mp4::write_video(AVPacket *packet)
 	{
-		std::lock_guard<std::mutex> lock(_mutex);
+		//can not and no need to add mutex here,audio data may block this to write video correctly
+		//std::lock_guard<std::mutex> lock(_mutex);
 
 		if (_paused) return AE_NO;
 
@@ -748,7 +749,7 @@ namespace am {
 
 	int muxer_mp4::write_audio(AVPacket *packet)
 	{
-		std::lock_guard<std::mutex> lock(_mutex);
+		//std::lock_guard<std::mutex> lock(_mutex);
 
 		if (_paused) return AE_NO;
 		

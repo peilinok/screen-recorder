@@ -214,6 +214,8 @@ namespace am {
 		}
 
 		while (ret >= 0) {
+			av_init_packet(packet);
+
 			ret = avcodec_receive_packet(_encoder_ctx, packet);
 			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
 				break;
