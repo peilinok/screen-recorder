@@ -1,31 +1,32 @@
 # screen-recorder
-this is a screen recorder by ffmpeg that include desktop、speaker、mircphone
+This is a screen recorder by ffmpeg that include desktop、speaker、mircphone
 
 首先感谢雷神的无私奉献，也是出于对其致敬，完全公开此录屏代码并持续更新.
+Here is Les's blog:
 
 https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
-版本功能:
+Support:
 
-1.录制桌面图像、系统声音以及指定麦克风声音
+1.Record desktop 、microphone、speaker at the same time
 
-2.最长53分钟450MB，且声音画面完全同步支持各中播放器
+2.Mux to mp4 for all players, video and audio is absolute sync
 
-3.nodejs addon封装，可直接用于electron项目
+3.Nodejs addon project
 
 Features:
 
-1.重构整体组织，抽取mp4 muxer,对各个模块进行解耦
+1.Review all codes,seperate encoder 、filter、muxer
 
-2.增加设备识别与枚举
+2.Add more devices enumer for different platforms
 
-3.增加硬件使用
+3.Add hardware use
 
-4.增加更多数据捕获方式DX、DSHOW、WSAPI等
+4.Add more capture with DX、DSHOW、WSAPI
 
-5.跨平台适配，增加对MAC、LINUX系统的支持
+5.Add cross-platform support
 
-6.增加更多filter对视频、音频进行预处理
+6.Add more filters for video and audio
 
 
 How to use?
