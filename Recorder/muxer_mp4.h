@@ -51,11 +51,11 @@ namespace am {
 
 
 
-		void on_enc_264_data(AVPacket *packet);
+		void on_enc_264_data(const AVPacket *packet);
 
 		void on_enc_264_error(int error);
 
-		void on_enc_aac_data(AVPacket *packet);
+		void on_enc_aac_data(const AVPacket *packet);
 
 		void on_enc_aac_error(int error);
 
@@ -75,9 +75,9 @@ namespace am {
 
 		uint64_t get_current_time();
 
-		int write_video(AVPacket *packet);
+		int write_video(const AVPacket *packet);
 
-		int write_audio(AVPacket *packet);
+		int write_audio(const AVPacket *packet);
 
 	private:
 		std::atomic_bool _inited;

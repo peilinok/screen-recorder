@@ -336,7 +336,7 @@ namespace am {
 		al_fatal("on filter audio error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_264_data(AVPacket *packet)
+	void muxer_mp4::on_enc_264_data(const AVPacket *packet)
 	{
 		if (_running && _v_stream) {
 			write_video(packet);
@@ -348,7 +348,7 @@ namespace am {
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(AVPacket *packet)
+	void muxer_mp4::on_enc_aac_data(const AVPacket *packet)
 	{
 		if (_running && _a_stream) {
 			write_audio(packet);
@@ -719,7 +719,7 @@ namespace am {
 		return av_gettime_relative();
 	}
 
-	int muxer_mp4::write_video(AVPacket *packet)
+	int muxer_mp4::write_video(const AVPacket *src_packet)
 	{
 		//can not and no need to add mutex here,audio data may block this to write video correctly
 		//std::lock_guard<std::mutex> lock(_mutex);
@@ -728,6 +728,10 @@ namespace am {
 
 		//if (_a_stream->pre_pts == (uint64_t)-1)
 		//	return 0;
+
+		AVPacket *packet = av_packet_alloc();
+
+		av_packet_ref(packet, src_packet);
 
 		packet->stream_index = _v_stream->st->index;
 
@@ -744,14 +748,18 @@ namespace am {
 
 		//al_debug("V:%lld %lld", packet->pts, packet->dts);
 
-		return av_interleaved_write_frame(_fmt_ctx, packet);
+		return av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 	}
 
-	int muxer_mp4::write_audio(AVPacket *packet)
+	int muxer_mp4::write_audio(const AVPacket *src_packet)
 	{
 		//std::lock_guard<std::mutex> lock(_mutex);
 
 		if (_paused) return AE_NO;
+
+		AVPacket *packet = av_packet_alloc();
+
+		av_packet_ref(packet, src_packet);
 		
 		packet->stream_index = _a_stream->st->index;
 
@@ -766,6 +774,6 @@ namespace am {
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
-		return av_interleaved_write_frame(_fmt_ctx, packet);
+		return av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 	}
 }

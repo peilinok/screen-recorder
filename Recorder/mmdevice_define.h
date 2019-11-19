@@ -12,7 +12,7 @@ public:
 		CoInitializeEx(NULL, COINIT_MULTITHREADED);
 	}
 	~com_initialize() {
-		CoInitializeEx(NULL, COINIT_MULTITHREADED);
+		CoUninitialize();
 	}
 };
 

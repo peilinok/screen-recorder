@@ -13,7 +13,7 @@
 //#define SAVE_AAC
 
 namespace am {
-	typedef std::function<void(AVPacket *packet)> cb_aac_data;
+	typedef std::function<void(const AVPacket *packet)> cb_aac_data;
 	typedef std::function<void(int)> cb_aac_error;
 
 
