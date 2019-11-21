@@ -729,26 +729,31 @@ namespace am {
 		//if (_a_stream->pre_pts == (uint64_t)-1)
 		//	return 0;
 
-		AVPacket *packet = av_packet_alloc();
+		AVPacket packet = {0};
+		av_init_packet(&packet);
 
-		av_packet_ref(packet, src_packet);
-
-		packet->stream_index = _v_stream->st->index;
-
-		if (_v_stream->pre_pts == (uint64_t)-1) {
-			_v_stream->pre_pts = packet->pts;
+		int ret = av_packet_ref(&packet, src_packet);
+		if (ret < 0) {
+			al_debug("av_packet_ref failed:%d", ret);
+			return ret;
 		}
 
-		packet->pts = packet->pts - _v_stream->pre_pts;
+		packet.stream_index = _v_stream->st->index;
+
+		if (_v_stream->pre_pts == (uint64_t)-1) {
+			_v_stream->pre_pts = packet.pts;
+		}
+
+		packet.pts = packet.pts - _v_stream->pre_pts;
 		//packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet.pts = av_rescale_q_rnd(packet.pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
-		packet->dts = packet->pts;//make sure that dts is equal to pts
+		packet.dts = packet.pts;//make sure that dts is equal to pts
 
 		//al_debug("V:%lld %lld", packet->pts, packet->dts);
 
-		return av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
+		return av_interleaved_write_frame(_fmt_ctx, &packet);//no need to unref packet,this will be auto unref
 	}
 
 	int muxer_mp4::write_audio(const AVPacket *src_packet)
@@ -757,23 +762,28 @@ namespace am {
 
 		if (_paused) return AE_NO;
 
-		AVPacket *packet = av_packet_alloc();
+		AVPacket packet = {0};
+		av_init_packet(&packet);
 
-		av_packet_ref(packet, src_packet);
+		int ret = av_packet_ref(&packet, src_packet);
+		if (ret < 0) {
+			al_debug("av_packet_ref failed:%d", ret);
+			return ret;
+		}
 		
-		packet->stream_index = _a_stream->st->index;
+		packet.stream_index = _a_stream->st->index;
 
 		if (_a_stream->pre_pts == (uint64_t)-1) {
-			_a_stream->pre_pts = packet->pts;
+			_a_stream->pre_pts = packet.pts;
 		}
 
-		packet->pts = packet->pts - _a_stream->pre_pts;
-		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
-		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet.pts = packet.pts - _a_stream->pre_pts;
+		packet.pts = av_rescale_q(packet.pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+		packet.pts = av_rescale_q_rnd(packet.pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		packet->dts = packet->pts;//make sure that dts is equal to pts
+		packet.dts = packet.pts;//make sure that dts is equal to pts
 		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
-		return av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
+		return av_interleaved_write_frame(_fmt_ctx, &packet);//no need to unref packet,this will be auto unref
 	}
 }
