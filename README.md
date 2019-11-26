@@ -7,7 +7,7 @@ Here is Les's blog:
 
 https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
-Support:
+## Support
 
 1.Record desktop 、microphone、speaker at the same time
 
@@ -15,7 +15,7 @@ Support:
 
 3.Nodejs addon project
 
-Features:
+## Features
 
 1.Review all codes,seperate encoder 、filter、muxer
 
@@ -30,14 +30,17 @@ Features:
 6.Add more filters for video and audio
 
 
-How to use?
+## How to use?
 
 use with dll,just compile with visual studio
 
 use in nodejs
+```sh
 
-npm install ffmpeg-recorder
+$ npm install ffmpeg-recorder
 
-or
+# or
 
-yarn add ffmpeg-recorder --save
+$ yarn add ffmpeg-recorder --save
+
+```
