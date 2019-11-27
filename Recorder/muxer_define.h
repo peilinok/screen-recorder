@@ -46,7 +46,7 @@ namespace am {
 		record_desktop *v_src;      // video source
 		sws_helper *v_sws;          // video sws
 
-									//audio
+		//audio
 		encoder_aac *a_enc;         // audio encoder
 		filter_audio *a_filter;      // audio mixer
 		int a_nb;                   // audio source num
