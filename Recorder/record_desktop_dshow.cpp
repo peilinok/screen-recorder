@@ -179,15 +179,47 @@ namespace am {
 		_inited = false;
 	}
 
+	int record_desktop_dshow::decode(AVFrame * frame, AVPacket * packet)
+	{
+		int ret = avcodec_send_packet(_codec_ctx, packet);
+		if (ret < 0) {
+			al_error("avcodec_send_packet failed:%d", ret);
+
+			return AE_FFMPEG_DECODE_FRAME_FAILED;
+		}
+
+		while (ret >=0)
+		{
+			ret = avcodec_receive_frame(_codec_ctx, frame);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+				break;
+			}
+
+			if (ret < 0) {
+				return AE_FFMPEG_READ_FRAME_FAILED;
+			}
+
+			if (ret == 0 && _on_data)
+				_on_data(frame);
+
+			av_frame_unref(frame);//need to do this? avcodec_receive_frame said will call unref before receive
+		}
+
+		return AE_NO;
+	}
+
 	void record_desktop_dshow::record_func()
 	{
-		AVPacket *packet = (AVPacket*)av_malloc(sizeof(AVPacket));
+		AVPacket *packet = av_packet_alloc();
 		AVFrame *frame = av_frame_alloc();
 
 		int ret = 0;
 
 		int got_pic = 0;
 		while (_running == true) {
+
+			av_init_packet(packet);
+
 			ret = av_read_frame(_fmt_ctx, packet);
 
 			if (ret < 0) {
@@ -198,23 +230,23 @@ namespace am {
 			}
 
 			if (packet->stream_index == _stream_index) {
-
-				ret = avcodec_decode_video2(_codec_ctx, frame, &got_pic, packet);
-				if (ret < 0) {
+				
+				ret = decode(frame, packet);
+				if (ret != AE_NO) {
 					if (_on_error) _on_error(AE_FFMPEG_DECODE_FRAME_FAILED);
 					al_fatal("decode desktop frame failed");
 					break;
 				}
-
-				if (got_pic) {
-					if (_on_data) _on_data(frame);
-				}
 			}
 
-			av_free_packet(packet);
+			av_packet_unref(packet);
 		}
 
-		av_free(frame);
+		//flush packet in decoder
+		decode(frame, NULL);
+
+		av_packet_free(&packet);
+		av_frame_free(&frame);
 	}
 
 }

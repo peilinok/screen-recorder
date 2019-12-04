@@ -158,19 +158,48 @@ namespace am {
 		return _fmt_ctx->streams[_stream_index]->start_time;
 	}
 
+	int record_audio_dshow::decode(AVFrame * frame, AVPacket * packet)
+	{
+		int ret = avcodec_send_packet(_codec_ctx, packet);
+		if (ret < 0) {
+			al_error("avcodec_send_packet failed:%d", ret);
+
+			return AE_FFMPEG_DECODE_FRAME_FAILED;
+		}
+
+		while (ret >= 0)
+		{
+			ret = avcodec_receive_frame(_codec_ctx, frame);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+				break;
+			}
+
+			if (ret < 0) {
+				return AE_FFMPEG_READ_FRAME_FAILED;
+			}
+
+			if (ret == 0 && _on_data)
+				_on_data(frame, _cb_extra_index);
+
+			av_frame_unref(frame);//need to do this? avcodec_receive_frame said will call unref before receive
+		}
+
+		return AE_NO;
+	}
+
 	void record_audio_dshow::record_loop()
 	{
 		int ret = 0;
 
 		AVPacket *packet = av_packet_alloc();
-		
-		av_init_packet(packet);
 
 		AVFrame *frame = av_frame_alloc();
 
 		int sample_len = 0;
 
 		while (_running == true) {
+			av_init_packet(packet);
+
 			ret = av_read_frame(_fmt_ctx, packet);
 
 			if (ret < 0) {
@@ -181,28 +210,23 @@ namespace am {
 			}
 
 			if (packet->stream_index == _stream_index) {
-				ret = avcodec_send_packet(_codec_ctx, packet);
-				while (ret >= 0) {
-					ret = avcodec_receive_frame(_codec_ctx, frame);
-					if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-						break;
-					}
+				ret = decode(frame, packet);
+				if (ret != AE_NO) {
+					if (_on_error) _on_error(AE_FFMPEG_DECODE_FRAME_FAILED, _cb_extra_index);
 
-					if (ret < 0) {
-						if (_on_error) _on_error(AE_FFMPEG_READ_PACKET_FAILED, _cb_extra_index);
-
-						al_fatal("read pcm frame failed:%d", ret);
-						break;
-					}
-
-					if (_on_data) {
-						_on_data(frame, _cb_extra_index);
-					}
+					al_fatal("decode pcm packet failed:%d", ret);
+					break;
 				}
 			}
 
-			av_free_packet(packet);
+			av_packet_unref(packet);
 		}
+
+		//flush packet left in decoder
+		decode(frame, NULL);
+
+		av_packet_free(&packet);
+		av_frame_free(&frame);
 	}
 
 	void record_audio_dshow::cleanup()

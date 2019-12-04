@@ -219,7 +219,7 @@ namespace am {
 				return AE_FFMPEG_READ_PACKET_FAILED;
 			}
 
-			if (_on_data)
+			if (ret == 0 && _on_data)
 				_on_data(packet);
 
 			av_packet_unref(packet);

@@ -26,6 +26,8 @@ namespace am {
 		virtual void clean_up();
 
 	private:
+		int decode(AVFrame *frame, AVPacket *packet);
+
 		void record_func();
 
 		int _stream_index;

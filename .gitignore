@@ -177,3 +177,17 @@
 /2node/node_modules/.yarn-integrity
 /2node/yarn.lock
 /Recorder/Release_DLL/recorder.Build.CppClean.log
+/Recorder/Release/Recorder.tlog/Recorder.write.1u.tlog
+/Recorder/Release/device_audios.obj
+/Recorder/Release/device_videos.obj
+/Recorder/Release/encoder_264.obj
+/Recorder/Release/encoder_aac.obj
+/Recorder/Release/export.obj
+/Recorder/Release/filter_audio.obj
+/Recorder/Release/muxer_libmp4v2.obj
+/Recorder/Release/muxer_mp4.obj
+/Recorder/Release/record_audio_dshow.obj
+/Recorder/Release/record_desktop_dshow.obj
+/Recorder/Release/resample_pcm.obj
+/Recorder/Release/sws_helper.obj
+/Recorder/Release/utils_string.obj

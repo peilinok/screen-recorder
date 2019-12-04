@@ -24,6 +24,7 @@ namespace am {
 		virtual int64_t get_start_time();
 
 	private:
+		int decode(AVFrame *frame, AVPacket *packet);
 		void record_loop();
 		void cleanup();
 	private:
