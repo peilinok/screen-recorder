@@ -118,6 +118,8 @@ EXPORTS
     av_div_i
     av_div_q
     av_downmix_info_update_side_data
+    av_dynamic_hdr_plus_alloc
+    av_dynamic_hdr_plus_create_side_data
     av_dynarray2_add
     av_dynarray_add
     av_dynarray_add_nofree
@@ -131,6 +133,7 @@ EXPORTS
     av_encryption_init_info_free
     av_encryption_init_info_get_side_data
     av_escape
+    av_expr_count_vars
     av_expr_eval
     av_expr_free
     av_expr_parse
@@ -399,6 +402,7 @@ EXPORTS
     av_rc4_crypt
     av_rc4_init
     av_read_image_line
+    av_read_image_line2
     av_realloc
     av_realloc_array
     av_realloc_f
@@ -440,6 +444,7 @@ EXPORTS
     av_spherical_from_name
     av_spherical_projection_name
     av_spherical_tile_bounds
+    av_sscanf
     av_stereo3d_alloc
     av_stereo3d_create_side_data
     av_stereo3d_from_name
@@ -494,6 +499,8 @@ EXPORTS
     av_twofish_crypt
     av_twofish_init
     av_twofish_size
+    av_tx_init
+    av_tx_uninit
     av_usleep
     av_utf8_decode
     av_util_ffversion
@@ -501,6 +508,7 @@ EXPORTS
     av_version_info
     av_vlog
     av_write_image_line
+    av_write_image_line2
     av_xtea_alloc
     av_xtea_crypt
     av_xtea_init

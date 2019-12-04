@@ -766,6 +766,8 @@ namespace am {
 		_v_stream->pkt->dts = _v_stream->pkt->pts;//make sure that dts is equal to pts
 
 		//al_debug("V:%lld %lld", packet->pts, packet->dts);
+		
+		av_assert0(_v_stream->pkt->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, _v_stream->pkt);//no need to unref packet,this will be auto unref
 
@@ -802,6 +804,8 @@ namespace am {
 
 		_a_stream->pkt->dts = _a_stream->pkt->pts;//make sure that dts is equal to pts
 		//al_debug("A:%lld %lld", packet->pts, packet->dts);
+
+		av_assert0(_a_stream->pkt->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, _a_stream->pkt);//no need to unref packet,this will be auto unref
 
