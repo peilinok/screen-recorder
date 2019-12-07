@@ -38,6 +38,8 @@ namespace am {
 		AVFrame *tmp_frame;         // tmp av frame 
 
 		AVPacket *pkt;              // current packet to write
+		uint8_t *data;              // current packet data buffer
+		uint32_t data_size;         // current packet data size
 
 		uint64_t pre_pts;
 

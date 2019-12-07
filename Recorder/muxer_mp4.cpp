@@ -459,6 +459,8 @@ namespace am {
 			_v_stream->st = st;
 
 			_v_stream->pkt = av_packet_alloc();
+			_v_stream->data_size = av_image_get_buffer_size(st->codec->pix_fmt, st->codec->width, st->codec->height, 1);
+			_v_stream->data = (uint8_t*)av_malloc(_v_stream->data_size);
 
 			_v_stream->setting = setting;
 			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
@@ -601,6 +603,10 @@ namespace am {
 			_a_stream->st = st;
 
 			_a_stream->pkt = av_packet_alloc();
+			_a_stream->data_size = av_samples_get_buffer_size(NULL, st->codec->channels, _a_stream->a_enc->get_nb_samples(), st->codec->sample_fmt, 1);
+			_a_stream->data = (uint8_t*)av_malloc(_a_stream->data_size);
+
+			
 
 			_a_stream->setting = setting;
 			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
@@ -647,6 +653,9 @@ namespace am {
 
 		if (_v_stream->pkt)
 			av_packet_free(&_v_stream->pkt);
+
+		if (_v_stream->data)
+			av_free(_v_stream->data);
 
 		delete _v_stream;
 
@@ -699,6 +708,9 @@ namespace am {
 		if (_a_stream->pkt)
 			av_packet_free(&_a_stream->pkt);
 
+		if (_a_stream->data)
+			av_free(_a_stream->data);
+
 		delete _a_stream;
 
 		_a_stream = nullptr;
@@ -735,6 +747,7 @@ namespace am {
 
 	int muxer_mp4::write_video(const AVPacket *src_packet)
 	{
+
 		//can not and no need to add mutex here,audio data may block this to write video correctly
 		//std::lock_guard<std::mutex> lock(_mutex);
 
@@ -748,7 +761,10 @@ namespace am {
 #if USE_REF
 		av_packet_ref(_v_stream->pkt, src_packet);
 #else
-		_v_stream->pkt->data = src_packet->data;
+		memcpy(_v_stream->data, src_packet->data, src_packet->size);
+
+		_v_stream->pkt->data = _v_stream->data;
+		//_v_stream->pkt->data = src_packet->data;
 		_v_stream->pkt->size = src_packet->size;
 #endif
 
@@ -787,7 +803,10 @@ namespace am {
 #if USE_REF
 		av_packet_ref(_a_stream->pkt, src_packet);
 #else
-		_a_stream->pkt->data = src_packet->data;
+		memcpy(_a_stream->data, src_packet->data, src_packet->size);
+
+		_a_stream->pkt->data = _a_stream->data;
+		//_a_stream->pkt->data = src_packet->data;
 		_a_stream->pkt->size = src_packet->size;
 #endif
 
