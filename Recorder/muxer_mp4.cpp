@@ -139,13 +139,9 @@ namespace am {
 		if (_running == false)
 			return AE_NO;
 
-		al_debug("try to stop muxer....");
-
-		al_debug("write mp4 trailer...");
-		if(_running == true && _fmt_ctx)
-			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mp4 can not play
-
 		_running = false;
+
+		al_debug("try to stop muxer....");
 
 		al_debug("stop audio recorder...");
 		if (_a_stream && _a_stream->a_src) {
@@ -172,6 +168,10 @@ namespace am {
 			if (_a_stream->a_enc)
 				_a_stream->a_enc->stop();
 		}
+
+		al_debug("write mp4 trailer...");
+		if (_fmt_ctx)
+			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mp4 can not play
 
 		al_debug("muxer stopped...");
 

@@ -195,8 +195,6 @@ namespace am {
 
 		AVFrame *frame = av_frame_alloc();
 
-		int sample_len = 0;
-
 		while (_running == true) {
 			av_init_packet(packet);
 
