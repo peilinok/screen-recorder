@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "desktop recorder",
   "main": "index.js",
   "scripts": {
