@@ -336,7 +336,7 @@ namespace am {
 		al_fatal("on filter audio error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_264_data(const AVPacket *packet)
+	void muxer_mp4::on_enc_264_data(AVPacket *packet)
 	{
 		if (_running && _v_stream) {
 			write_video(packet);
@@ -348,7 +348,7 @@ namespace am {
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(const AVPacket *packet)
+	void muxer_mp4::on_enc_aac_data(AVPacket *packet)
 	{
 		if (_running && _a_stream) {
 			write_audio(packet);
@@ -457,10 +457,6 @@ namespace am {
 			}
 
 			_v_stream->st = st;
-
-			_v_stream->pkt = av_packet_alloc();
-			_v_stream->data_size = av_image_get_buffer_size(st->codec->pix_fmt, st->codec->width, st->codec->height, 1);
-			_v_stream->data = (uint8_t*)av_malloc(_v_stream->data_size);
 
 			_v_stream->setting = setting;
 			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
@@ -600,13 +596,7 @@ namespace am {
 				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
 			}
 
-			_a_stream->st = st;
-
-			_a_stream->pkt = av_packet_alloc();
-			_a_stream->data_size = av_samples_get_buffer_size(NULL, st->codec->channels, _a_stream->a_enc->get_nb_samples(), st->codec->sample_fmt, 1);
-			_a_stream->data = (uint8_t*)av_malloc(_a_stream->data_size);
-
-			
+			_a_stream->st = st;		
 
 			_a_stream->setting = setting;
 			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
@@ -650,12 +640,6 @@ namespace am {
 
 		if (_v_stream->v_sws)
 			delete _v_stream->v_sws;
-
-		if (_v_stream->pkt)
-			av_packet_free(&_v_stream->pkt);
-
-		if (_v_stream->data)
-			av_free(_v_stream->data);
 
 		delete _v_stream;
 
@@ -705,12 +689,6 @@ namespace am {
 				delete[] _a_stream->a_resamples;
 		}
 
-		if (_a_stream->pkt)
-			av_packet_free(&_a_stream->pkt);
-
-		if (_a_stream->data)
-			av_free(_a_stream->data);
-
 		delete _a_stream;
 
 		_a_stream = nullptr;
@@ -743,94 +721,59 @@ namespace am {
 		return av_gettime_relative();
 	}
 
-#define USE_REF 0
-
-	int muxer_mp4::write_video(const AVPacket *src_packet)
+	int muxer_mp4::write_video(AVPacket *packet)
 	{
-
-		//can not and no need to add mutex here,audio data may block this to write video correctly
-		//std::lock_guard<std::mutex> lock(_mutex);
+		//must lock here,coz av_interleaved_write_frame will push packet into a queue,and is not thread safe
+		std::lock_guard<std::mutex> lock(_mutex);
 
 		if (_paused) return AE_NO;
 
 		//if (_a_stream->pre_pts == (uint64_t)-1)
 		//	return 0;
 
-		av_init_packet(_v_stream->pkt);
-		av_packet_copy_props(_v_stream->pkt, src_packet);
-#if USE_REF
-		av_packet_ref(_v_stream->pkt, src_packet);
-#else
-		memcpy(_v_stream->data, src_packet->data, src_packet->size);
-
-		_v_stream->pkt->data = _v_stream->data;
-		//_v_stream->pkt->data = src_packet->data;
-		_v_stream->pkt->size = src_packet->size;
-#endif
-
-		_v_stream->pkt->stream_index = _v_stream->st->index;
+		packet->stream_index = _v_stream->st->index;
 
 		if (_v_stream->pre_pts == (uint64_t)-1) {
-			_v_stream->pre_pts = _v_stream->pkt->pts;
+			_v_stream->pre_pts = packet->pts;
 		}
 
-		_v_stream->pkt->pts = _v_stream->pkt->pts - _v_stream->pre_pts;
+		packet->pts = packet->pts - _v_stream->pre_pts;
 		//packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-		_v_stream->pkt->pts = av_rescale_q_rnd(_v_stream->pkt->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
-		_v_stream->pkt->dts = _v_stream->pkt->pts;//make sure that dts is equal to pts
+		packet->dts = packet->pts;//make sure that dts is equal to pts
 
 		//al_debug("V:%lld %lld", packet->pts, packet->dts);
 		
-		av_assert0(_v_stream->pkt->data != NULL);
+		av_assert0(packet->data != NULL);
 
-		int ret = av_interleaved_write_frame(_fmt_ctx, _v_stream->pkt);//no need to unref packet,this will be auto unref
+		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 
-#if USE_REF
-		av_packet_unref(_v_stream->pkt);
-#endif
 	}
 
-	int muxer_mp4::write_audio(const AVPacket *src_packet)
+	int muxer_mp4::write_audio(AVPacket *packet)
 	{
-		//std::lock_guard<std::mutex> lock(_mutex);
-
+		std::lock_guard<std::mutex> lock(_mutex);
 		if (_paused) return AE_NO;
 
-		av_init_packet(_a_stream->pkt);
-		av_packet_copy_props(_a_stream->pkt, src_packet);
-#if USE_REF
-		av_packet_ref(_a_stream->pkt, src_packet);
-#else
-		memcpy(_a_stream->data, src_packet->data, src_packet->size);
-
-		_a_stream->pkt->data = _a_stream->data;
-		//_a_stream->pkt->data = src_packet->data;
-		_a_stream->pkt->size = src_packet->size;
-#endif
-
 		
-		_a_stream->pkt->stream_index = _a_stream->st->index;
+		packet->stream_index = _a_stream->st->index;
 
 		if (_a_stream->pre_pts == (uint64_t)-1) {
-			_a_stream->pre_pts = _a_stream->pkt->pts;
+			_a_stream->pre_pts = packet->pts;
 		}
 
-		_a_stream->pkt->pts = _a_stream->pkt->pts - _a_stream->pre_pts;
-		_a_stream->pkt->pts = av_rescale_q(_a_stream->pkt->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
-		_a_stream->pkt->pts = av_rescale_q_rnd(_a_stream->pkt->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		packet->pts = packet->pts - _a_stream->pre_pts;
+		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-		_a_stream->pkt->dts = _a_stream->pkt->pts;//make sure that dts is equal to pts
+		packet->dts = packet->pts;//make sure that dts is equal to pts
 		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
-		av_assert0(_a_stream->pkt->data != NULL);
+		av_assert0(packet->data != NULL);
 
-		int ret = av_interleaved_write_frame(_fmt_ctx, _a_stream->pkt);//no need to unref packet,this will be auto unref
-
-#if USE_REF
-		av_packet_unref(_a_stream->pkt);
-#endif
+		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 
 		return ret;
 	}

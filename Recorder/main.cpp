@@ -110,6 +110,8 @@ void stop_muxer()
 
 void test_recorder()
 {
+	//av_log_set_level(AV_LOG_DEBUG);
+
 	start_muxer();
 
 	getchar();

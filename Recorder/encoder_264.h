@@ -11,7 +11,7 @@
 #include "ring_buffer.h"
 
 namespace am {
-	typedef std::function<void(const AVPacket *packet)> cb_264_data;
+	typedef std::function<void(AVPacket *packet)> cb_264_data;
 	typedef std::function<void(int)> cb_264_error;
 
 	class encoder_264 

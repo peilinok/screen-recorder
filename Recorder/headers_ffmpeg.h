@@ -18,4 +18,5 @@ extern "C" {
 #include <libavfilter\buffersrc.h>
 #include <libavutil\imgutils.h>
 #include <libavutil\samplefmt.h>
+#include <libavutil\log.h>
 }
