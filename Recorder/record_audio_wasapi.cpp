@@ -46,7 +46,7 @@ namespace am {
 			CoUninitialize();
 	}
 
-	int record_audio_wasapi::init(const std::string & device_name)
+	int record_audio_wasapi::init(const std::string & device_name, bool is_input)
 	{
 		int error = AE_NO;
 
@@ -57,6 +57,9 @@ namespace am {
 		if (_inited == true) {
 			return AE_NO;
 		}
+
+		_device_name = device_name;
+		is_input = is_input;
 
 		do {
 			HRESULT hr = CoCreateInstance(
@@ -108,7 +111,7 @@ namespace am {
 				break;
 			}
 
-			_ready_event = CreateEvent(NULL,FALSE,FALSE,NULL);
+			_ready_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 			if (!_ready_event) {
 				error = AE_CO_CREATE_EVENT_FAILED;
 				break;

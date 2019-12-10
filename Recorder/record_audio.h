@@ -19,7 +19,7 @@ namespace am {
 		record_audio();
 		virtual ~record_audio();
 
-		virtual int init(const std::string &device_name) = 0;
+		virtual int init(const std::string &device_name,bool is_input) = 0;
 
 		virtual int start() = 0;
 		
@@ -74,6 +74,8 @@ namespace am {
 		AVSampleFormat _fmt;
 		
 		std::string _device_name;
+
+		bool _is_input;
 
 		cb_audio_error _on_error;
 		

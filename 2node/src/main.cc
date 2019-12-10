@@ -353,8 +353,8 @@ private:
 
       for(int i=0;i<ret;i++){
         Local<Object> device = Object::New(isolate);
-        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].id).c_str()));
-        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].name).c_str()));
+        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,devices[i].id));
+        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,devices[i].name));
         device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
         array->Set(i,device);
       }
@@ -379,8 +379,8 @@ private:
 
       for(int i=0;i<ret;i++){
         Local<Object> device = Object::New(isolate);
-        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].id).c_str()));
-        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,ascii_utf8(devices[i].name).c_str()));
+        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,devices[i].id));
+        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,devices[i].name));
         device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
         array->Set(i,device);
       }
@@ -474,17 +474,17 @@ private:
     String::Utf8Value utf8Output(Local<String>::Cast(args[2]));
     std::string strOutput = utf8_ascii(*utf8Output);
     printf("%s\r\n",strOutput.c_str());
-    sprintf_s(settings.output,260,"%s",strOutput.c_str());
+    sprintf_s(settings.output,260,"%s",*utf8Output);
 
     String::Utf8Value utf8Speaker(Local<String>::Cast(args[3]));
     std::string strSpeaker = utf8_ascii(*utf8Speaker);
     printf("%s\r\n",strSpeaker.c_str());
-    sprintf_s(settings.a_speaker.name,260,"%s",strSpeaker.c_str());
+    sprintf_s(settings.a_speaker.name,260,"%s",*utf8Speaker);
 
     String::Utf8Value utf8Mic(Local<String>::Cast(args[4]));
     std::string strMic = utf8_ascii(*utf8Mic);
     printf("%s\r\n",strMic.c_str());
-    sprintf_s(settings.a_mic.name,260,"%s",strMic.c_str());
+    sprintf_s(settings.a_mic.name,260,"%s",*utf8Mic);
 
     error = recorder_init(settings,callbacks);
 

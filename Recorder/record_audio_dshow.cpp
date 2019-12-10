@@ -4,8 +4,6 @@
 #include "log_helper.h"
 #include "error_define.h"
 
-#include "utils_string.h"
-
 namespace am {
 
 	record_audio_dshow::record_audio_dshow()
@@ -28,7 +26,7 @@ namespace am {
 		cleanup();
 	}
 
-	int record_audio_dshow::init(const std::string & device_name)
+	int record_audio_dshow::init(const std::string & device_name,bool is_input)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -38,7 +36,8 @@ namespace am {
 
 		do {
 
-			_device_name = utils_string::ascii_utf8(device_name);
+			_device_name = device_name;
+			_is_input = is_input;
 
 			_input_fmt = av_find_input_format("dshow");
 			if (!_input_fmt) {

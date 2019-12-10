@@ -15,6 +15,7 @@ namespace am {
 		_on_error = nullptr;
 
 		_device_name = "";
+		_is_input = false;
 	}
 
 	record_audio::~record_audio()

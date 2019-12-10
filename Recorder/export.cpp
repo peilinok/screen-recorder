@@ -120,13 +120,13 @@ namespace am {
 		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
 		AMERROR_CHECK(error);
 
-		error = _recorder_speaker->init("audio=virtual-audio-capturer");
+		error = _recorder_speaker->init("audio=virtual-audio-capturer", false);
 		AMERROR_CHECK(error);
 
 		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_mic);
 		AMERROR_CHECK(error);
 
-		error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name));
+		error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name), true);
 		AMERROR_CHECK(error);
 
 		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);

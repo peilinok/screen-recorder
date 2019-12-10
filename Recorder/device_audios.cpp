@@ -90,7 +90,7 @@ namespace am {
 				break;
 			}
 
-			std::string default_id = utils_string::unicode_ascii(current_device_id);
+			std::string default_id = utils_string::unicode_utf8(current_device_id);
 
 			CoTaskMemFree(current_device_id);
 
@@ -117,12 +117,12 @@ namespace am {
 
 				hr = connector->GetConnectorIdConnectedTo(&device_name);
 
-				str_name = utils_string::unicode_ascii(device_name);*/
+				str_name = utils_string::unicode_utf8(device_name);*/
 
 				hr = pEndpointDevice->GetId(&device_id);
 				if (FAILED(hr)) continue;
 
-				str_id = utils_string::unicode_ascii(device_id);
+				str_id = utils_string::unicode_utf8(device_id);
 
 				hr = pEndpointDevice->OpenPropertyStore(STGM_READ, &pPropertyStore);
 				if (FAILED(hr)) continue;
@@ -134,10 +134,10 @@ namespace am {
 				}
 
 				if (pv.vt == VT_LPWSTR) {
-					str_friendly = utils_string::unicode_ascii(pv.pwszVal);
+					str_friendly = utils_string::unicode_utf8(pv.pwszVal);
 				}
 				else if (pv.vt == VT_LPSTR) {
-					str_friendly = pv.pszVal;
+					str_friendly = utils_string::ascii_utf8(pv.pszVal);
 				}
 
 				devices.push_back({
@@ -209,7 +209,7 @@ namespace am {
 				break;
 			}
 
-			id = utils_string::unicode_ascii(current_device_id);
+			id = utils_string::unicode_utf8(current_device_id);
 
 			CoTaskMemFree(current_device_id);
 
@@ -230,10 +230,10 @@ namespace am {
 			}
 
 			if (pv.vt == VT_LPWSTR) {
-				name = utils_string::unicode_ascii(pv.pwszVal);
+				name = utils_string::unicode_utf8(pv.pwszVal);
 			}
 			else if (pv.vt == VT_LPSTR) {
-				name = pv.pszVal;
+				name = utils_string::ascii_utf8(pv.pszVal);
 			}
 
 			PropVariantClear(&pv);

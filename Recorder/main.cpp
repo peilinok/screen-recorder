@@ -6,6 +6,7 @@
 #include "muxer_define.h"
 #include "muxer_mp4.h"
 
+#include "utils_string.h"
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -48,11 +49,11 @@ int start_muxer() {
 	
 	//to use wasapi ,need to modify the record loop,coz silent will not have data
 	//record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
-	_recorder_speaker->init("audio=virtual-audio-capturer");
+	_recorder_speaker->init(am::utils_string::ascii_utf8("audio=virtual-audio-capturer"), false);
 	//_recorder_speaker->init("audio=" + out_name);
 
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_microphone);
-	_recorder_microphone->init("audio=" + input_name);
+	_recorder_microphone->init(am::utils_string::ascii_utf8("audio=") + input_name, true);
 
 	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
@@ -83,7 +84,7 @@ int start_muxer() {
 	setting.a_sample_rate = A_SAMPLE_RATE;
 	setting.a_bit_rate = A_BIT_RATE;
 
-	int error = _muxer->init("save.mp4", _recorder_desktop, audios, 2, setting);
+	int error = _muxer->init(am::utils_string::ascii_utf8("save.mp4").c_str(), _recorder_desktop, audios, 2, setting);
 	if (error != AE_NO) {
 		return error;
 	}

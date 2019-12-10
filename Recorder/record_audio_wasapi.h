@@ -20,7 +20,7 @@ namespace am {
 		record_audio_wasapi();
 		~record_audio_wasapi();
 
-		virtual int init(const std::string &device_name);
+		virtual int init(const std::string &device_name,bool is_input);
 
 		virtual int start();
 

@@ -10,7 +10,7 @@ namespace am {
 		record_audio_dshow();
 		~record_audio_dshow();
 
-		virtual int init(const std::string &device_name);
+		virtual int init(const std::string &device_name,bool is_input);
 
 		virtual int start();
 
