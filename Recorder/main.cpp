@@ -120,8 +120,6 @@ void test_recorder()
 	stop_muxer();
 
 	al_info("record stoped...");
-	al_info("press any key to exit...");
-	system("pause");
 }
 
 void show_devices()
@@ -143,13 +141,23 @@ void show_devices()
 	}
 }
 
+void test_audio() 
+{
+
+}
+
 int main(int argc, char **argv)
 {
 	al_info("record start...");
 
 	show_devices();
 
-	test_recorder();
+	test_audio();
+
+	//test_recorder();
+
+	al_info("press any key to exit...");
+	system("pause");
 
 	return 0;
 }

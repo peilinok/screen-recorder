@@ -18,6 +18,11 @@ enum AM_ERROR{
 	AE_CO_CREATE_EVENT_FAILED,
 	AE_CO_SET_EVENT_FAILED,
 	AE_CO_START_FAILED,
+	AE_CO_ENUMENDPOINT_FAILED,
+	AE_CO_GET_ENDPOINT_COUNT_FAILED,
+	AE_CO_GET_ENDPOINT_ID_FAILED,
+	AE_CO_OPEN_PROPERTY_FAILED,
+	AE_CO_GET_VALUE_FAILED,
 
 	AE_FFMPEG_OPEN_INPUT_FAILED,
 	AE_FFMPEG_FIND_STREAM_FAILED,
@@ -65,6 +70,11 @@ static const char *ERRORS_STR[] = {
 	"com audio create event failed",    //AE_CO_CREATE_EVENT_FAILED
 	"com set ready event failed",       //AE_CO_SET_EVENT_FAILED
 	"com start to record failed",       //AE_CO_START_FAILED
+	"com enum audio endpoints failed",  //AE_CO_ENUMENDPOINT_FAILED
+	"com get endpoints count failed",   //AE_CO_GET_ENDPOINT_COUNT_FAILED
+	"com get endpoint id failed",       //AE_CO_GET_ENDPOINT_ID_FAILED
+	"com open endpoint property failed", //AE_CO_OPEN_PROPERTY_FAILED
+	"com get property value failed",    //AE_CO_GET_VALUE_FAILED
 
 	"ffmpeg open input failed",         //AE_FFMPEG_OPEN_INPUT_FAILED
 	"ffmpeg find stream info failed",   //AE_FFMPEG_FIND_STREAM_FAILED
