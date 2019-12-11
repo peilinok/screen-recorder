@@ -144,7 +144,20 @@ void show_devices()
 
 void test_audio() 
 {
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
+	_recorder_speaker->init(am::utils_string::ascii_utf8("Default"), true);
 
+	//record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_microphone);
+	//_recorder_microphone->init(am::utils_string::ascii_utf8("Default"), true);
+
+	_recorder_speaker->start();
+
+	//_recorder_microphone->start();
+
+	getchar();
+
+	_recorder_speaker->stop();
+	//_recorder_microphone->stop();
 }
 
 int main(int argc, char **argv)

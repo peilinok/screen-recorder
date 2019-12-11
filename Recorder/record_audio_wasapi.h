@@ -7,7 +7,8 @@
 
 #include "mmdevice_define.h"
 
-
+#include <windows.h>
+#include <propsys.h>
 #include <AudioClient.h>
 #include <AudioPolicy.h>
 
@@ -35,6 +36,10 @@ namespace am {
 		virtual int64_t get_start_time();
 
 	private:
+		void init_render();
+
+		bool do_record(AVFrame *frame);
+
 		void record_func();
 
 		bool adjust_format_2_16bits(WAVEFORMATEX *pwfx);
@@ -52,7 +57,10 @@ namespace am {
 
 		IAudioCaptureClient *_capture;
 
+		IAudioRenderClient *_render;
+
 		HANDLE _ready_event;
+		HANDLE _stop_event;
 
 		bool _co_inited;
 

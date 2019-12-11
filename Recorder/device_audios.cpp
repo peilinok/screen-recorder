@@ -7,12 +7,6 @@
 
 #include "mmdevice_define.h"
 
-#include <propkeydef.h>//must include before functiondiscoverykeys_devpkey
-#include <functiondiscoverykeys_devpkey.h>
-
-#include <wrl/client.h>
-#include <devicetopology.h>
-
 #include <memory>
 
 namespace am {
@@ -239,7 +233,6 @@ namespace am {
 			PropVariantClear(&pv);
 		} while (0);
 
-		CoTaskMemFree(current_device_id);
 
 		if (ret != AE_NO)
 			al_debug("get_devices failed(%ld): %s", GetLastError(), err2str(ret));

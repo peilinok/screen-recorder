@@ -2,9 +2,12 @@
 
 #ifdef _WIN32
 
+#include <mmdeviceapi.h>
+#include <propkeydef.h>//must include before functiondiscoverykeys_devpkey
+#include <functiondiscoverykeys_devpkey.h>
 
-#include <MMDeviceAPI.h>
-
+#include <wrl/client.h>
+#include <devicetopology.h>
 
 class com_initialize {
 public:

@@ -191,3 +191,5 @@
 /Recorder/Release/resample_pcm.obj
 /Recorder/Release/sws_helper.obj
 /Recorder/Release/utils_string.obj
+/Recorder/Debug/mmdevice_define.obj
+/Recorder/Release/recorder.Build.CppClean.log
