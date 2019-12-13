@@ -15,6 +15,8 @@
 #include <atomic>
 #include <mutex>
 
+#define USE_DSHOW 0
+
 namespace am {
 	typedef std::lock_guard<std::mutex> lock_guard;
 
@@ -117,6 +119,8 @@ namespace am {
 		_setting = setting;
 		_callbacks = callbacks;
 
+#if USE_DSHOW
+
 		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
 		AMERROR_CHECK(error);
 
@@ -131,6 +135,22 @@ namespace am {
 
 		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
 		AMERROR_CHECK(error);
+#else
+		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
+		AMERROR_CHECK(error);
+
+		error = _recorder_speaker->init(setting.a_speaker.name, setting.a_speaker.id, false);
+		AMERROR_CHECK(error);
+
+		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
+		AMERROR_CHECK(error);
+
+		error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
+		AMERROR_CHECK(error);
+
+		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
+		AMERROR_CHECK(error);
+#endif 
 
 		error = _recorder_desktop->init(
 		{ 

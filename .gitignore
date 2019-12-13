@@ -193,3 +193,5 @@
 /Recorder/Release/utils_string.obj
 /Recorder/Debug/mmdevice_define.obj
 /Recorder/Release/recorder.Build.CppClean.log
+/Recorder/Debug_DLL/mmdevice_define.obj
+/Recorder/Release_DLL/mmdevice_define.obj

@@ -67,8 +67,8 @@ int start_muxer() {
 #endif // !USE_WASAPI
 
 
-	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
-	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
+	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
+	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
 
 	RECORD_DESKTOP_RECT rect;
 	rect.left = 0;
