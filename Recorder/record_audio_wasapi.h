@@ -21,7 +21,9 @@ namespace am {
 		record_audio_wasapi();
 		~record_audio_wasapi();
 
-		virtual int init(const std::string &device_name,bool is_input);
+		virtual int init(const std::string &device_name,
+			const std::string &device_id,
+			bool is_input);
 
 		virtual int start();
 
@@ -63,6 +65,8 @@ namespace am {
 		HANDLE _stop_event;
 
 		bool _co_inited;
+
+		bool _is_default;
 
 		//define time stamps here
 		int64_t _start_time;

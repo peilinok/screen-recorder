@@ -26,7 +26,7 @@ namespace am {
 		cleanup();
 	}
 
-	int record_audio_dshow::init(const std::string & device_name,bool is_input)
+	int record_audio_dshow::init(const std::string & device_name, const std::string &device_id, bool is_input)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -37,6 +37,7 @@ namespace am {
 		do {
 
 			_device_name = device_name;
+			_device_id = device_id;
 			_is_input = is_input;
 
 			_input_fmt = av_find_input_format("dshow");

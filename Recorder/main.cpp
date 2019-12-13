@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define USE_WASAPI 1
+
 #define V_FRAME_RATE 20
 #define V_BIT_RATE 64000
 #define V_WIDTH 1920
@@ -45,15 +47,25 @@ int start_muxer() {
 	al_info("use default output aduio device:%s", out_name.c_str());
 
 	//first audio resrouce must be speaker,otherwise the audio pts may be not correct,may need to change the filter amix descriptions with duration & sync option
+#if !USE_WASAPI
+
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
-	
-	//to use wasapi ,need to modify the record loop,coz silent will not have data
-	//record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
-	_recorder_speaker->init(am::utils_string::ascii_utf8("audio=virtual-audio-capturer"), false);
-	//_recorder_speaker->init("audio=" + out_name);
+	_recorder_speaker->init(
+		am::utils_string::ascii_utf8("audio=virtual-audio-capturer"),
+		am::utils_string::ascii_utf8("audio=virtual-audio-capturer"), 
+		false
+	);
 
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_microphone);
-	_recorder_microphone->init(am::utils_string::ascii_utf8("audio=") + input_name, true);
+	_recorder_microphone->init(am::utils_string::ascii_utf8("audio=") + input_name, input_id, true);
+#else
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
+	_recorder_speaker->init(out_name, out_id, false);
+
+	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_microphone);
+	_recorder_microphone->init(input_name, input_id, true);
+#endif // !USE_WASAPI
+
 
 	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
@@ -144,11 +156,24 @@ void show_devices()
 
 void test_audio() 
 {
+	std::string input_id, input_name, out_id, out_name;
+
+	am::device_audios::get_default_input_device(input_id, input_name);
+
+	al_info("use default \r\ninput aduio device name:%s \r\ninput audio device id:%s ", 
+		input_name.c_str(), input_id.c_str());
+
+	am::device_audios::get_default_ouput_device(out_id, out_name);
+
+	al_info("use default \r\noutput aduio device name:%s \r\noutput audio device id:%s ", 
+		out_name.c_str(), out_id.c_str());
+
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
-	_recorder_speaker->init(am::utils_string::ascii_utf8("Default"), true);
+	_recorder_speaker->init(am::utils_string::ascii_utf8("Default"), am::utils_string::ascii_utf8("Default"), false);
+
 
 	//record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_microphone);
-	//_recorder_microphone->init(am::utils_string::ascii_utf8("Default"), true);
+	//_recorder_microphone->init(input_name,input_id, true);
 
 	_recorder_speaker->start();
 
@@ -166,9 +191,9 @@ int main(int argc, char **argv)
 
 	show_devices();
 
-	test_audio();
+	//test_audio();
 
-	//test_recorder();
+	test_recorder();
 
 	al_info("press any key to exit...");
 	system("pause");

@@ -19,4 +19,7 @@ public:
 	}
 };
 
+#define DEFAULT_AUDIO_INOUTPUT_NAME "Default"
+#define DEFAULT_AUDIO_INOUTPUT_ID "Default"
+
 #endif // _WIN32

@@ -146,6 +146,14 @@ namespace am {
 			}
 		} while (0);
 
+		if (ret == AE_NO && devices.size()) {
+			devices.push_front({
+				utils_string::ascii_utf8(DEFAULT_AUDIO_INOUTPUT_ID),
+				utils_string::ascii_utf8(DEFAULT_AUDIO_INOUTPUT_NAME),
+				true
+			});
+		}
+
 
 		if (ret != AE_NO)
 			al_debug("get_devices failed(%ld): %s", GetLastError(), err2str(ret));

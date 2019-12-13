@@ -4,6 +4,7 @@
 
 #include "error_define.h"
 #include "log_helper.h"
+#include "utils_string.h"
 
 #ifdef _WIN32
 
@@ -28,6 +29,8 @@ namespace am {
 
 		_co_inited = (hr == S_OK || hr == S_FALSE);//if already initialize will return S_FALSE
 
+		_is_default = false;
+
 		_wfex = NULL;
 		_enumerator = nullptr;
 		_device = nullptr;
@@ -36,6 +39,7 @@ namespace am {
 		_render = nullptr;
 
 		_ready_event = NULL;
+		_stop_event = NULL;
 
 		_start_time = 0;
 		_pre_pts = 0;
@@ -113,7 +117,7 @@ namespace am {
 		_render->ReleaseBuffer(frames, 0);
 	}
 
-	int record_audio_wasapi::init(const std::string & device_name, bool is_input)
+	int record_audio_wasapi::init(const std::string & device_name, const std::string &device_id, bool is_input)
 	{
 		int error = AE_NO;
 
@@ -126,7 +130,9 @@ namespace am {
 		}
 
 		_device_name = device_name;
+		_device_id = device_id;
 		_is_input = is_input;
+		_is_default = (utils_string::ascii_utf8(DEFAULT_AUDIO_INOUTPUT_ID).compare(_device_id) == 0);
 
 		do {
 			HRESULT hr = CoCreateInstance(
@@ -141,9 +147,15 @@ namespace am {
 				break;
 			}
 
-			hr = _enumerator->GetDefaultAudioEndpoint(
-				is_input ? eCapture : eRender,
-				is_input ? eCommunications : eConsole, &_device);
+			if (_is_default) {
+				hr = _enumerator->GetDefaultAudioEndpoint(
+					is_input ? eCapture : eRender,
+					is_input ? eCommunications : eConsole, &_device);
+			}
+			else {
+				hr = _enumerator->GetDevice(utils_string::utf8_unicode(_device_id).c_str(), &_device);
+			}
+
 			if (hr != S_OK) {
 				error = AE_CO_GETENDPOINT_FAILED;
 				break;
@@ -284,31 +296,37 @@ namespace am {
 	{
 		HRESULT res;
 		LPBYTE buffer;
-		UINT32 frame_num;
 		DWORD flags;
-		UINT64 pos, ts;
-		UINT captureSize = 0;
+
+		uint64_t pos, ts;
+		uint32_t packet_size = 0, frame_num = 0;
 
 		int frame_size = _bit_per_sample / 8 * _channel_num;
 
 		while (true) {
-			res = _capture->GetNextPacketSize(&captureSize);
+			res = _capture->GetNextPacketSize(&packet_size);
 
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
-					al_error("GetNextPacketSize failed: %lX", res);
+					al_warn("GetNextPacketSize failed: %lX", res);
+
 				return false;
 			}
 
-			if (!captureSize)
+			if (!packet_size)
 				break;
 
 			res = _capture->GetBuffer(&buffer, &frame_num, &flags, &pos, &ts);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
-					al_error("GetBuffer failed: %lX",res);
+					al_warn("GetBuffer failed: %lX",res);
+
 				return false;
 			}
+
+			//
+			if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
+				al_debug("slient data");
 
 			if (buffer) {
 				frame->pts = av_gettime_relative() - _start_time;
@@ -323,23 +341,9 @@ namespace am {
 				frame->channels = _channel_num;
 				frame->pkt_size = frame_num*frame_size;
 
-				al_debug("%d %lld", _cb_extra_index, frame->pkt_pts);
+				//al_debug("%lld %lld", pos, ts);
 				if(_on_data) _on_data(frame, _cb_extra_index);
 			}
-
-			//obs_source_audio data = {};
-			//data.data[0] = (const uint8_t *)buffer;
-			//data.frames = (uint32_t)frames;
-			//data.speakers = speakers;
-			//data.samples_per_sec = sampleRate;
-			//data.format = format;
-			//data.timestamp = useDeviceTiming ? ts * 100 : os_gettime_ns();
-
-			//if (!useDeviceTiming)
-			//	data.timestamp -= (uint64_t)frames * 1000000000ULL /
-			//	(uint64_t)sampleRate;
-
-			//obs_source_output_audio(source, &data);
 
 			_capture->ReleaseBuffer(frame_num);
 		}
@@ -352,14 +356,6 @@ namespace am {
 		HANDLE events[2] = { _ready_event,_stop_event };
 
 		DWORD ret = WAIT_TIMEOUT;
-		HRESULT hr = S_OK;
-
-		unsigned int packet_num = 0;
-		unsigned int frame_num = 0;
-		DWORD flags = 0;
-		BYTE *data = NULL;
-
-		int frame_size = _bit_per_sample / 8 * _channel_num;
 
 		AVFrame *frame = av_frame_alloc();
 
@@ -372,45 +368,15 @@ namespace am {
 			if (ret != WAIT_OBJECT_0 && ret != WAIT_TIMEOUT)
 				continue;
 
-			if (do_record(frame) == false) break;
-
-			continue;
-
-			hr = _capture->GetNextPacketSize(&packet_num);
-			while (packet_num != 0 && _running == true)
-			{
-				hr = _capture->GetBuffer(&data, &frame_num, &flags, NULL, NULL);
-				if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {//tell to copy silence data
-					//data = NULL;
-				}
-
-				if (_on_data && data) {
-					frame->pts = av_gettime_relative() -_start_time;
-					//frame->pts = av_rescale(frame->pts, 1, AV_TIME_BASE);
-					frame->pkt_dts = frame->pts;
-					frame->pkt_pts = frame->pts;
-					frame->data[0] = data;
-					frame->linesize[0] = frame_num*frame_size / _channel_num;
-					frame->nb_samples = frame_num;
-					frame->format = _fmt;
-					frame->sample_rate = _sample_rate;
-					frame->channels = _channel_num;
-					frame->pkt_size = frame_num*frame_size;
-
-					al_debug("%d %lld", _cb_extra_index, frame->pkt_pts);
-					_on_data(frame, _cb_extra_index);
-				}
-
-				if (data)
-					hr = _capture->ReleaseBuffer(frame_num);
-				hr = _capture->GetNextPacketSize(&packet_num);
-			}
+			if (!do_record(frame))
+				break;
 
 		}//while(_running)
 
 		av_frame_free(&frame);
 	}
 
+	//no need any more,coz wasapi is always flt
 	bool record_audio_wasapi::adjust_format_2_16bits(WAVEFORMATEX *pwfx)
 	{
 		bool ret = false;
@@ -464,9 +430,17 @@ namespace am {
 			_capture->Release();
 		_capture = nullptr;
 
+		if (_render)
+			_render->Release();
+		_render = nullptr;
+
 		if (_ready_event)
 			CloseHandle(_ready_event);
 		_ready_event = NULL;
+
+		if (_stop_event)
+			CloseHandle(_stop_event);
+		_stop_event = NULL;
 
 		if(_co_inited == true)
 			CoUninitialize();

@@ -15,6 +15,7 @@ namespace am {
 		_on_error = nullptr;
 
 		_device_name = "";
+		_device_id = "";
 		_is_input = false;
 	}
 
