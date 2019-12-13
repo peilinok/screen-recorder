@@ -40,9 +40,15 @@ namespace am {
 	private:
 		void init_render();
 
-		bool do_record(AVFrame *frame);
+		void process_data(AVFrame *frame,uint8_t* data, uint32_t frame_num);
 
-		void record_func();
+		bool do_record_input(AVFrame *frame);
+
+		bool do_record_output(AVFrame *frame);
+
+		void record_func_input();
+
+		void record_func_output();
 
 		bool adjust_format_2_16bits(WAVEFORMATEX *pwfx);
 
@@ -61,12 +67,18 @@ namespace am {
 
 		IAudioRenderClient *_render;
 
+		uint32_t _buffer_frame_count;
+
 		HANDLE _ready_event;
 		HANDLE _stop_event;
 
 		bool _co_inited;
 
 		bool _is_default;
+
+		uint8_t *_silent_data;
+		uint32_t _silent_frame_num;
+		uint32_t _silent_data_size;
 
 		//define time stamps here
 		int64_t _start_time;

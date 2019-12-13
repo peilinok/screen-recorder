@@ -10,9 +10,7 @@
 
 
 #define REFTIMES_PER_SEC  10000000
-#define BUFFER_TIME_100NS (5 * REFTIMES_PER_SEC)
 #define REFTIMES_PER_MILLISEC  10000
-#define RECONNECT_INTERVAL 3000
 
 #endif // _WIN32
 
@@ -37,6 +35,8 @@ namespace am {
 		_client = nullptr;
 		_capture = nullptr;
 		_render = nullptr;
+
+		_buffer_frame_count = 0;
 
 		_ready_event = NULL;
 		_stop_event = NULL;
@@ -90,7 +90,7 @@ namespace am {
 		if (FAILED(res))
 			return;
 
-		res = client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, BUFFER_TIME_100NS,
+		res = client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, REFTIMES_PER_SEC,
 			0, wfex, nullptr);
 		if (FAILED(res))
 			return;
@@ -182,7 +182,7 @@ namespace am {
 			hr = _client->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				flags,
-				BUFFER_TIME_100NS,
+				REFTIMES_PER_SEC,
 				0,
 				_wfex,
 				NULL);
@@ -194,6 +194,12 @@ namespace am {
 
 			if (_is_input == false)
 				init_render();
+
+			hr = _client->GetBufferSize(&_buffer_frame_count);
+			if (hr != S_OK) {
+				error = AE_CO_GET_VALUE_FAILED;
+				break;
+			}
 
 
 			hr = _client->GetService(__uuidof(IAudioCaptureClient), (void**)&_capture);
@@ -253,7 +259,10 @@ namespace am {
 		_start_time = av_gettime_relative();
 
 		_running = true;
-		_thread = std::thread(std::bind(&record_audio_wasapi::record_func, this));
+		if(_is_input)
+			_thread = std::thread(std::bind(&record_audio_wasapi::record_func_input, this));
+		else
+			_thread = std::thread(std::bind(&record_audio_wasapi::record_func_output, this));
 
 		return AE_NO;
 	}
@@ -292,16 +301,32 @@ namespace am {
 		return _start_time;
 	}
 
-	bool record_audio_wasapi::do_record(AVFrame *frame)
+	void record_audio_wasapi::process_data(AVFrame *frame, uint8_t* data, uint32_t frame_num)
+	{
+		int frame_size = _bit_per_sample / 8 * _channel_num;
+
+		frame->pts = av_gettime_relative() - _start_time;
+		frame->pkt_dts = frame->pts;
+		frame->pkt_pts = frame->pts;
+		frame->data[0] = data;
+		frame->linesize[0] = frame_num*frame_size / _channel_num;
+		frame->nb_samples = frame_num;
+		frame->format = _fmt;
+		frame->sample_rate = _sample_rate;
+		frame->channels = _channel_num;
+		frame->pkt_size = frame_num*frame_size;
+
+		if (_on_data) _on_data(frame, _cb_extra_index);
+	}
+
+	bool record_audio_wasapi::do_record_input(AVFrame *frame)
 	{
 		HRESULT res;
-		LPBYTE buffer;
+		LPBYTE buffer = NULL;
 		DWORD flags;
 
 		uint64_t pos, ts;
 		uint32_t packet_size = 0, frame_num = 0;
-
-		int frame_size = _bit_per_sample / 8 * _channel_num;
 
 		while (true) {
 			res = _capture->GetNextPacketSize(&packet_size);
@@ -316,6 +341,7 @@ namespace am {
 			if (!packet_size)
 				break;
 
+			buffer = NULL;
 			res = _capture->GetBuffer(&buffer, &frame_num, &flags, &pos, &ts);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
@@ -324,25 +350,15 @@ namespace am {
 				return false;
 			}
 
-			//
+			//should handle silent data for output
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-				al_debug("slient data");
+				al_debug("input slient data");
 
 			if (buffer) {
-				frame->pts = av_gettime_relative() - _start_time;
-				//frame->pts = av_rescale(frame->pts, 1, AV_TIME_BASE);
-				frame->pkt_dts = frame->pts;
-				frame->pkt_pts = frame->pts;
-				frame->data[0] = buffer;
-				frame->linesize[0] = frame_num*frame_size / _channel_num;
-				frame->nb_samples = frame_num;
-				frame->format = _fmt;
-				frame->sample_rate = _sample_rate;
-				frame->channels = _channel_num;
-				frame->pkt_size = frame_num*frame_size;
-
-				//al_debug("%lld %lld", pos, ts);
-				if(_on_data) _on_data(frame, _cb_extra_index);
+				process_data(frame, buffer, frame_num);
+			}
+			else {
+				al_debug("input buffer invalid is");
 			}
 
 			_capture->ReleaseBuffer(frame_num);
@@ -351,7 +367,64 @@ namespace am {
 		return true;
 	}
 
-	void record_audio_wasapi::record_func()
+	bool record_audio_wasapi::do_record_output(AVFrame *frame)
+	{
+		HRESULT res;
+		LPBYTE buffer = NULL;
+		DWORD flags;
+
+		uint64_t pos, ts;
+		uint32_t packet_size = 0, frame_num = 0;
+
+		res = _capture->GetNextPacketSize(&packet_size);
+		if (FAILED(res)) {
+			if (res != AUDCLNT_E_DEVICE_INVALIDATED)
+				al_warn("GetNextPacketSize failed: %lX", res);
+
+			return false;
+		}
+
+		if (!packet_size) {
+			//al_debug("no packet for output");
+			process_data(frame, _silent_data, _silent_frame_num);
+			return true;
+		}
+
+		while (packet_size != 0) {
+			buffer = NULL;
+			res = _capture->GetBuffer(&buffer, &frame_num, &flags, &pos, &ts);
+			if (FAILED(res)) {
+				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
+					al_warn("GetBuffer failed: %lX", res);
+
+				return false;
+			}
+
+			if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
+				al_debug("output slient data");
+
+			if (buffer) {
+				process_data(frame, buffer, frame_num);
+			}
+			else {
+				al_debug("output buffer invalid");
+			}
+
+			_capture->ReleaseBuffer(frame_num);
+
+			res = _capture->GetNextPacketSize(&packet_size);
+			if (FAILED(res)) {
+				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
+					al_warn("GetNextPacketSize failed: %lX", res);
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	void record_audio_wasapi::record_func_input()
 	{
 		HANDLE events[2] = { _ready_event,_stop_event };
 
@@ -359,22 +432,50 @@ namespace am {
 
 		AVFrame *frame = av_frame_alloc();
 
-		/* Output devices don't signal, so just make it check every 10 ms */
-		DWORD dur = _is_input ? RECONNECT_INTERVAL : 10;
-
 		while (_running)
 		{
-			ret = WaitForMultipleObjects(2, events, FALSE, dur);
+			ret = WaitForMultipleObjects(2, events, FALSE, INFINITE);
 			if (ret != WAIT_OBJECT_0 && ret != WAIT_TIMEOUT)
 				continue;
 
-			if (!do_record(frame))
+			if (!do_record_input(frame))
 				break;
 
 		}//while(_running)
 
 		av_frame_free(&frame);
 	}
+
+	void record_audio_wasapi::record_func_output()
+	{
+		DWORD ret = WAIT_TIMEOUT;
+
+		AVFrame *frame = av_frame_alloc();
+
+		REFERENCE_TIME dur = (double)REFTIMES_PER_SEC*_buffer_frame_count / _sample_rate;
+		dur = dur / REFTIMES_PER_MILLISEC / 2;
+		
+		//half 1s or 10ms?half 1s will destroy sync time line
+		dur = 10;
+
+		_silent_frame_num = _sample_rate * dur / 1000;
+		_silent_data_size = _silent_frame_num * _bit_per_sample / 8 * _channel_num;
+		_silent_data = new uint8_t[_silent_data_size];
+
+		memset(_silent_data, 0, _silent_data_size);
+
+		while (_running)
+		{
+			Sleep(10);
+
+			if (!do_record_output(frame))
+				break;
+
+		}//while(_running)
+
+		av_frame_free(&frame);
+		delete[] _silent_data;
+ 	}
 
 	//no need any more,coz wasapi is always flt
 	bool record_audio_wasapi::adjust_format_2_16bits(WAVEFORMATEX *pwfx)
