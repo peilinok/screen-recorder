@@ -305,7 +305,8 @@ namespace am {
 	{
 		int frame_size = _bit_per_sample / 8 * _channel_num;
 
-		frame->pts = av_gettime_relative() - _start_time;
+		//use relative time instead of device time
+		frame->pts = av_gettime_relative();// -_start_time;
 		frame->pkt_dts = frame->pts;
 		frame->pkt_pts = frame->pts;
 		frame->data[0] = data;
@@ -315,6 +316,8 @@ namespace am {
 		frame->sample_rate = _sample_rate;
 		frame->channels = _channel_num;
 		frame->pkt_size = frame_num*frame_size;
+
+		//al_debug("AF:%lld", frame->pts);
 
 		if (_on_data) _on_data(frame, _cb_extra_index);
 	}

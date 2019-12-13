@@ -199,6 +199,10 @@ namespace am {
 				return AE_FFMPEG_READ_FRAME_FAILED;
 			}
 
+			//use relative time instead of device time
+			frame->pts = av_gettime_relative();// -_start_time;
+			frame->pkt_dts = frame->pts;
+			frame->pkt_pts = frame->pts;
 			if (ret == 0 && _on_data)
 				_on_data(frame);
 

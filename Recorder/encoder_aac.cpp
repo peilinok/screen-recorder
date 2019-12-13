@@ -225,6 +225,8 @@ namespace am {
 				return AE_FFMPEG_READ_PACKET_FAILED;
 			}
 
+			//al_debug("AP:%lld", packet->pts);
+
 			if (ret == 0 && _on_data)
 				_on_data(packet);
 
