@@ -405,7 +405,7 @@ namespace am {
 			}
 
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-				al_debug("output slient data,%d", sample_count);
+				al_debug("output slient data,%d %d", sample_count, _silent_sample_count);
 				process_data(frame, _silent_data, _silent_sample_count);
 			} 
 			else {

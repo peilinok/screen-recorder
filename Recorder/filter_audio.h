@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FILTER_AUDIO
+#define FILTER_AUDIO
 
 #include <thread>
 #include <atomic>
@@ -72,3 +73,5 @@ namespace am {
 	};
 
 }
+
+#endif

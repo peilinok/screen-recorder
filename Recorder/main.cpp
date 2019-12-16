@@ -78,8 +78,8 @@ int start_muxer() {
 
 	_recorder_desktop->init(rect, V_FRAME_RATE);
 
-	audios[0] = _recorder_speaker;
-	audios[1] = _recorder_microphone;
+	audios[0] = _recorder_microphone;
+	audios[1] = _recorder_speaker;
 
 	_muxer = new am::muxer_mp4();
 

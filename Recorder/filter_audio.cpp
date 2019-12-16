@@ -7,6 +7,11 @@
 
 namespace am {
 
+	static void print_frame(const AVFrame *frame, int index)
+	{
+		al_debug("index:%d %lld %d", index, frame->pts, frame->nb_samples);
+	}
+
 	filter_audio::filter_audio()
 	{
 		av_register_all();
@@ -61,7 +66,7 @@ namespace am {
 			}
 
 			//const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=32[out]";
-			const std::string filter_desrc = "[in0][in1]amix=inputs=2[out]";
+			const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first[out]";
 
 			_ctx_in_0.inout = avfilter_inout_alloc();
 			_ctx_in_1.inout = avfilter_inout_alloc();
@@ -201,6 +206,7 @@ namespace am {
 				break;
 			}
 
+			//print_frame(frame, index);
 			int ret = av_buffersrc_add_frame_flags(ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF);
 			if (ret < 0) {
 				error = AE_FILTER_ADD_FRAME_FAILED;
@@ -234,11 +240,6 @@ namespace am {
 		memset(&_ctx_out, 0, sizeof(FILTER_CTX));
 
 		_inited = false;
-	}
-
-	static void print_frame(const AVFrame *frame)
-	{
-		al_debug("%lld %lld %lld %d", frame->pts, frame->pkt_pts, frame->pkt_dts, frame->nb_samples);
 	}
 
 	void filter_audio::filter_loop()
