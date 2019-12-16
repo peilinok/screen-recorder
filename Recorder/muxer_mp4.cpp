@@ -728,9 +728,8 @@ namespace am {
 
 		if (_paused) return AE_NO;
 
-		//this can get better sync from audio,but will get a few black pics at the begin of mp4
-		if (_a_stream->pre_pts == (uint64_t)-1)
-			return 0;
+		//if (_a_stream->pre_pts == (uint64_t)-1)
+		//	return 0;
 
 		packet->stream_index = _v_stream->st->index;
 

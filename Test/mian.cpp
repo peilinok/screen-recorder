@@ -25,7 +25,7 @@ int main()
 	setting.v_bit_rate = 64000;
 	setting.v_frame_rate = 20;
 
-	sprintf(setting.output, "save.mp4");
+	sprintf(setting.output, "..\\..\\save.mp4");
 
 	for (int i = 0; i < nspeaker; i++) {
 		if (speakers[i].is_default == 1)

@@ -96,7 +96,7 @@ int start_muxer() {
 	setting.a_sample_rate = A_SAMPLE_RATE;
 	setting.a_bit_rate = A_BIT_RATE;
 
-	int error = _muxer->init(am::utils_string::ascii_utf8("save.mp4").c_str(), _recorder_desktop, audios, 2, setting);
+	int error = _muxer->init(am::utils_string::ascii_utf8("..\\..\\save.mp4").c_str(), _recorder_desktop, audios, 2, setting);
 	if (error != AE_NO) {
 		return error;
 	}

@@ -403,8 +403,10 @@ namespace am {
 				return false;
 			}
 
-			if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-				al_debug("output slient data");
+			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+				al_debug("output slient data,%d %d", packet_size, frame_num);
+				//process_data(frame, _silent_data, _silent_frame_num);
+			}
 
 			if (buffer) {
 				process_data(frame, buffer, frame_num);
