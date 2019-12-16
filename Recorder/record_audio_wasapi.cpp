@@ -301,21 +301,21 @@ namespace am {
 		return _start_time;
 	}
 
-	void record_audio_wasapi::process_data(AVFrame *frame, uint8_t* data, uint32_t frame_num)
+	void record_audio_wasapi::process_data(AVFrame *frame, uint8_t* data, uint32_t sample_count)
 	{
-		int frame_size = _bit_per_sample / 8 * _channel_num;
+		int sample_size = _bit_per_sample / 8 * _channel_num;
 
 		//use relative time instead of device time
 		frame->pts = av_gettime_relative();// -_start_time;
 		frame->pkt_dts = frame->pts;
 		frame->pkt_pts = frame->pts;
 		frame->data[0] = data;
-		frame->linesize[0] = frame_num*frame_size / _channel_num;
-		frame->nb_samples = frame_num;
+		frame->linesize[0] = sample_count*sample_size / _channel_num;
+		frame->nb_samples = sample_count;
 		frame->format = _fmt;
 		frame->sample_rate = _sample_rate;
 		frame->channels = _channel_num;
-		frame->pkt_size = frame_num*frame_size;
+		frame->pkt_size = sample_count*sample_size;
 
 		//al_debug("AF:%lld", frame->pts);
 
@@ -329,10 +329,10 @@ namespace am {
 		DWORD flags;
 
 		uint64_t pos, ts;
-		uint32_t packet_size = 0, frame_num = 0;
+		uint32_t sample_count = 0;
 
 		while (true) {
-			res = _capture->GetNextPacketSize(&packet_size);
+			res = _capture->GetNextPacketSize(&sample_count);
 
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
@@ -341,11 +341,11 @@ namespace am {
 				return false;
 			}
 
-			if (!packet_size)
+			if (!sample_count)
 				break;
 
 			buffer = NULL;
-			res = _capture->GetBuffer(&buffer, &frame_num, &flags, &pos, &ts);
+			res = _capture->GetBuffer(&buffer, &sample_count, &flags, &pos, &ts);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
 					al_warn("GetBuffer failed: %lX",res);
@@ -353,18 +353,19 @@ namespace am {
 				return false;
 			}
 
-			//should handle silent data for output
-			if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-				al_debug("input slient data");
+			//input mode do not have silent data flag do nothing here
+			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+				al_warn("input slient data %d", sample_count);
+			}
 
 			if (buffer) {
-				process_data(frame, buffer, frame_num);
+				process_data(frame, buffer, sample_count);
 			}
 			else {
 				al_debug("input buffer invalid is");
 			}
 
-			_capture->ReleaseBuffer(frame_num);
+			_capture->ReleaseBuffer(sample_count);
 		}
 
 		return true;
@@ -377,9 +378,9 @@ namespace am {
 		DWORD flags;
 
 		uint64_t pos, ts;
-		uint32_t packet_size = 0, frame_num = 0;
+		uint32_t sample_count = 0;
 
-		res = _capture->GetNextPacketSize(&packet_size);
+		res = _capture->GetNextPacketSize(&sample_count);
 		if (FAILED(res)) {
 			if (res != AUDCLNT_E_DEVICE_INVALIDATED)
 				al_warn("GetNextPacketSize failed: %lX", res);
@@ -387,15 +388,15 @@ namespace am {
 			return false;
 		}
 
-		if (!packet_size) {
-			//al_debug("no packet for output");
-			process_data(frame, _silent_data, _silent_frame_num);
+		//when there is no pcm rendering,the capture will not return packet_size,so we put silent data(10ms)
+		if (!sample_count) {
+			process_data(frame, _silent_data, _silent_sample_count);
 			return true;
 		}
 
-		while (packet_size != 0) {
+		while (sample_count != 0) {
 			buffer = NULL;
-			res = _capture->GetBuffer(&buffer, &frame_num, &flags, &pos, &ts);
+			res = _capture->GetBuffer(&buffer, &sample_count, &flags, &pos, &ts);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
 					al_warn("GetBuffer failed: %lX", res);
@@ -404,20 +405,22 @@ namespace am {
 			}
 
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-				al_debug("output slient data,%d %d", packet_size, frame_num);
-				//process_data(frame, _silent_data, _silent_frame_num);
-			}
-
-			if (buffer) {
-				process_data(frame, buffer, frame_num);
-			}
+				al_debug("output slient data,%d", sample_count);
+				process_data(frame, _silent_data, _silent_sample_count);
+			} 
 			else {
-				al_debug("output buffer invalid");
+
+				if (buffer) {
+					process_data(frame, buffer, sample_count);
+				}
+				else {
+					al_debug("output buffer invalid");
+				}
 			}
 
-			_capture->ReleaseBuffer(frame_num);
+			_capture->ReleaseBuffer(sample_count);
 
-			res = _capture->GetNextPacketSize(&packet_size);
+			res = _capture->GetNextPacketSize(&sample_count);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
 					al_warn("GetNextPacketSize failed: %lX", res);
@@ -457,21 +460,22 @@ namespace am {
 
 		AVFrame *frame = av_frame_alloc();
 
-		REFERENCE_TIME dur = (double)REFTIMES_PER_SEC*_buffer_frame_count / _sample_rate;
-		dur = dur / REFTIMES_PER_MILLISEC / 2;
+		//                    ( get fill 1s buffer costed time in ns                     ) / (1 ms equals 10000 ns)/ (half 1s)
+		REFERENCE_TIME dur = _buffer_frame_count / _sample_rate * (double)REFTIMES_PER_SEC / REFTIMES_PER_MILLISEC / 2;
 		
 		//half 1s or 10ms?half 1s will destroy sync time line
 		dur = 10;
 
-		_silent_frame_num = _sample_rate * dur / 1000;
-		_silent_data_size = _silent_frame_num * _bit_per_sample / 8 * _channel_num;
+		_silent_sample_count = _sample_rate * dur / 1000;
+		_silent_data_size = _silent_sample_count * _bit_per_sample / 8 * _channel_num;
 		_silent_data = new uint8_t[_silent_data_size];
 
 		memset(_silent_data, 0, _silent_data_size);
 
 		while (_running)
 		{
-			Sleep(10);
+			if (WaitForSingleObject(_stop_event, dur) == WAIT_OBJECT_0)
+				break;
 
 			if (!do_record_output(frame))
 				break;

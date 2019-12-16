@@ -40,7 +40,7 @@ namespace am {
 	private:
 		void init_render();
 
-		void process_data(AVFrame *frame,uint8_t* data, uint32_t frame_num);
+		void process_data(AVFrame *frame,uint8_t* data, uint32_t sample_count);
 
 		bool do_record_input(AVFrame *frame);
 
@@ -77,7 +77,7 @@ namespace am {
 		bool _is_default;
 
 		uint8_t *_silent_data;
-		uint32_t _silent_frame_num;
+		uint32_t _silent_sample_count;
 		uint32_t _silent_data_size;
 
 		//define time stamps here

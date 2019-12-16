@@ -172,9 +172,11 @@ namespace am {
 		mux_setting.a_sample_rate = 44100;
 		mux_setting.a_bit_rate = 128000;
 
-		
-
+#if USE_DSHOW
 		am::record_audio *audios[2] = { _recorder_speaker,_recorder_mic };
+#else
+		am::record_audio *audios[2] = { _recorder_mic,_recorder_speaker };
+#endif
 
 		_muxer = new muxer_mp4();
 		error = _muxer->init(setting.output, _recorder_desktop, audios, 2, mux_setting);
