@@ -194,36 +194,50 @@ namespace am {
 		return (error == AE_NO);
 	}
 
+	void record_desktop_win_gdi::do_sleep(int64_t dur, int64_t pre, int64_t now)
+	{
+		int64_t delay = now - pre;
+		delay = delay > dur ? max(0, dur - (delay - dur)) : (dur + dur - delay);
+
+		//al_debug("%lld", delay);
+
+		if(delay)
+			av_usleep(delay);
+	}
+
 	void record_desktop_win_gdi::record_func()
 	{
 		AVFrame *frame = av_frame_alloc();
 
+		int64_t pre_pts = 0;
+		int64_t dur = AV_TIME_BASE / _fps;
+
+		bool ret = true;
 		while (_running)
 		{
-			
-			if (!do_record()) {
-				al_error("record desktop by win api failed:%lld", GetLastError());
+			ret = do_record();
+			if (!ret)
 				break;
-			}
-			else {
-				frame->pts = av_gettime_relative();
-				frame->pkt_dts = frame->pts;
-				frame->pkt_pts = frame->pts;
-				frame->best_effort_timestamp = frame->pts;
-				
-				frame->data[0] = _buffer;
-				frame->linesize[0] = _width * 4;
 
-				frame->width = _width;
-				frame->height = _height;
-				frame->format = AV_PIX_FMT_BGRA;
-				frame->pict_type = AV_PICTURE_TYPE_I;
-				frame->pkt_size = _width * _height * 4;
+			frame->pts = av_gettime_relative();
+			frame->pkt_dts = frame->pts;
+			frame->pkt_pts = frame->pts;
+			frame->best_effort_timestamp = frame->pts;
 
-				if (_on_data) _on_data(frame);
+			frame->data[0] = _buffer;
+			frame->linesize[0] = _width * 4;
 
-				av_usleep(60 * 100);
-			}
+			frame->width = _width;
+			frame->height = _height;
+			frame->format = AV_PIX_FMT_BGRA;
+			frame->pict_type = AV_PICTURE_TYPE_I;
+			frame->pkt_size = _width * _height * 4;
+
+			if (_on_data) _on_data(frame);
+
+			do_sleep(dur, pre_pts, frame->pts);
+
+			pre_pts = frame->pts;
 		}
 
 		av_frame_free(&frame);
