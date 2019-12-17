@@ -167,6 +167,22 @@ private:
 	if(!CheckParamValid(value, type)) \
 		return;
 
+#define CHECK_PARAM_TYPE7(type1, type2, type3, type4, type5, type6, type7) \
+	if (type1 != NULL) \
+		CHECK_PARAM_VALID(args[0], type1); \
+	if (type2 != NULL) \
+		CHECK_PARAM_VALID(args[1], type2); \
+	if (type3 != NULL) \
+		CHECK_PARAM_VALID(args[2], type3); \
+	if (type4 != NULL) \
+		CHECK_PARAM_VALID(args[3], type4); \
+	if (type5 != NULL) \
+		CHECK_PARAM_VALID(args[4], type5); \
+	if (type6 != NULL) \
+		CHECK_PARAM_VALID(args[5], type6); \
+  if (type7 != NULL) \
+		CHECK_PARAM_VALID(args[6], type7);
+
 #define CHECK_PARAM_TYPE6(type1, type2, type3, type4, type5, type6) \
 	if (type1 != NULL) \
 		CHECK_PARAM_VALID(args[0], type1); \
@@ -449,8 +465,8 @@ private:
     Isolate* isolate = args.GetIsolate();
 
     //v_qb v_frame_rate v_output a_speaker a_mic
-    CHECK_PARAM_COUNT(5);
-		CHECK_PARAM_TYPE5("uint32", "uint32"," string", "string", "string");
+    CHECK_PARAM_COUNT(7);
+		CHECK_PARAM_TYPE7("uint32", "uint32"," string", "string", "string", "string", "string");
 
     int error = 0;
 
@@ -472,19 +488,19 @@ private:
     settings.v_frame_rate = args[1]->Uint32Value();
 
     String::Utf8Value utf8Output(Local<String>::Cast(args[2]));
-    std::string strOutput = utf8_ascii(*utf8Output);
-    printf("%s\r\n",strOutput.c_str());
     sprintf_s(settings.output,260,"%s",*utf8Output);
 
-    String::Utf8Value utf8Speaker(Local<String>::Cast(args[3]));
-    std::string strSpeaker = utf8_ascii(*utf8Speaker);
-    printf("%s\r\n",strSpeaker.c_str());
-    sprintf_s(settings.a_speaker.name,260,"%s",*utf8Speaker);
+    String::Utf8Value utf8SpeakerName(Local<String>::Cast(args[3]));
+    sprintf_s(settings.a_speaker.name,260,"%s",*utf8SpeakerName);
 
-    String::Utf8Value utf8Mic(Local<String>::Cast(args[4]));
-    std::string strMic = utf8_ascii(*utf8Mic);
-    printf("%s\r\n",strMic.c_str());
-    sprintf_s(settings.a_mic.name,260,"%s",*utf8Mic);
+    String::Utf8Value utf8SpeakerId(Local<String>::Cast(args[4]));
+    sprintf_s(settings.a_speaker.id,260,"%s",*utf8SpeakerId);
+
+    String::Utf8Value utf8MicName(Local<String>::Cast(args[5]));
+    sprintf_s(settings.a_mic.name,260,"%s",*utf8MicName);
+
+    String::Utf8Value utf8MicId(Local<String>::Cast(args[6]));
+    sprintf_s(settings.a_mic.id,260,"%s",*utf8MicId);
 
     error = recorder_init(settings,callbacks);
 

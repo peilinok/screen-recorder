@@ -2,6 +2,8 @@
 
 This is a node-js addon by screen-recorder which is written by c++ based on ffmpeg.
 
+Only support windows(at least windows7 sp1) for now.
+
 
 ## Features
 
@@ -11,7 +13,7 @@ This is a node-js addon by screen-recorder which is written by c++ based on ffmp
 ## Usage
 
 
-### 1.Install DirectShow device 
+### 1.Install DirectShow device(Optional After 1.1.1)
 
 https://github.com/rdp/screen-capture-recorder-to-video-windows-free
 
@@ -40,7 +42,7 @@ const mics = recorder.GetMics();
 console.log(speakers);
 console.log(mics);
 
-const ret = recorder.Init(60,20,"d:\\save.mp4",speakers[0].name,mics[0].name);
+const ret = recorder.Init(60,20,"d:\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
 
 let running = false;
 

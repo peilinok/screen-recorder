@@ -8,7 +8,7 @@ const mics = recorder.GetMics();
 console.log(speakers);
 console.log(mics);
 
-const ret = recorder.Init(60,20,"d:\\save.mp4",speakers[0].name,mics[0].name);
+const ret = recorder.Init(60,20,"d:\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
 
 let running = false;
 

@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "tuple": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "type_traits": "cpp",
+        "xtr1common": "cpp"
     }
 }

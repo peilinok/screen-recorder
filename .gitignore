@@ -199,3 +199,6 @@
 /Recorder/Debug_DLL/record_desktop_ffmpeg_dshow.obj
 /Recorder/Debug_DLL/record_desktop_ffmpeg_gdi.obj
 /Recorder/Debug_DLL/record_desktop_win_gdi.obj
+/Recorder/Release_DLL/record_desktop_ffmpeg_dshow.obj
+/Recorder/Release_DLL/record_desktop_ffmpeg_gdi.obj
+/Recorder/Release_DLL/record_desktop_win_gdi.obj
