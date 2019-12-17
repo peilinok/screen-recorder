@@ -88,15 +88,14 @@ namespace am {
 
 			_frame = av_frame_alloc();
 
-			_buff_size = avpicture_get_size(_encoder_ctx->pix_fmt, _encoder_ctx->width, _encoder_ctx->height);
+			_buff_size = av_image_get_buffer_size(_encoder_ctx->pix_fmt, _encoder_ctx->width, _encoder_ctx->height, 1);
 			
 			_buff = (uint8_t*)av_malloc(_buff_size);
 			if (!_buff) {
 				break;
 			}
 
-			avpicture_fill((AVPicture*)_frame, _buff, _encoder_ctx->pix_fmt, _encoder_ctx->width, _encoder_ctx->height);
-			//may no need above
+			av_image_fill_arrays(_frame->data, _frame->linesize, _buff, _encoder_ctx->pix_fmt, _encoder_ctx->width, _encoder_ctx->height, 1);
 
 			_frame->format = _encoder_ctx->pix_fmt;
 			_frame->width = _encoder_ctx->width;
@@ -245,6 +244,7 @@ namespace am {
 				_frame->pkt_dts = yuv_frame.pkt_dts;
 				_frame->pkt_dts = yuv_frame.pkt_dts;
 				_frame->pts = yuv_frame.pts;
+				_frame->best_effort_timestamp = yuv_frame.best_effort_timestamp;
 
 				if ((error = encode(_frame, packet)) != AE_NO) {
 					if (_on_error) 
@@ -254,7 +254,6 @@ namespace am {
 
 					break;
 				}
-				
 			}
 			
 			_cond_notify = false;

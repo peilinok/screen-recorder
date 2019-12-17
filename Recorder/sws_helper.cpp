@@ -43,12 +43,12 @@ namespace am {
 			return AE_FFMPEG_NEW_SWSCALE_FAILED;
 		}
 
-		_buffer_size = avpicture_get_size(dst_fmt, dst_width, dst_height);
+		_buffer_size = av_image_get_buffer_size(dst_fmt, dst_width, dst_height, 1);
 		_buffer = new uint8_t[_buffer_size];
 
 		_frame = av_frame_alloc();
 
-		avpicture_fill((AVPicture*)_frame, _buffer, dst_fmt, dst_width, dst_height);
+		av_image_fill_arrays(_frame->data, _frame->linesize, _buffer, dst_fmt, dst_width, dst_height, 1);
 
 		_inited = true;
 

@@ -742,7 +742,21 @@ namespace am {
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
-		//al_debug("V:%lld %lld", packet->pts, packet->dts);
+
+		//al_debug("V:%lld", packet->pts);
+
+#if 0
+		static FILE *fp = NULL;
+		if (fp == NULL) {
+			fp = fopen("..\\..\\save.264", "wb+");
+			//write sps pps
+			fwrite(_v_stream->v_enc->get_extradata(), 1, _v_stream->v_enc->get_extradata_size(), fp);
+		}
+
+		fwrite(packet->data, 1, packet->size, fp);
+
+		fflush(fp);
+#endif
 		
 		av_assert0(packet->data != NULL);
 

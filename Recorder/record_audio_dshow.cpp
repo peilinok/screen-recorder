@@ -149,7 +149,7 @@ namespace am {
 			return _fmt_ctx->streams[_stream_index]->time_base;
 		}
 		else {
-			return{ 1,90000 };
+			return{ 1,AV_TIME_BASE };
 		}
 	}
 

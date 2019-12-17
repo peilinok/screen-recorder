@@ -43,7 +43,7 @@ namespace am {
 			_buffer = new uint8_t[_buffer_size];
 
 			_start_time = av_gettime_relative();
-			_time_base = { 1,90000 };
+			_time_base = { 1,AV_TIME_BASE };
 			_pixel_fmt = AV_PIX_FMT_BGRA;
 
 
@@ -210,14 +210,9 @@ namespace am {
 				frame->pkt_dts = frame->pts;
 				frame->pkt_pts = frame->pts;
 				frame->best_effort_timestamp = frame->pts;
-
-				av_image_fill_arrays(frame->data, 
-					frame->linesize, 
-					_buffer,
-					AV_PIX_FMT_BGRA,
-					_width, 
-					_height, 
-					1);
+				
+				frame->data[0] = _buffer;
+				frame->linesize[0] = _width * 4;
 
 				frame->width = _width;
 				frame->height = _height;
@@ -225,10 +220,9 @@ namespace am {
 				frame->pict_type = AV_PICTURE_TYPE_I;
 				frame->pkt_size = _width * _height * 4;
 
-				al_debug("%lld", frame->pts);
 				if (_on_data) _on_data(frame);
 
-				//av_usleep(60 * 100);
+				av_usleep(60 * 100);
 			}
 		}
 
