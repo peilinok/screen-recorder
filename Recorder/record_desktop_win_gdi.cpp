@@ -104,6 +104,36 @@ namespace am {
 			delete[] _buffer;
 	}
 
+	void record_desktop_win_gdi::draw_cursor(HDC hdc)
+	{
+		if (!(_ci.flags & CURSOR_SHOWING))
+			return;
+
+		if (_ci.ptScreenPos.x < _rect.left ||
+			_ci.ptScreenPos.x > _rect.right ||
+			_ci.ptScreenPos.y < _rect.top ||
+			_ci.ptScreenPos.y > _rect.bottom
+			)
+			return;
+
+		HICON icon;
+		ICONINFO ii;
+
+		icon = CopyIcon(_ci.hCursor);
+		if (!icon)
+			return;
+
+		if (GetIconInfo(icon, &ii)) {
+			POINT pos;
+			DrawIconEx(hdc, _ci.ptScreenPos.x, _ci.ptScreenPos.y, icon, 0, 0, 0, NULL, DI_NORMAL);
+
+			DeleteObject(ii.hbmColor);
+			DeleteObject(ii.hbmMask);
+		}
+
+		DestroyIcon(icon);
+	}
+
 	bool record_desktop_win_gdi::do_record()
 	{
 		//int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
@@ -138,6 +168,12 @@ namespace am {
 			if (!BitBlt(hdc_mem, 0, 0, _width, _height, hdc_screen, _rect.left, _rect.top, SRCCOPY)) {
 				al_error("bitblt data failed:%lld", GetLastError());
 				break;
+			}
+
+			memset(&_ci, 0, sizeof(CURSORINFO));
+			_ci.cbSize = sizeof(CURSORINFO);
+			if (GetCursorInfo(&_ci)) {
+				draw_cursor(hdc_mem);
 			}
 
 			BITMAPINFOHEADER   bi;

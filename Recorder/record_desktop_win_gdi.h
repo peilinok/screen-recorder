@@ -27,8 +27,12 @@ namespace am {
 		virtual void clean_up();
 
 	private:
+		void draw_cursor(HDC hdc);
+
 		bool do_record();
+
 		void do_sleep(int64_t dur, int64_t pre, int64_t now);
+
 		void record_func();
 
 		uint8_t *_buffer;
