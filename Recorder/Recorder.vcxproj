@@ -138,7 +138,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2D.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;libmp4v2D.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
@@ -178,7 +178,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2D.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;libmp4v2D.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
@@ -202,7 +202,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;libmp4v2.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -252,7 +252,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;libmp4v2.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;libmp4v2.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -285,11 +285,12 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="record_audio_wasapi.h" />
     <ClInclude Include="record_desktop.h" />
     <ClInclude Include="record_desktop_define.h" />
-    <ClInclude Include="record_desktop_dshow.h" />
+    <ClInclude Include="record_desktop_ffmpeg_dshow.h" />
     <ClInclude Include="record_desktop_factory.h" />
-    <ClInclude Include="record_desktop_gdi.h" />
+    <ClInclude Include="record_desktop_ffmpeg_gdi.h" />
     <ClInclude Include="device_audios.h" />
     <ClInclude Include="export.h" />
+    <ClInclude Include="record_desktop_win_gdi.h" />
     <ClInclude Include="resample_pcm.h" />
     <ClInclude Include="ring_buffer.h" />
     <ClInclude Include="stdafx.h" />
@@ -311,11 +312,12 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="record_audio_dshow.cpp" />
     <ClCompile Include="record_audio_wasapi.cpp" />
     <ClCompile Include="record_desktop.cpp" />
-    <ClCompile Include="record_desktop_dshow.cpp" />
-    <ClCompile Include="record_desktop_gdi.cpp" />
+    <ClCompile Include="record_desktop_ffmpeg_dshow.cpp" />
+    <ClCompile Include="record_desktop_ffmpeg_gdi.cpp" />
     <ClCompile Include="record_desktop_factory.cpp" />
     <ClCompile Include="device_audios.cpp" />
     <ClCompile Include="export.cpp" />
+    <ClCompile Include="record_desktop_win_gdi.cpp" />
     <ClCompile Include="resample_pcm.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,26 +1,24 @@
-#pragma once
+#ifndef RECORD_DESKTOP_GDI
+#define RECORD_DESKTOP_GDI
 
 #include "record_desktop.h"
 
 namespace am {
 
-	class record_desktop_dshow:public record_desktop
+	class record_desktop_ffmpeg_gdi :public record_desktop
 	{
 	public:
-		record_desktop_dshow();
-		~record_desktop_dshow();
+		record_desktop_ffmpeg_gdi();
+		~record_desktop_ffmpeg_gdi();
 
 		virtual int init(
 			const RECORD_DESKTOP_RECT &rect,
 			const int fps);
-
+		
 		virtual int start();
 		virtual int pause();
 		virtual int resume();
 		virtual int stop();
-		virtual const AVRational & get_time_base();
-		virtual int64_t get_start_time();
-		virtual AVPixelFormat get_pixel_fmt();
 
 	protected:
 		virtual void clean_up();
@@ -38,3 +36,4 @@ namespace am {
 	};
 
 }
+#endif

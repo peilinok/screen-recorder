@@ -29,11 +29,11 @@ namespace am {
 		virtual int resume() = 0;
 		virtual int stop() = 0;
 
-		virtual const AVRational & get_time_base() = 0;
+		inline const AVRational & get_time_base() { return _time_base; }
 
-		virtual int64_t get_start_time() = 0;
+		inline int64_t get_start_time() { return _start_time; }
 
-		virtual AVPixelFormat get_pixel_fmt() = 0;
+		inline AVPixelFormat get_pixel_fmt() { return _pixel_fmt; }
 
 	public:
 		inline bool is_recording() { return _running; }
@@ -54,6 +54,7 @@ namespace am {
 
 	protected:
 		std::atomic_bool _running;
+		std::atomic_bool _paused;
 		std::atomic_bool _inited;
 
 		std::thread _thread;
@@ -67,6 +68,10 @@ namespace am {
 
 		cb_desktop_data _on_data;
 		cb_desktop_error _on_error;
+
+		AVRational _time_base;
+		int64_t _start_time;
+		AVPixelFormat _pixel_fmt;
 	};
 }
 

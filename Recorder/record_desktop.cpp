@@ -4,6 +4,7 @@
 am::record_desktop::record_desktop()
 {
 	_running = false;
+	_paused = false;
 	_inited = false;
 
 	_on_data = nullptr;
@@ -12,7 +13,9 @@ am::record_desktop::record_desktop()
 	_device_name = "";
 	_data_type = RECORD_DESKTOP_DATA_TYPES::AT_DESKTOP_BGRA;
 
-	//memset(&_record_rect, 0, sizeof(_record_rect));
+	_time_base = { 1,90000 };
+	_start_time = 0;
+	_pixel_fmt = AV_PIX_FMT_NONE;
 }
 
 am::record_desktop::~record_desktop()

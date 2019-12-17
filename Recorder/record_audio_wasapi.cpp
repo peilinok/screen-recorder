@@ -177,7 +177,7 @@ namespace am {
 
 			DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
 			if (_is_input == false)
-				flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;
+				flags = AUDCLNT_STREAMFLAGS_LOOPBACK;//for output mode,event will not auto set when there is no audio rendering
 
 			hr = _client->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
@@ -216,10 +216,12 @@ namespace am {
 
 			_stop_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-			hr = _client->SetEventHandle(_ready_event);
-			if (hr != S_OK) {
-				error = AE_CO_SET_EVENT_FAILED;
-				break;
+			if (_is_input) {
+				hr = _client->SetEventHandle(_ready_event);
+				if (hr != S_OK) {
+					error = AE_CO_SET_EVENT_FAILED;
+					break;
+				}
 			}
 
 			_sample_rate = _wfex->nSamplesPerSec;
@@ -317,7 +319,13 @@ namespace am {
 		frame->channels = _channel_num;
 		frame->pkt_size = sample_count*sample_size;
 
-		//al_debug("AF:%lld", frame->pts);
+#if 0
+		if (!_is_input) {
+			static int64_t pre_pts = 0;
+			al_debug("AF:%lld", frame->pts - pre_pts);
+			pre_pts = frame->pts;
+		}
+#endif
 
 		if (_on_data) _on_data(frame, _cb_extra_index);
 	}
@@ -406,7 +414,7 @@ namespace am {
 
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
 				al_debug("output slient data,%d %d", sample_count, _silent_sample_count);
-				process_data(frame, _silent_data, _silent_sample_count);
+				process_data(frame, _silent_data, min(sample_count, _silent_sample_count));
 			} 
 			else {
 
@@ -414,7 +422,7 @@ namespace am {
 					process_data(frame, buffer, sample_count);
 				}
 				else {
-					al_debug("output buffer invalid");
+					al_warn("output buffer invalid");
 				}
 			}
 
@@ -474,12 +482,11 @@ namespace am {
 
 		while (_running)
 		{
-			if (WaitForSingleObject(_stop_event, dur) == WAIT_OBJECT_0)
-				break;
-
 			if (!do_record_output(frame))
 				break;
 
+			if (WaitForSingleObject(_stop_event, dur) == WAIT_OBJECT_0)
+				break;
 		}//while(_running)
 
 		av_frame_free(&frame);

@@ -133,7 +133,7 @@ namespace am {
 		error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name), std::string("audio=") + std::string(setting.a_mic.name), true);
 		AMERROR_CHECK(error);
 
-		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_DSHOW, &_recorder_desktop);
+		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_DSHOW, &_recorder_desktop);
 		AMERROR_CHECK(error);
 #else
 		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
@@ -148,13 +148,14 @@ namespace am {
 		error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
 		AMERROR_CHECK(error);
 
-		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_GDI, &_recorder_desktop);
+		//error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_GDI, &_recorder_desktop);
+		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
 		AMERROR_CHECK(error);
 #endif 
 
 		error = _recorder_desktop->init(
 		{ 
-			setting.v_left,setting.v_top,setting.v_width,setting.v_height 
+			setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top 
 		}, 
 			setting.v_frame_rate
 		);

@@ -54,9 +54,6 @@
     <ClInclude Include="record_audio_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="record_desktop_gdi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="record_desktop_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -87,9 +84,6 @@
     <ClInclude Include="sws_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="record_desktop_dshow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="device_audios.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -103,6 +97,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_ffmpeg_gdi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_ffmpeg_dshow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_win_gdi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -120,9 +123,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="record_audio_factory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_desktop_gdi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="record_desktop.cpp">
@@ -155,9 +155,6 @@
     <ClCompile Include="sws_helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="record_desktop_dshow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="device_audios.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -171,6 +168,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="mmdevice_define.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_ffmpeg_dshow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_ffmpeg_gdi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_win_gdi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

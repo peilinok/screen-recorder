@@ -196,3 +196,6 @@
 /Recorder/Debug_DLL/mmdevice_define.obj
 /Recorder/Release_DLL/mmdevice_define.obj
 /Recorder/Release/mmdevice_define.obj
+/Recorder/Debug_DLL/record_desktop_ffmpeg_dshow.obj
+/Recorder/Debug_DLL/record_desktop_ffmpeg_gdi.obj
+/Recorder/Debug_DLL/record_desktop_win_gdi.obj

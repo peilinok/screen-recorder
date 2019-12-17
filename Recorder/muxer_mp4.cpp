@@ -716,8 +716,6 @@ namespace am {
 	{
 		std::lock_guard<std::mutex> lock(_time_mutex);
 
-		av_usleep(1000);
-
 		return av_gettime_relative();
 	}
 

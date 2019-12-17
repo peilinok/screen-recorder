@@ -1,4 +1,4 @@
-#include "record_desktop_gdi.h"
+#include "record_desktop_ffmpeg_dshow.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -6,7 +6,7 @@
 
 namespace am {
 
-	record_desktop_gdi::record_desktop_gdi()
+	record_desktop_ffmpeg_dshow::record_desktop_ffmpeg_dshow()
 	{
 		av_register_all();
 		avdevice_register_all();
@@ -21,13 +21,13 @@ namespace am {
 	}
 
 
-	record_desktop_gdi::~record_desktop_gdi()
+	record_desktop_ffmpeg_dshow::~record_desktop_ffmpeg_dshow()
 	{
 		stop();
 		clean_up();
 	}
 
-	int record_desktop_gdi::init(const RECORD_DESKTOP_RECT & rect, const int fps)
+	int record_desktop_ffmpeg_dshow::init(const RECORD_DESKTOP_RECT & rect, const int fps)
 	{
 		int error = AE_NO;
 		if (_inited == true) {
@@ -50,10 +50,10 @@ namespace am {
 		int ret = 0;
 		do {
 			_fmt_ctx = avformat_alloc_context();
-			_input_fmt = av_find_input_format("gdigrab");
+			_input_fmt = av_find_input_format("dshow");
 
 			//the framerate must be same like encoder & muxer 's framerate,otherwise the video can not sync with audio
-			ret = avformat_open_input(&_fmt_ctx, "desktop", _input_fmt, &options);
+			ret = avformat_open_input(&_fmt_ctx, "video=screen-capture-recorder", _input_fmt, &options);
 			if (ret != 0) {
 				error = AE_FFMPEG_OPEN_INPUT_FAILED;
 				break;
@@ -92,6 +92,10 @@ namespace am {
 				break;
 			}
 
+			_start_time = _fmt_ctx->streams[_stream_index]->start_time;
+			_time_base = _fmt_ctx->streams[_stream_index]->time_base;
+			_pixel_fmt = _fmt_ctx->streams[_stream_index]->codec->pix_fmt;
+
 			_inited = true;
 		} while (0);
 
@@ -105,7 +109,7 @@ namespace am {
 		return error;
 	}
 
-	int record_desktop_gdi::start()
+	int record_desktop_ffmpeg_dshow::start()
 	{
 		if (_running == true) {
 			al_warn("record desktop gdi is already running");
@@ -116,24 +120,23 @@ namespace am {
 			return AE_NEED_INIT;
 		}
 
-
 		_running = true;
-		_thread = std::thread(std::bind(&record_desktop_gdi::record_func, this));
+		_thread = std::thread(std::bind(&record_desktop_ffmpeg_dshow::record_func, this));
 
 		return AE_NO;
 	}
 
-	int record_desktop_gdi::pause()
+	int record_desktop_ffmpeg_dshow::pause()
 	{
 		return 0;
 	}
 
-	int record_desktop_gdi::resume()
+	int record_desktop_ffmpeg_dshow::resume()
 	{
 		return 0;
 	}
 
-	int record_desktop_gdi::stop()
+	int record_desktop_ffmpeg_dshow::stop()
 	{
 		_running = false;
 		if (_thread.joinable())
@@ -142,27 +145,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	const AVRational & record_desktop_gdi::get_time_base()
-	{
-		if (_inited && _fmt_ctx && _stream_index != -1) {
-			return _fmt_ctx->streams[_stream_index]->time_base;
-		}
-		else {
-			return{ 1,90000 };
-		}
-	}
-
-	int64_t record_desktop_gdi::get_start_time()
-	{
-		return _fmt_ctx->streams[_stream_index]->start_time;
-	}
-
-	AVPixelFormat record_desktop_gdi::get_pixel_fmt()
-	{
-		return _fmt_ctx->streams[_stream_index]->codec->pix_fmt;
-	}
-
-	void record_desktop_gdi::clean_up()
+	void record_desktop_ffmpeg_dshow::clean_up()
 	{
 		if (_codec_ctx)
 			avcodec_close(_codec_ctx);
@@ -179,7 +162,7 @@ namespace am {
 		_inited = false;
 	}
 
-	int record_desktop_gdi::decode(AVFrame * frame, AVPacket * packet)
+	int record_desktop_ffmpeg_dshow::decode(AVFrame * frame, AVPacket * packet)
 	{
 		int ret = avcodec_send_packet(_codec_ctx, packet);
 		if (ret < 0) {
@@ -188,7 +171,7 @@ namespace am {
 			return AE_FFMPEG_DECODE_FRAME_FAILED;
 		}
 
-		while (ret >= 0)
+		while (ret >=0)
 		{
 			ret = avcodec_receive_frame(_codec_ctx, frame);
 			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
@@ -199,10 +182,6 @@ namespace am {
 				return AE_FFMPEG_READ_FRAME_FAILED;
 			}
 
-			//use relative time instead of device time
-			frame->pts = av_gettime_relative();// -_start_time;
-			frame->pkt_dts = frame->pts;
-			frame->pkt_pts = frame->pts;
 			if (ret == 0 && _on_data)
 				_on_data(frame);
 
@@ -212,7 +191,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	void record_desktop_gdi::record_func()
+	void record_desktop_ffmpeg_dshow::record_func()
 	{
 		AVPacket *packet = av_packet_alloc();
 		AVFrame *frame = av_frame_alloc();
@@ -221,6 +200,9 @@ namespace am {
 
 		int got_pic = 0;
 		while (_running == true) {
+
+			av_init_packet(packet);
+
 			ret = av_read_frame(_fmt_ctx, packet);
 
 			if (ret < 0) {
@@ -231,7 +213,7 @@ namespace am {
 			}
 
 			if (packet->stream_index == _stream_index) {
-
+				
 				ret = decode(frame, packet);
 				if (ret != AE_NO) {
 					if (_on_error) _on_error(AE_FFMPEG_DECODE_FRAME_FAILED);

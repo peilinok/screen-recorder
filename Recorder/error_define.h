@@ -4,6 +4,7 @@
 
 enum AM_ERROR{
 	AE_NO = 0,
+	AE_ERROR,
 	AE_UNSUPPORT,
 	AE_INVALID_CONTEXT,
 	AE_NEED_INIT,
@@ -56,6 +57,7 @@ enum AM_ERROR{
 
 static const char *ERRORS_STR[] = {
 	"no error",                         //AE_NO
+	"error",                            //AE_ERROR
 	"not support for now",              //AE_UNSUPPORT
 	"invalid context",                  //AE_INVALID_CONTEXT
 	"need init first",                  //AE_NEED_INIT
