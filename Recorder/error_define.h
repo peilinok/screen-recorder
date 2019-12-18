@@ -57,6 +57,12 @@ enum AM_ERROR{
 	AE_FILTER_CONFIG_FAILED,
 	AE_FILTER_INVALID_CTX_INDEX,
 	AE_FILTER_ADD_FRAME_FAILED,
+
+	AE_GDI_GET_DC_FAILED,
+	AE_GDI_CREATE_DC_FAILED,
+	AE_GDI_CREATE_BMP_FAILED,
+	AE_GDI_BITBLT_FAILED,
+	AE_GDI_GET_DIBITS_FAILED,
 };
 
 static const char *ERRORS_STR[] = {
@@ -116,6 +122,12 @@ static const char *ERRORS_STR[] = {
 	"avfilter config graph failed",     //AE_FILTER_CONFIG_FAILED
 	"avfilter invalid ctx index",       //AE_FILTER_INVALID_CTX_INDEX
 	"avfilter add frame failed",        //AE_FILTER_ADD_FRAME_FAILED
+
+	"gdi get dc failed",                //AE_GDI_GET_DC_FAILED
+	"gdi create dc failed",             //AE_GDI_CREATE_DC_FAILED
+	"gdi create bmp failed",            //AE_GDI_CREATE_BMP_FAILED
+	"gdi bitblt failed",                //AE_GDI_BITBLT_FAILED
+	"gid geet dibbits failed",          //AE_GDI_GET_DIBITS_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]
