@@ -66,7 +66,7 @@ namespace am {
 			}
 
 			//const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=32[out]";
-			const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first[out]";
+			const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=0[out]";
 
 			_ctx_in_0.inout = avfilter_inout_alloc();
 			_ctx_in_1.inout = avfilter_inout_alloc();

@@ -233,12 +233,12 @@ namespace am {
 	void record_desktop_win_gdi::do_sleep(int64_t dur, int64_t pre, int64_t now)
 	{
 		int64_t delay = now - pre;
-		delay = delay > dur ? max(0, dur - (delay - dur)) : (dur + dur - delay);
+		dur = delay > dur ? max(0, dur - (delay - dur)) : (dur + dur - delay);
 
 		//al_debug("%lld", delay);
 
-		if(delay)
-			av_usleep(delay);
+		if(dur)
+			av_usleep(dur);
 	}
 
 	void record_desktop_win_gdi::record_func()
@@ -258,7 +258,6 @@ namespace am {
 			frame->pts = av_gettime_relative();
 			frame->pkt_dts = frame->pts;
 			frame->pkt_pts = frame->pts;
-			frame->best_effort_timestamp = frame->pts;
 
 			frame->data[0] = _buffer;
 			frame->linesize[0] = _width * 4;

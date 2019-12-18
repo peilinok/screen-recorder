@@ -8,9 +8,8 @@
 
 #ifdef _WIN32
 
-
-#define REFTIMES_PER_SEC  10000000
-#define REFTIMES_PER_MILLISEC  10000
+#define NS_PER_SEC 1000000000
+#define REFTIMES_PER_SEC  NS_PER_SEC/100            //100ns per buffer unit
 
 #endif // _WIN32
 
@@ -32,14 +31,17 @@ namespace am {
 		_wfex = NULL;
 		_enumerator = nullptr;
 		_device = nullptr;
-		_client = nullptr;
+		_capture_client = nullptr;
 		_capture = nullptr;
 		_render = nullptr;
+		_render_client = nullptr;
 
-		_buffer_frame_count = 0;
+		_capture_sample_count = 0;
+		_render_sample_count = 0;
 
 		_ready_event = NULL;
 		_stop_event = NULL;
+		_render_event = NULL;
 
 		_start_time = 0;
 		_pre_pts = 0;
@@ -73,48 +75,85 @@ namespace am {
 		}
 	}
 
-	void record_audio_wasapi::init_render()
+	int record_audio_wasapi::init_render()
 	{
-		WAVEFORMATEX *wfex;
-		HRESULT res;
-		LPBYTE buffer;
-		UINT32 frames;
-		IAudioClient* client = NULL;
+		int error = AE_NO;
 
-		res = _device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr,
-			(void **)&client);
-		if (FAILED(res))
-			return;
+		do {
+			HRESULT res = _device->Activate(__uuidof(IAudioClient),
+				CLSCTX_ALL, 
+				nullptr,
+				(void **)&_render_client
+			);
 
-		res = client->GetMixFormat(&wfex);
-		if (FAILED(res))
-			return;
+			if (FAILED(res)) {
+				error = AE_CO_ACTIVE_DEVICE_FAILED;
+				break;
+			}
 
-		res = client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, REFTIMES_PER_SEC,
-			0, wfex, nullptr);
-		if (FAILED(res))
-			return;
+			WAVEFORMATEX *wfex;
+			res = _render_client->GetMixFormat(&wfex);
+			if (FAILED(res)) {
+				error = AE_CO_GET_FORMAT_FAILED;
+				break;
+			}
 
-		/* Silent loopback fix. Prevents audio stream from stopping and */
-		/* messing up timestamps and other weird glitches during silence */
-		/* by playing a silent sample all over again. */
+			res = _render_client->Initialize(AUDCLNT_SHAREMODE_SHARED,
+				AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+				REFTIMES_PER_SEC,
+				0, wfex, nullptr);
 
-		res = client->GetBufferSize(&frames);
-		if (FAILED(res))
-			return;
+			CoTaskMemFree(wfex);
+			if (FAILED(res)) {
+				error = AE_CO_AUDIOCLIENT_INIT_FAILED;
+				break;
+			}
 
-		res = client->GetService(__uuidof(IAudioRenderClient),
-			(void **)&_render);
-		if (FAILED(res))
-			return;
+			/* Silent loopback fix. Prevents audio stream from stopping and */
+			/* messing up timestamps and other weird glitches during silence */
+			/* by playing a silent sample all over again. */
 
-		res = _render->GetBuffer(frames, &buffer);
-		if (FAILED(res))
-			return;
+			res = _render_client->GetService(__uuidof(IAudioRenderClient),
+				(void **)&_render);
+			if (FAILED(res)) {
+				error = AE_CO_GET_CAPTURE_FAILED;
+				break;
+			}
 
-		memset(buffer, 0, frames * wfex->nBlockAlign);
+			_render_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+			if (!_render_event) {
+				error = AE_CO_CREATE_EVENT_FAILED;
+				break;
+			}
+			
+			res = _render_client->SetEventHandle(_render_event);
+			if (FAILED(res)) {
+				error = AE_CO_SET_EVENT_FAILED;
+				break;
+			}
 
-		_render->ReleaseBuffer(frames, 0);
+			//pre fill a single silent buffer
+			res = _render_client->GetBufferSize(&_render_sample_count);
+			if (FAILED(res)) {
+				error = AE_CO_GET_VALUE_FAILED;
+				break;
+			}
+
+			uint8_t *buffer = NULL;
+			res = _render->GetBuffer(_render_sample_count, &buffer);
+			if (FAILED(res)) {
+				error = AE_CO_GET_VALUE_FAILED;
+				break;
+			}
+
+			res = _render->ReleaseBuffer(_render_sample_count, AUDCLNT_BUFFERFLAGS_SILENT);
+			if (FAILED(res)) {
+				error = AE_CO_RELEASE_BUFFER_FAILED;
+				break;
+			}
+		} while (0);
+
+		return error;
 	}
 
 	int record_audio_wasapi::init(const std::string & device_name, const std::string &device_id, bool is_input)
@@ -163,13 +202,13 @@ namespace am {
 
 			get_device_info(_device);
 
-			hr = _device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&_client);
+			hr = _device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&_capture_client);
 			if (hr != S_OK) {
 				error = AE_CO_ACTIVE_DEVICE_FAILED;
 				break;
 			}
 
-			hr = _client->GetMixFormat(&_wfex);
+			hr = _capture_client->GetMixFormat(&_wfex);
 			if (hr != S_OK) {
 				error = AE_CO_GET_FORMAT_FAILED;
 				break;
@@ -177,9 +216,9 @@ namespace am {
 
 			DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
 			if (_is_input == false)
-				flags = AUDCLNT_STREAMFLAGS_LOOPBACK;//for output mode,event will not auto set when there is no audio rendering
+				flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;//for output mode,event will not auto set when there is no audio rendering
 
-			hr = _client->Initialize(
+			hr = _capture_client->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				flags,
 				REFTIMES_PER_SEC,
@@ -192,17 +231,21 @@ namespace am {
 				break;
 			}
 
-			if (_is_input == false)
-				init_render();
+			if (_is_input == false) {
+				error = init_render();
 
-			hr = _client->GetBufferSize(&_buffer_frame_count);
+				if (error != AE_NO)
+					break;
+			}
+
+			hr = _capture_client->GetBufferSize(&_capture_sample_count);
 			if (hr != S_OK) {
 				error = AE_CO_GET_VALUE_FAILED;
 				break;
 			}
 
 
-			hr = _client->GetService(__uuidof(IAudioCaptureClient), (void**)&_capture);
+			hr = _capture_client->GetService(__uuidof(IAudioCaptureClient), (void**)&_capture);
 			if (hr != S_OK) {
 				error = AE_CO_GET_CAPTURE_FAILED;
 				break;
@@ -216,8 +259,8 @@ namespace am {
 
 			_stop_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-			if (_is_input) {
-				hr = _client->SetEventHandle(_ready_event);
+			if (_is_input || !_is_input) {
+				hr = _capture_client->SetEventHandle(_ready_event);
 				if (hr != S_OK) {
 					error = AE_CO_SET_EVENT_FAILED;
 					break;
@@ -252,9 +295,19 @@ namespace am {
 		if (_inited == false)
 			return AE_NEED_INIT;
 
-		HRESULT hr = _client->Start();
+		HRESULT hr = S_OK;
+		
+		if (!_is_input) {
+			hr = _render_client->Start();
+			if (FAILED(hr)) {
+				al_error("%s,error:%ld", err2str(AE_CO_START_FAILED), GetLastError());
+				return AE_CO_START_FAILED;
+			}
+		}
+		
+		hr = _capture_client->Start();
 		if (hr != S_OK) {
-			al_debug("%s,error:%ld", err2str(AE_CO_START_FAILED), GetLastError());
+			al_error("%s,error:%ld", err2str(AE_CO_START_FAILED), GetLastError());
 			return AE_CO_START_FAILED;
 		}
 
@@ -263,9 +316,10 @@ namespace am {
 		_running = true;
 		if(_is_input)
 			_thread = std::thread(std::bind(&record_audio_wasapi::record_func_input, this));
-		else
+		else {
+			_render_thread = std::thread(std::bind(&record_audio_wasapi::render_func, this));
 			_thread = std::thread(std::bind(&record_audio_wasapi::record_func_output, this));
-
+		}
 		return AE_NO;
 	}
 
@@ -281,14 +335,20 @@ namespace am {
 
 	int record_audio_wasapi::stop()
 	{
-		if (_client)
-			_client->Stop();
-
 		_running = false;
 		SetEvent(_stop_event);
 
+		if (_render_thread.joinable())
+			_render_thread.join();
+
 		if (_thread.joinable())
 			_thread.join();
+
+		if (_capture_client)
+			_capture_client->Stop();
+
+		if (_render_client)
+			_render_client->Stop();
 
 		return AE_NO;
 	}
@@ -308,7 +368,8 @@ namespace am {
 		int sample_size = _bit_per_sample / 8 * _channel_num;
 
 		//use relative time instead of device time
-		frame->pts = av_gettime_relative();// -_start_time;
+		frame->pts = av_gettime_relative();
+		frame->pts -= (int64_t)sample_count * AV_TIME_BASE / (int64_t)_sample_rate;
 		frame->pkt_dts = frame->pts;
 		frame->pkt_pts = frame->pts;
 		frame->data[0] = data;
@@ -319,7 +380,7 @@ namespace am {
 		frame->channels = _channel_num;
 		frame->pkt_size = sample_count*sample_size;
 
-#if 0
+#if 1
 		if (!_is_input) {
 			static int64_t pre_pts = 0;
 			al_debug("AF:%lld", frame->pts - pre_pts);
@@ -339,7 +400,7 @@ namespace am {
 		uint64_t pos, ts;
 		uint32_t sample_count = 0;
 
-		while (true) {
+		while (_running) {
 			res = _capture->GetNextPacketSize(&sample_count);
 
 			if (FAILED(res)) {
@@ -388,21 +449,21 @@ namespace am {
 		uint64_t pos, ts;
 		uint32_t sample_count = 0;
 
-		res = _capture->GetNextPacketSize(&sample_count);
-		if (FAILED(res)) {
-			if (res != AUDCLNT_E_DEVICE_INVALIDATED)
-				al_warn("GetNextPacketSize failed: %lX", res);
+		while (_running) {
+			res = _capture->GetNextPacketSize(&sample_count);
+			if (FAILED(res)) {
+				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
+					al_warn("GetNextPacketSize failed: %lX", res);
 
-			return false;
-		}
+				return false;
+			}
 
-		//when there is no pcm rendering,the capture will not return packet_size,so we put silent data(10ms)
-		if (!sample_count) {
-			process_data(frame, _silent_data, _silent_sample_count);
-			return true;
-		}
+			//when there is no pcm rendering,the capture will not return packet_size,so we put silent data(10ms)
+			if (!sample_count) {
+				//process_data(frame, _silent_data, _silent_sample_count);
+				return true;
+			}
 
-		while (sample_count != 0) {
 			buffer = NULL;
 			res = _capture->GetBuffer(&buffer, &sample_count, &flags, &pos, &ts);
 			if (FAILED(res)) {
@@ -413,7 +474,7 @@ namespace am {
 			}
 
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-				al_debug("output slient data,%d %d", sample_count, _silent_sample_count);
+				//al_debug("output slient data,%d %d", sample_count, _silent_sample_count);
 				process_data(frame, _silent_data, min(sample_count, _silent_sample_count));
 			} 
 			else {
@@ -427,17 +488,65 @@ namespace am {
 			}
 
 			_capture->ReleaseBuffer(sample_count);
-
-			res = _capture->GetNextPacketSize(&sample_count);
-			if (FAILED(res)) {
-				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
-					al_warn("GetNextPacketSize failed: %lX", res);
-
-				return false;
-			}
 		}
 
 		return true;
+	}
+
+	void record_audio_wasapi::render_func()
+	{
+		HANDLE events[2] = { _stop_event,_render_event };
+
+		uint8_t *pData = NULL;
+		while (_running && 
+			WaitForMultipleObjects(2, events, FALSE, INFINITE) != WAIT_OBJECT_0
+			) {
+			// got "feed me" event - see how much padding there is
+			//
+			// padding is how much of the buffer is currently in use
+			//
+			// note in particular that event-driven (pull-mode) render should not
+			// call GetCurrentPadding multiple times
+			// in a single processing pass
+			// this is in stark contrast to timer-driven (push-mode) render
+			UINT32 nFramesOfPadding;
+			HRESULT hr = _render_client->GetCurrentPadding(&nFramesOfPadding);
+			if (FAILED(hr)) {
+				break;
+			}
+
+			if (nFramesOfPadding == _render_sample_count) {
+				hr = E_UNEXPECTED;
+				printf("Got \"feed me\" event but IAudioClient::GetCurrentPadding reports buffer is full - glitch?\n");
+				break;
+			}
+
+			hr = _render->GetBuffer(_render_sample_count - nFramesOfPadding, &pData);
+			if (FAILED(hr)) {
+				al_error("%s", err2str(AE_CO_GET_BUFFER_FAILED));
+				break;
+			}
+
+			// *** AT THIS POINT ***
+			// If you wanted to render something besides silence,
+			// you would fill the buffer pData
+			// with (nFramesInBuffer - nFramesOfPadding) worth of audio data
+			// this should be in the same wave format
+			// that the stream was initialized with
+			//
+			// In particular, if you didn't want to use the mix format,
+			// you would need to either ask for a different format in IAudioClient::Initialize
+			// or do a format conversion
+			//
+			// If you do, then change the AUDCLNT_BUFFERFLAGS_SILENT flags value below to 0
+
+			// release the buffer with the silence flag
+			hr = _render->ReleaseBuffer(_render_sample_count - nFramesOfPadding, AUDCLNT_BUFFERFLAGS_SILENT);
+			if (FAILED(hr)) {
+				al_error("IAudioRenderClient::ReleaseBuffer failed on pass %u: hr = 0x%08x - glitch?\n", 0, hr);
+				break;
+			}
+		}
 	}
 
 	void record_audio_wasapi::record_func_input()
@@ -464,15 +573,9 @@ namespace am {
 
 	void record_audio_wasapi::record_func_output()
 	{
-		DWORD ret = WAIT_TIMEOUT;
-
 		AVFrame *frame = av_frame_alloc();
 
-		//                    ( get fill 1s buffer costed time in ns                     ) / (1 ms equals 10000 ns)/ (half 1s)
-		REFERENCE_TIME dur = _buffer_frame_count / _sample_rate * (double)REFTIMES_PER_SEC / REFTIMES_PER_MILLISEC / 2;
-		
-		//half 1s or 10ms?half 1s will destroy sync time line
-		dur = 10;
+		int64_t dur = 10;
 
 		_silent_sample_count = _sample_rate * dur / 1000;
 		_silent_data_size = _silent_sample_count * _bit_per_sample / 8 * _channel_num;
@@ -480,16 +583,21 @@ namespace am {
 
 		memset(_silent_data, 0, _silent_data_size);
 
+		HANDLE events[2] = { _stop_event,_ready_event };
+
+		DWORD ret = WAIT_TIMEOUT;
+
 		while (_running)
 		{
-			if (!do_record_output(frame))
+			if (WaitForMultipleObjects(2, events, FALSE, INFINITE) == WAIT_OBJECT_0)
 				break;
 
-			if (WaitForSingleObject(_stop_event, dur) == WAIT_OBJECT_0)
+			if (!do_record_output(frame))
 				break;
 		}//while(_running)
 
 		av_frame_free(&frame);
+
 		delete[] _silent_data;
  	}
 
@@ -539,9 +647,13 @@ namespace am {
 			_device->Release();
 		_device = nullptr;
 
-		if (_client)
-			_client->Release();
-		_client = nullptr;
+		if (_capture_client)
+			_capture_client->Release();
+		_capture_client = nullptr;
+
+		if (_render_client)
+			_render_client->Release();
+		_render_client = nullptr;
 
 		if (_capture)
 			_capture->Release();
@@ -558,6 +670,10 @@ namespace am {
 		if (_stop_event)
 			CloseHandle(_stop_event);
 		_stop_event = NULL;
+
+		if (_render_event)
+			CloseHandle(_render_event);
+		_render_event = NULL;
 
 		if(_co_inited == true)
 			CoUninitialize();

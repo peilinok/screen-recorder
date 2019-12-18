@@ -38,7 +38,9 @@ namespace am {
 		virtual int64_t get_start_time();
 
 	private:
-		void init_render();
+		int init_render();
+
+		void render_func();
 
 		void process_data(AVFrame *frame,uint8_t* data, uint32_t sample_count);
 
@@ -61,16 +63,22 @@ namespace am {
 
 		IMMDevice *_device;
 
-		IAudioClient *_client;
+		IAudioClient *_capture_client;
 
 		IAudioCaptureClient *_capture;
 
 		IAudioRenderClient *_render;
 
-		uint32_t _buffer_frame_count;
+		IAudioClient *_render_client;
+
+		std::thread _render_thread;
+
+		uint32_t _capture_sample_count;
+		uint32_t _render_sample_count;
 
 		HANDLE _ready_event;
 		HANDLE _stop_event;
+		HANDLE _render_event;
 
 		bool _co_inited;
 

@@ -24,6 +24,8 @@ enum AM_ERROR{
 	AE_CO_GET_ENDPOINT_ID_FAILED,
 	AE_CO_OPEN_PROPERTY_FAILED,
 	AE_CO_GET_VALUE_FAILED,
+	AE_CO_GET_BUFFER_FAILED,
+	AE_CO_RELEASE_BUFFER_FAILED,
 
 	AE_FFMPEG_OPEN_INPUT_FAILED,
 	AE_FFMPEG_FIND_STREAM_FAILED,
@@ -77,6 +79,8 @@ static const char *ERRORS_STR[] = {
 	"com get endpoint id failed",       //AE_CO_GET_ENDPOINT_ID_FAILED
 	"com open endpoint property failed", //AE_CO_OPEN_PROPERTY_FAILED
 	"com get property value failed",    //AE_CO_GET_VALUE_FAILED
+	"com get buffer failed",            //AE_CO_GET_BUFFER_FAILED
+	"com release buffer failed",        //AE_CO_RELEASE_BUFFER_FAILED
 
 	"ffmpeg open input failed",         //AE_FFMPEG_OPEN_INPUT_FAILED
 	"ffmpeg find stream info failed",   //AE_FFMPEG_FIND_STREAM_FAILED

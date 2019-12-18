@@ -244,7 +244,6 @@ namespace am {
 				_frame->pkt_dts = yuv_frame.pkt_dts;
 				_frame->pkt_dts = yuv_frame.pkt_dts;
 				_frame->pts = yuv_frame.pts;
-				_frame->best_effort_timestamp = yuv_frame.best_effort_timestamp;
 
 				if ((error = encode(_frame, packet)) != AE_NO) {
 					if (_on_error) 
