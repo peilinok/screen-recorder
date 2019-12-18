@@ -26,6 +26,8 @@ enum AM_ERROR{
 	AE_CO_GET_VALUE_FAILED,
 	AE_CO_GET_BUFFER_FAILED,
 	AE_CO_RELEASE_BUFFER_FAILED,
+	AE_CO_GET_PACKET_FAILED,
+	AE_CO_PADDING_UNEXPECTED,
 
 	AE_FFMPEG_OPEN_INPUT_FAILED,
 	AE_FFMPEG_FIND_STREAM_FAILED,
@@ -81,6 +83,8 @@ static const char *ERRORS_STR[] = {
 	"com get property value failed",    //AE_CO_GET_VALUE_FAILED
 	"com get buffer failed",            //AE_CO_GET_BUFFER_FAILED
 	"com release buffer failed",        //AE_CO_RELEASE_BUFFER_FAILED
+	"com get packet size failed",       //AE_CO_GET_PACKET_FAILED
+	"com get padding size unexpected",  //AE_CO_PADDING_UNEXPECTED
 
 	"ffmpeg open input failed",         //AE_FFMPEG_OPEN_INPUT_FAILED
 	"ffmpeg find stream info failed",   //AE_FFMPEG_FIND_STREAM_FAILED

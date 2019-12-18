@@ -62,6 +62,7 @@ namespace am {
 	protected:
 		std::atomic_bool _running;
 		std::atomic_bool _inited;
+		std::atomic_bool _paused;
 
 		std::thread _thread;
 

@@ -5,6 +5,7 @@ namespace am {
 	{
 		_running = false;
 		_inited = false;
+		_paused = false;
 
 		_sample_rate = 48000;
 		_bit_rate = 3072000;

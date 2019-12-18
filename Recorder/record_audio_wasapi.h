@@ -40,19 +40,13 @@ namespace am {
 	private:
 		int init_render();
 
-		void render_func();
+		void render_loop();
 
 		void process_data(AVFrame *frame,uint8_t* data, uint32_t sample_count);
 
-		bool do_record_input(AVFrame *frame);
+		int do_record(AVFrame *frame);
 
-		bool do_record_output(AVFrame *frame);
-
-		void record_func_input();
-
-		void record_func_output();
-
-		bool adjust_format_2_16bits(WAVEFORMATEX *pwfx);
+		void record_loop();
 
 		void clean_wasapi();
 
@@ -84,13 +78,8 @@ namespace am {
 
 		bool _is_default;
 
-		uint8_t *_silent_data;
-		uint32_t _silent_sample_count;
-		uint32_t _silent_data_size;
-
 		//define time stamps here
 		int64_t _start_time;
-		int64_t _pre_pts;
 	};
 }
 

@@ -65,7 +65,6 @@ namespace am {
 				break;
 			}
 
-			//const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=32[out]";
 			const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=0[out]";
 
 			_ctx_in_0.inout = avfilter_inout_alloc();
@@ -128,7 +127,7 @@ namespace am {
 				break;
 			}
 
-			al_debug("dump graph:\r\n%s", avfilter_graph_dump(_filter_graph, NULL));
+			//al_debug("dump graph:\r\n%s", avfilter_graph_dump(_filter_graph, NULL));
 
 			_inited = true;
 		} while (0);
