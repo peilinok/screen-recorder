@@ -29,7 +29,7 @@ namespace am {
 	private:
 		void draw_cursor(HDC hdc);
 
-		bool do_record();
+		int do_record();
 
 		void do_sleep(int64_t dur, int64_t pre, int64_t now);
 

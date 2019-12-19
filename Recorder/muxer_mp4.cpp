@@ -211,7 +211,7 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-#if 1
+#if 1 //with filter
 	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false

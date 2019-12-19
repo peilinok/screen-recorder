@@ -134,7 +134,7 @@ namespace am {
 		DestroyIcon(icon);
 	}
 
-	bool record_desktop_win_gdi::do_record()
+	int record_desktop_win_gdi::do_record()
 	{
 		//int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
 		//int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
@@ -170,7 +170,8 @@ namespace am {
 
 			if (!BitBlt(hdc_mem, 0, 0, _width, _height, hdc_screen, _rect.left, _rect.top, SRCCOPY)) {
 				al_error("bitblt data failed:%lld", GetLastError());
-				error = AE_GDI_BITBLT_FAILED;
+				//error = AE_GDI_BITBLT_FAILED;
+				//administrator UAC will trigger invalid handle error
 				break;
 			}
 
@@ -232,7 +233,7 @@ namespace am {
 		if(hdc_screen)
 			ReleaseDC(NULL, hdc_screen);
 
-		return (error == AE_NO);
+		return  AE_NO;
 	}
 
 	void record_desktop_win_gdi::do_sleep(int64_t dur, int64_t pre, int64_t now)
@@ -257,21 +258,29 @@ namespace am {
 		while (_running)
 		{
 			ret = do_record();
-			if (!ret)
+			if (ret != AE_NO) {
+				if (_on_error) _on_error(ret);
 				break;
+			}
 
 			frame->pts = av_gettime_relative();
 			frame->pkt_dts = frame->pts;
 			frame->pkt_pts = frame->pts;
-
-			frame->data[0] = _buffer;
-			frame->linesize[0] = _width * 4;
 
 			frame->width = _width;
 			frame->height = _height;
 			frame->format = AV_PIX_FMT_BGRA;
 			frame->pict_type = AV_PICTURE_TYPE_I;
 			frame->pkt_size = _width * _height * 4;
+
+			av_image_fill_arrays(frame->data, 
+				frame->linesize, 
+				_buffer,
+				AV_PIX_FMT_BGRA,
+				_width,
+				_height,
+				1
+			);
 
 			if (_on_data) _on_data(frame);
 
