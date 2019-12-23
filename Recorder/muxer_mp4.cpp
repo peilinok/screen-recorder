@@ -612,13 +612,20 @@ namespace am {
 		int ret = 0;
 
 		do {
-			ret = avio_open(&_fmt_ctx->pb, output_file, AVIO_FLAG_WRITE);
-			if (ret < 0) {
-				error = AE_FFMPEG_OPEN_IO_FAILED;
-				break;
+			if (!(_fmt->flags & AVFMT_NOFILE)) {
+				ret = avio_open(&_fmt_ctx->pb, output_file, AVIO_FLAG_WRITE);
+				if (ret < 0) {
+					error = AE_FFMPEG_OPEN_IO_FAILED;
+					break;
+				}
 			}
 
+
 			ret = avformat_write_header(_fmt_ctx, NULL);
+			if (ret < 0) {
+				error = AE_FFMPEG_WRITE_HEADER_FAILED;
+				break;
+			}
 		} while (0);
 
 		return error;

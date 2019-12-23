@@ -47,6 +47,7 @@ enum AM_ERROR{
 	AE_RESAMPLE_INIT_FAILED,
 	AE_FFMPEG_NEW_STREAM_FAILED,
 	AE_FFMPEG_FIND_INPUT_FMT_FAILED,
+	AE_FFMPEG_WRITE_HEADER_FAILED,
 
 	AE_MP4V2_CREATE_FAILED,
 	AE_MP4V2_ADD_TRACK_FAILED,
@@ -112,6 +113,7 @@ static const char *ERRORS_STR[] = {
 	"resampler init failed",            //AE_RESAMPLE_INIT_FAILED
 	"ffmpeg new out stream failed",     //AE_FFMPEG_NEW_STREAM_FAILED
 	"ffmpeg find input format failed",  //AE_FFMPEG_FIND_INPUT_FMT_FAILED
+	"ffmpeg write file header failed",  //AE_FFMPEG_WRITE_HEADER_FAILED
 
 	"mp4v2 create new handle failed",   //AE_MP4V2_CREATE_FAILED
 	"mp4v2 create new track failed",    //AE_MP4V2_ADD_TRACK_FAILED
