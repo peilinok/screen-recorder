@@ -168,7 +168,8 @@ namespace am {
 
 			SelectObject(hdc_mem, hbm_mem);
 
-			if (!BitBlt(hdc_mem, 0, 0, _width, _height, hdc_screen, _rect.left, _rect.top, SRCCOPY)) {
+			//must have CAPTUREBLT falg,otherwise some layered window can not be captured
+			if (!BitBlt(hdc_mem, 0, 0, _width, _height, hdc_screen, _rect.left, _rect.top, SRCCOPY | CAPTUREBLT)) {
 				al_error("bitblt data failed:%lld", GetLastError());
 				//error = AE_GDI_BITBLT_FAILED;
 				//administrator UAC will trigger invalid handle error
