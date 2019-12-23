@@ -1,5 +1,4 @@
-#ifndef MUXER_MP4
-#define MUXER_MP4
+#pragma once
 
 #include <atomic>
 #include <thread>
@@ -13,12 +12,11 @@
 #include "headers_ffmpeg.h"
 
 namespace am {
-
-	class muxer_mp4 : public muxer_file
+	class muxer_mkv :public muxer_file
 	{
 	public:
-		muxer_mp4();
-		~muxer_mp4();
+		muxer_mkv();
+		~muxer_mkv();
 
 		int init(
 			const char *output_file,
@@ -98,8 +96,5 @@ namespace am {
 		std::mutex _mutex;
 		std::mutex _time_mutex;
 	};
+
 }
-
-
-
-#endif

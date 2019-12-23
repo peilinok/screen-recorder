@@ -6,7 +6,9 @@
 #include "record_desktop_factory.h"
 
 #include "muxer_define.h"
+#include "muxer_file.h"
 #include "muxer_mp4.h"
+#include "muxer_mkv.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -55,7 +57,7 @@ namespace am {
 		record_audio *_recorder_mic;
 		record_desktop *_recorder_desktop;
 
-		muxer_mp4 *_muxer;
+		muxer_file *_muxer;
 
 		std::atomic_bool _inited;
 		std::mutex _mutex;
@@ -179,7 +181,13 @@ namespace am {
 		am::record_audio *audios[2] = { _recorder_mic,_recorder_speaker };
 #endif
 
+
+#if 0
+		_muxer = new muxer_mkv();
+#else
 		_muxer = new muxer_mp4();
+#endif 
+
 		error = _muxer->init(setting.output, _recorder_desktop, audios, 2, mux_setting);
 		AMERROR_CHECK(error);
 

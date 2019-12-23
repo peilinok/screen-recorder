@@ -108,6 +108,12 @@
     <ClInclude Include="record_desktop_win_gdi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="muxer_mkv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="muxer_file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -177,6 +183,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="record_desktop_win_gdi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="muxer_mkv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="muxer_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

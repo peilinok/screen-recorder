@@ -1,4 +1,5 @@
-#include "muxer_mp4.h"
+#include "muxer_mkv.h"
+
 #include "muxer_define.h"
 
 #include "record_desktop.h"
@@ -18,7 +19,7 @@
 
 namespace am {
 
-	muxer_mp4::muxer_mp4()
+	muxer_mkv::muxer_mkv()
 	{
 		av_register_all();
 
@@ -40,13 +41,13 @@ namespace am {
 		_base_time = -1;
 	}
 
-	muxer_mp4::~muxer_mp4()
+	muxer_mkv::~muxer_mkv()
 	{
 		stop();
 		cleanup();
 	}
 
-	int muxer_mp4::init(
+	int muxer_mkv::init(
 		const char * output_file,
 		record_desktop * source_desktop,
 		record_audio ** source_audios,
@@ -92,7 +93,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::start()
+	int muxer_mkv::start()
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
@@ -119,7 +120,7 @@ namespace am {
 
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				if(_a_stream->a_src[i])
+				if (_a_stream->a_src[i])
 					_a_stream->a_src[i]->start();
 			}
 		}
@@ -132,7 +133,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::stop()
+	int muxer_mkv::stop()
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
@@ -178,20 +179,20 @@ namespace am {
 		return AE_NO;
 	}
 
-	int muxer_mp4::pause()
+	int muxer_mkv::pause()
 	{
 		_paused = true;
 
 		return 0;
 	}
 
-	int muxer_mp4::resume()
+	int muxer_mkv::resume()
 	{
 		_paused = false;
 		return 0;
 	}
 
-	void muxer_mp4::on_desktop_data(AVFrame *frame)
+	void muxer_mkv::on_desktop_data(AVFrame *frame)
 	{
 		if (_running == false || !_v_stream || !_v_stream->v_enc || !_v_stream->v_sws) {
 			return;
@@ -199,20 +200,20 @@ namespace am {
 
 		int len = 0, ret = AE_NO;
 		uint8_t *yuv_data = NULL;
-		
+
 		ret = _v_stream->v_sws->convert(frame, &yuv_data, &len);
 		if (ret == AE_NO && yuv_data && len) {
 			_v_stream->v_enc->put(yuv_data, len, frame);
 		}
 	}
 
-	void muxer_mp4::on_desktop_error(int error)
+	void muxer_mkv::on_desktop_error(int error)
 	{
 		al_fatal("on desktop capture error:%d", error);
 	}
 
 #if 1 //with filter
-	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
+	void muxer_mkv::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
 			|| !_a_stream
@@ -229,7 +230,7 @@ namespace am {
 		return;
 	}
 #else
-	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
+	void muxer_mkv::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
 			|| !_a_stream
@@ -250,7 +251,7 @@ namespace am {
 		int remain_len = sample_len;
 
 		while (remain_len > 0) {//should add is_planner codes
-			//cache pcm
+								//cache pcm
 			copied_len = min(samples->size - samples->sample_in, remain_len);
 			if (copied_len) {
 				memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
@@ -274,12 +275,12 @@ namespace am {
 	}
 #endif
 
-	void muxer_mp4::on_audio_error(int error, int index)
+	void muxer_mkv::on_audio_error(int error, int index)
 	{
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_filter_audio_data(AVFrame * frame)
+	void muxer_mkv::on_filter_audio_data(AVFrame * frame)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -289,7 +290,7 @@ namespace am {
 
 		int copied_len = 0;
 		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
-			sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
 
 		int remain_len = sample_len;
 
@@ -317,7 +318,7 @@ namespace am {
 				copied_len = min(resamples->size - resamples->sample_in, remain_len);
 				if (copied_len) {
 					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
-					memcpy(resamples->buff + resamples->size/2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
+					memcpy(resamples->buff + resamples->size / 2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
 					resamples->sample_in += copied_len;
 					remain_len = remain_len - copied_len;
 				}
@@ -331,36 +332,36 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_filter_audio_error(int error)
+	void muxer_mkv::on_filter_audio_error(int error)
 	{
 		al_fatal("on filter audio error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_264_data(AVPacket *packet)
+	void muxer_mkv::on_enc_264_data(AVPacket *packet)
 	{
 		if (_running && _v_stream) {
 			write_video(packet);
 		}
 	}
 
-	void muxer_mp4::on_enc_264_error(int error)
+	void muxer_mkv::on_enc_264_error(int error)
 	{
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(AVPacket *packet)
+	void muxer_mkv::on_enc_aac_data(AVPacket *packet)
 	{
 		if (_running && _a_stream) {
 			write_audio(packet);
 		}
 	}
 
-	void muxer_mp4::on_enc_aac_error(int error)
+	void muxer_mkv::on_enc_aac_error(int error)
 	{
 		al_fatal("on audio encode error:%d", error);
 	}
 
-	int muxer_mp4::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
+	int muxer_mkv::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		_output_file = std::string(output_file);
 
@@ -368,7 +369,7 @@ namespace am {
 		int ret = 0;
 
 		do {
-			ret = avformat_alloc_output_context2(&_fmt_ctx, NULL, NULL, output_file);
+			ret = avformat_alloc_output_context2(&_fmt_ctx, av_guess_format("matroska", output_file, NULL), "mkv", output_file);
 			if (ret < 0 || !_fmt_ctx) {
 				error = AE_FFMPEG_ALLOC_CONTEXT_FAILED;
 				break;
@@ -380,7 +381,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
+	int muxer_mkv::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -391,23 +392,23 @@ namespace am {
 		_v_stream->v_src = source_desktop;
 
 		_v_stream->pre_pts = -1;
-		
+
 		_v_stream->v_src->registe_cb(
-			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1),
-			std::bind(&muxer_mp4::on_desktop_error, this, std::placeholders::_1)
+			std::bind(&muxer_mkv::on_desktop_data, this, std::placeholders::_1),
+			std::bind(&muxer_mkv::on_desktop_error, this, std::placeholders::_1)
 		);
 
 		RECORD_DESKTOP_RECT v_rect = _v_stream->v_src->get_rect();
 
 		do {
 			_v_stream->v_enc = new encoder_264();
-			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, setting.v_qb);
+			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate, setting.v_bit_rate, setting.v_qb);
 			if (error != AE_NO)
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
+				std::bind(&muxer_mkv::on_enc_264_data, this, std::placeholders::_1),
+				std::bind(&muxer_mkv::on_enc_264_error, this, std::placeholders::_1)
 			);
 
 			_v_stream->v_sws = new sws_helper();
@@ -422,39 +423,45 @@ namespace am {
 			if (error != AE_NO)
 				break;
 
+			AVStream *st = avformat_new_stream(_fmt_ctx, NULL);
+			if (!st) {
+				error = AE_FFMPEG_NEW_STREAM_FAILED;
+				break;
+			}
+
 			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
 			if (!codec) {
 				error = AE_FFMPEG_FIND_ENCODER_FAILED;
 				break;
 			}
 
-			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
-			}
+			AVCodecContext * codec_ctx = avcodec_alloc_context3(codec);
 
-			st->codec->codec_id = AV_CODEC_ID_H264;
-			st->codec->bit_rate_tolerance = setting.v_bit_rate;
-			st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-			st->codec->time_base.den = setting.v_frame_rate;
-			st->codec->time_base.num = 1;
-			st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+			codec_ctx->codec_id = AV_CODEC_ID_H264;
+			codec_ctx->bit_rate_tolerance = setting.v_bit_rate;
+			codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
+			codec_ctx->time_base.den = setting.v_frame_rate;
+			codec_ctx->time_base.num = 1;
+			codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-			st->codec->coded_width = setting.v_width;
-			st->codec->coded_height = setting.v_height;
-			st->codec->width = setting.v_width;
-			st->codec->height = setting.v_height;
-			st->codec->max_b_frames = 0;//NO B Frame
-			st->time_base = { 1,90000 };//fixed?
-			st->avg_frame_rate = av_inv_q(st->codec->time_base);
+			codec_ctx->coded_width = setting.v_width;
+			codec_ctx->coded_height = setting.v_height;
+			codec_ctx->width = setting.v_width;
+			codec_ctx->height = setting.v_height;
+			codec_ctx->max_b_frames = 0;//NO B Frame
 
 			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play,extradata will write with avformat_write_header
-				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+				codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				st->codec->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
+				codec_ctx->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				codec_ctx->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
 			}
+
+			avcodec_open2(codec_ctx, codec, NULL);
+			avcodec_parameters_from_context(st->codecpar, codec_ctx);
+
+			st->time_base = { 1,90000 };//fixed?
+			st->avg_frame_rate = av_inv_q(codec_ctx->time_base);
 
 			_v_stream->st = st;
 
@@ -465,7 +472,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
+	int muxer_mkv::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -493,16 +500,16 @@ namespace am {
 				break;
 
 			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
+				std::bind(&muxer_mkv::on_enc_aac_data, this, std::placeholders::_1),
+				std::bind(&muxer_mkv::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 
 				_a_stream->a_src[i] = source_audios[i];
 				_a_stream->a_src[i]->registe_cb(
-					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
-					std::bind(&muxer_mp4::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mkv::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mkv::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
 					i
 				);
 
@@ -564,9 +571,15 @@ namespace am {
 			}
 
 			_a_stream->a_filter->registe_cb(
-				std::bind(&muxer_mp4::on_filter_audio_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_filter_audio_error, this, std::placeholders::_1)
+				std::bind(&muxer_mkv::on_filter_audio_data, this, std::placeholders::_1),
+				std::bind(&muxer_mkv::on_filter_audio_error, this, std::placeholders::_1)
 			);
+
+			AVStream *st = avformat_new_stream(_fmt_ctx, NULL);
+			if (!st) {
+				error = AE_FFMPEG_NEW_STREAM_FAILED;
+				break;
+			}
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
 			if (!codec) {
@@ -574,29 +587,30 @@ namespace am {
 				break;
 			}
 
-			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
+			AVCodecContext * codec_ctx = avcodec_alloc_context3(codec);
+
+			codec_ctx->codec_type = AVMEDIA_TYPE_AUDIO;
+			codec_ctx->codec_id = _fmt->audio_codec;
+			codec_ctx->bit_rate = setting.a_bit_rate;
+			codec_ctx->channels = setting.a_nb_channel;
+			codec_ctx->sample_rate = setting.a_sample_rate;
+			codec_ctx->sample_fmt = setting.a_sample_fmt;
+			codec_ctx->time_base = { 1,setting.a_sample_rate };
+			codec_ctx->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
+
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
+				codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				codec_ctx->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				codec_ctx->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
 			}
+
+			avcodec_open2(codec_ctx, codec, NULL);
+			avcodec_parameters_from_context(st->codecpar, codec_ctx);
 
 			st->time_base = { 1,setting.a_sample_rate };
 
-			st->codec->bit_rate = setting.a_bit_rate;
-			st->codec->channels = setting.a_nb_channel;
-			st->codec->sample_rate = setting.a_sample_rate;
-			st->codec->sample_fmt = setting.a_sample_fmt;
-			st->codec->time_base = { 1,setting.a_sample_rate };
-			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
-
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
-				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-				st->codec->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
-			}
-
-			_a_stream->st = st;		
+			_a_stream->st = st;
 
 			_a_stream->setting = setting;
 			_a_stream->filter = av_bitstream_filter_init("aac_adtstoasc");
@@ -606,12 +620,14 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::open_output(const char * output_file, const MUX_SETTING_T & setting)
+	int muxer_mkv::open_output(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		int error = AE_NO;
 		int ret = 0;
 
 		do {
+			av_dump_format(_fmt_ctx, 0, output_file, 1);
+
 			if (!(_fmt->flags & AVFMT_NOFILE)) {
 				ret = avio_open(&_fmt_ctx->pb, output_file, AVIO_FLAG_WRITE);
 				if (ret < 0) {
@@ -620,14 +636,8 @@ namespace am {
 				}
 			}
 
-			AVDictionary* opt = NULL;
-			av_dict_set_int(&opt, "video_track_timescale", _v_stream->setting.v_frame_rate, 0);
 
-			//ret = avformat_write_header(_fmt_ctx, &opt);//no need to set this
 			ret = avformat_write_header(_fmt_ctx, NULL);
-
-			av_dict_free(&opt);
-
 			if (ret < 0) {
 				error = AE_FFMPEG_WRITE_HEADER_FAILED;
 				break;
@@ -637,7 +647,7 @@ namespace am {
 		return error;
 	}
 
-	void muxer_mp4::cleanup_video()
+	void muxer_mkv::cleanup_video()
 	{
 		if (!_v_stream)
 			return;
@@ -659,7 +669,7 @@ namespace am {
 		_v_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup_audio()
+	void muxer_mkv::cleanup_audio()
 	{
 		if (!_a_stream)
 			return;
@@ -707,7 +717,7 @@ namespace am {
 		_a_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup()
+	void muxer_mkv::cleanup()
 	{
 		cleanup_video();
 		cleanup_audio();
@@ -725,14 +735,14 @@ namespace am {
 		_inited = false;
 	}
 
-	uint64_t muxer_mp4::get_current_time()
+	uint64_t muxer_mkv::get_current_time()
 	{
 		std::lock_guard<std::mutex> lock(_time_mutex);
 
 		return av_gettime_relative();
 	}
 
-	int muxer_mp4::write_video(AVPacket *packet)
+	int muxer_mkv::write_video(AVPacket *packet)
 	{
 		//must lock here,coz av_interleaved_write_frame will push packet into a queue,and is not thread safe
 		std::lock_guard<std::mutex> lock(_mutex);
@@ -756,7 +766,7 @@ namespace am {
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
 
-		//al_debug("V:%lld", packet->pts);
+								  //al_debug("V:%lld", packet->pts);
 
 #if 0
 		static FILE *fp = NULL;
@@ -770,19 +780,20 @@ namespace am {
 
 		fflush(fp);
 #endif
-		
+
 		av_assert0(packet->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 
 	}
 
-	int muxer_mp4::write_audio(AVPacket *packet)
+	int muxer_mkv::write_audio(AVPacket *packet)
 	{
+		return 0;
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (_paused) return AE_NO;
 
-		
+
 		packet->stream_index = _a_stream->st->index;
 
 		if (_a_stream->pre_pts == (uint64_t)-1) {
@@ -794,7 +805,7 @@ namespace am {
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
-		//al_debug("A:%lld %lld", packet->pts, packet->dts);
+								  //al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
 
