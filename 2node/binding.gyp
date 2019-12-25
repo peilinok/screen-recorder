@@ -19,5 +19,15 @@
       "include_dirs": [ "." ],
       "sources": [ "./src/main.cc" ],
     },
+    {
+      "target_name": "action_after_build",
+      "type": "none",
+      "copies": [
+        {
+          "files": [ "<(PRODUCT_DIR)/recorder.node" ],
+          "destination": "./platform/win32"
+        }
+      ]
+    }
   ],
 }
