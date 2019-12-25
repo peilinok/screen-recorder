@@ -15,62 +15,62 @@
 
 namespace recorder
 {
-using namespace v8;
-using namespace node;
+	using namespace v8;
+	using namespace node;
 
-class Locker
-{
-public:
-  Locker()
-  {
+	class Locker
+	{
+	public:
+		Locker()
+		{
 #ifdef WIN32
-    InitializeCriticalSection(&m_csLock);
+			InitializeCriticalSection(&m_csLock);
 #else
-    pthread_mutexattr_t attr;
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
-    pthread_mutex_init(&m_csLock, &attr);
+			pthread_mutexattr_t attr;
+			pthread_mutexattr_init(&attr);
+			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+			pthread_mutex_init(&m_csLock, &attr);
 #endif
-  }
-  virtual ~Locker()
-  {
+		}
+		virtual ~Locker()
+		{
 #ifdef WIN32
-    DeleteCriticalSection(&m_csLock);
+			DeleteCriticalSection(&m_csLock);
 #else
-    pthread_mutex_destroy(&m_csLock);
+			pthread_mutex_destroy(&m_csLock);
 #endif
-  }
+		}
 
-  long Lock()
-  {
+		long Lock()
+		{
 #ifdef WIN32
-    EnterCriticalSection(&m_csLock);
-    return m_csLock.LockCount;
+			EnterCriticalSection(&m_csLock);
+			return m_csLock.LockCount;
 #else
-    pthread_mutex_lock(&m_csLock);
-    return 1;
+			pthread_mutex_lock(&m_csLock);
+			return 1;
 #endif
-  }
-  long Unlock()
-  {
+		}
+		long Unlock()
+		{
 #ifdef WIN32
-    LeaveCriticalSection(&m_csLock);
-    return m_csLock.LockCount;
+			LeaveCriticalSection(&m_csLock);
+			return m_csLock.LockCount;
 #else
-    pthread_mutex_unlock(&m_csLock);
-    return 1;
+			pthread_mutex_unlock(&m_csLock);
+			return 1;
 #endif
-  }
+		}
 
-private:
+	private:
 #ifdef WIN32
-  CRITICAL_SECTION m_csLock;
+		CRITICAL_SECTION m_csLock;
 #else
-  pthread_mutex_t m_csLock;
+		pthread_mutex_t m_csLock;
 #endif
-};
+	};
 
-  std::string unicode_utf8(const std::wstring & wstr)
+	std::string unicode_utf8(const std::wstring & wstr)
 	{
 		int ansiiLen = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
 		char *pAssii = (char*)malloc(sizeof(char)*ansiiLen);
@@ -90,7 +90,7 @@ private:
 		return ret_str;
 	}
 
-  std::wstring ascii_unicode(const std::string & str)
+	std::wstring ascii_unicode(const std::string & str)
 	{
 		int unicodeLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
 
@@ -125,11 +125,22 @@ private:
 		return unicode_ascii(utf8_unicode(utf8));
 	}
 
+	Local<String> utf8_v8string(Isolate *isolate,const char *utf8) 
+	{
+#if NODE_VERSION_AT_LEAST(12,0,0)
+		return String::NewFromUtf8(isolate, utf8).ToLocalChecked();
+#elif NODE_VERSION_AT_LEAST(10,0,0)
+		return String::NewFromUtf8(isolate, utf8);
+#else
+		return String::NewFromUtf8(isolate, utf8);
+#endif
+	}
+
 	bool CheckParamCount(unsigned int nLength, unsigned int nCount) {
 		if (nLength != nCount) {
 			Isolate* isolate = Isolate::GetCurrent();
 			isolate->ThrowException(Exception::TypeError(
-				String::NewFromUtf8(isolate, "Wrong number of arguments")));
+				utf8_v8string(isolate,"Wrong number of arguments")));
 			return false;
 		}
 		return true;
@@ -154,7 +165,7 @@ private:
 		if (!bOK) {
 			Isolate* isolate = Isolate::GetCurrent();
 			isolate->ThrowException(Exception::TypeError(
-				String::NewFromUtf8(isolate, "Wrong arguments")));
+				utf8_v8string(isolate, "Wrong arguments")));
 		}
 		return bOK;
 	}
@@ -212,369 +223,370 @@ private:
 #define CHECK_PARAM_TYPE1(type1) \
 	CHECK_PARAM_TYPE2(type1, NULL)
 
-  typedef enum{
-    uvcb_type_duration = 1,
-    uvcb_type_error,
-    uvcb_type_device_change
-  }uvCallbackType;
+	typedef enum {
+		uvcb_type_duration = 1,
+		uvcb_type_error,
+		uvcb_type_device_change
+	}uvCallbackType;
 
-  typedef struct{
-    uint64_t duration;
-  }uvCallBackDataDruation;
+	typedef struct {
+		uint64_t duration;
+	}uvCallBackDataDruation;
 
-  typedef struct{
-    int error;
-  }uvCallBackDataError;
+	typedef struct {
+		int error;
+	}uvCallBackDataError;
 
-  typedef struct{
-    int type;
-  }uvCallBackDataDeviceChange;
+	typedef struct {
+		int type;
+	}uvCallBackDataDeviceChange;
 
-  typedef struct{
-    uvCallbackType type;
-    int *data;
-  }uvCallBackChunk;
+	typedef struct {
+		uvCallbackType type;
+		int *data;
+	}uvCallBackChunk;
 
-  static Persistent<Function>* cb_uv_duration = NULL;
-  static Persistent<Function>* cb_uv_error = NULL;
-  static Persistent<Function>* cb_uv_device_change = NULL;
+	static Persistent<Function>* cb_uv_duration = NULL;
+	static Persistent<Function>* cb_uv_error = NULL;
+	static Persistent<Function>* cb_uv_device_change = NULL;
 
-  static uv_async_t s_async = { 0 };
+	static uv_async_t s_async = { 0 };
 	static Locker locker;
 
-  static std::queue<uvCallBackChunk> cb_chunk_queue;
+	static std::queue<uvCallBackChunk> cb_chunk_queue;
 
-  void PushUvChunk(const uvCallBackChunk &chunk){
-    locker.Lock();
-    cb_chunk_queue.push(chunk);
-    locker.Unlock();
+	void PushUvChunk(const uvCallBackChunk &chunk) {
+		locker.Lock();
+		cb_chunk_queue.push(chunk);
+		locker.Unlock();
 
-    uv_async_send(&s_async);
-  }
+		uv_async_send(&s_async);
+	}
 
-  void DispatchUvRecorderDuration(Isolate* isolate, uvCallBackDataDruation *data){
-    if(!cb_uv_duration) return;
+	void DispatchUvRecorderDuration(Isolate* isolate, uvCallBackDataDruation *data) {
+		if (!cb_uv_duration) return;
 
-    const unsigned argc = 1;
+		const unsigned argc = 1;
+		Local<Value> argv[argc] = { Uint32::New(isolate, data->duration) };
+		Local<Value> recv;
+		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+	}
+
+	void DispatchUvRecorderError(Isolate* isolate, uvCallBackDataError *data) {
+		if (!cb_uv_error) return;
+
+		const unsigned argc = 1;
 		Local<Value> argv[argc] = {
-      Uint32::New(isolate, data->duration)
+			Uint32::New(isolate, data->error)
 		};
-		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext()->Global(), argc, argv);
-  }
+		Local<Value> recv;
+		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+	}
 
-  void DispatchUvRecorderError(Isolate* isolate,uvCallBackDataError *data){
-    if(!cb_uv_error) return;
+	void DispatchUvRecorderDeviceChange(Isolate* isolate, uvCallBackDataDeviceChange *data) {
+		if (!cb_uv_device_change) return;
 
-    const unsigned argc = 1;
+		const unsigned argc = 1;
 		Local<Value> argv[argc] = {
-      Uint32::New(isolate, data->error)
+			Uint32::New(isolate, data->type)
 		};
-		Local<Function>::New(isolate, *cb_uv_error)->Call(isolate->GetCurrentContext()->Global(), argc, argv);
-  }
+		Local<Value> recv;
+		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+	}
 
-  void DispatchUvRecorderDeviceChange(Isolate* isolate,uvCallBackDataDeviceChange *data){
-    if(!cb_uv_device_change) return;
+	void OnRecorderDuration(uint64_t duration) {
+		uvCallBackDataDruation *data = new uvCallBackDataDruation;
+		data->duration = duration;
 
-    const unsigned argc = 1;
-		Local<Value> argv[argc] = {
-      Uint32::New(isolate, data->type)
-		};
-		Local<Function>::New(isolate, *cb_uv_device_change)->Call(isolate->GetCurrentContext()->Global(), argc, argv);
-  }
+		DispatchUvRecorderDuration(Isolate::GetCurrent(), data);
+		delete data;
 
-  void OnRecorderDuration(uint64_t duration){
-    uvCallBackDataDruation *data = new uvCallBackDataDruation;
-    data->duration = duration;
+		return;
 
-    DispatchUvRecorderDuration(Isolate::GetCurrent(),data);
-    delete data;
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_duration;
+		uv_cb_chunk.data = (int*)data;
 
-    return;
+		PushUvChunk(uv_cb_chunk);
+	}
 
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_duration;
-    uv_cb_chunk.data = (int*)data;
+	void OnRecorderError(int error) {
+		uvCallBackDataError *data = new uvCallBackDataError;
+		data->error = error;
 
-    PushUvChunk(uv_cb_chunk);
-  }
+		DispatchUvRecorderError(Isolate::GetCurrent(), data);
+		delete data;
 
-  void OnRecorderError(int error){
-    uvCallBackDataError *data = new uvCallBackDataError;
-    data->error = error;
+		return;
 
-    DispatchUvRecorderError(Isolate::GetCurrent(),data);
-    delete data;
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_error;
+		uv_cb_chunk.data = (int*)data;
 
-    return;
+		PushUvChunk(uv_cb_chunk);
+	}
 
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_error;
-    uv_cb_chunk.data = (int*)data;
+	void OnRecorderDeviceChange(int type) {
+		uvCallBackDataDeviceChange *data = new uvCallBackDataDeviceChange;
+		data->type = type;
 
-    PushUvChunk(uv_cb_chunk);
-  }
+		DispatchUvRecorderDeviceChange(Isolate::GetCurrent(), data);
+		delete data;
 
-  void OnRecorderDeviceChange(int type){
-    uvCallBackDataDeviceChange *data = new uvCallBackDataDeviceChange;
-    data->type = type;
+		return;
 
-    DispatchUvRecorderDeviceChange(Isolate::GetCurrent(),data);
-    delete data;
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_device_change;
+		uv_cb_chunk.data = (int*)data;
 
-    return;
-
-    uvCallBackChunk uv_cb_chunk;
-    uv_cb_chunk.type = uvcb_type_device_change;
-    uv_cb_chunk.data = (int*)data;
-
-    PushUvChunk(uv_cb_chunk);
-  }
+		PushUvChunk(uv_cb_chunk);
+	}
 
 
-  void OnUvCallback(uv_async_t *handle){
-    locker.Lock();
-    while(!cb_chunk_queue.empty()){
-      uvCallBackChunk &chunk = cb_chunk_queue.front();
-      cb_chunk_queue.pop();
-      Isolate* isolate = Isolate::GetCurrent();
-      switch (chunk.type)
-      {
-      case uvcb_type_duration:
-        DispatchUvRecorderDuration(isolate,(uvCallBackDataDruation*)chunk.data);
-        break;
-      case uvcb_type_error:
-        DispatchUvRecorderError(isolate,(uvCallBackDataError*)chunk.data);
-        break;
-      case uvcb_type_device_change:
-        DispatchUvRecorderDeviceChange(isolate,(uvCallBackDataDeviceChange*)chunk.data);
-        break;
-      default:
-        break;
-      }
+	void OnUvCallback(uv_async_t *handle) {
+		locker.Lock();
+		while (!cb_chunk_queue.empty()) {
+			uvCallBackChunk &chunk = cb_chunk_queue.front();
+			cb_chunk_queue.pop();
+			Isolate* isolate = Isolate::GetCurrent();
+			switch (chunk.type)
+			{
+			case uvcb_type_duration:
+				DispatchUvRecorderDuration(isolate, (uvCallBackDataDruation*)chunk.data);
+				break;
+			case uvcb_type_error:
+				DispatchUvRecorderError(isolate, (uvCallBackDataError*)chunk.data);
+				break;
+			case uvcb_type_device_change:
+				DispatchUvRecorderDeviceChange(isolate, (uvCallBackDataDeviceChange*)chunk.data);
+				break;
+			default:
+				break;
+			}
 
-      delete chunk.data;
-    }
+			delete chunk.data;
+		}
 
-    locker.Unlock();
-  }
+		locker.Unlock();
+	}
 
-  void GetSpeakers(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void GetSpeakers(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    AMRECORDER_DEVICE *devices;
-    int ret = recorder_get_speakers(&devices);
-    if(ret > 0){
+		AMRECORDER_DEVICE *devices;
+		int ret = recorder_get_speakers(&devices);
+		if (ret > 0) {
 
-      Local<Array> array = Array::New(isolate,ret);
+			Local<Array> array = Array::New(isolate, ret);
 
-      for(int i=0;i<ret;i++){
-        Local<Object> device = Object::New(isolate);
-        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,devices[i].id));
-        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,devices[i].name));
-        device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
-        array->Set(i,device);
-      }
+			for (int i = 0; i<ret; i++) {
+				Local<Object> device = Object::New(isolate);
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "id"), utf8_v8string(isolate, devices[i].id));
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "name"), utf8_v8string(isolate, devices[i].name));
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "isDefault"), Number::New(isolate, devices[i].is_default));
+				array->Set(isolate->GetCurrentContext(), i, device);
+			}
 
-      delete []devices;
+			delete[]devices;
 
-      args.GetReturnValue().Set(array);
-    }
-    else{
-      args.GetReturnValue().Set(String::NewFromUtf8(isolate,"get speaker list failed."));
-    }
-  }
+			args.GetReturnValue().Set(array);
+		}
+		else {
+			args.GetReturnValue().Set(utf8_v8string(isolate, "get speaker list failed."));
+		}
+	}
 
-  void GetMics(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void GetMics(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    AMRECORDER_DEVICE *devices;
-    int ret = recorder_get_mics(&devices);
-    if(ret > 0){
+		AMRECORDER_DEVICE *devices;
+		int ret = recorder_get_mics(&devices);
+		if (ret > 0) {
 
-      Local<Array> array = Array::New(isolate,ret);
+			Local<Array> array = Array::New(isolate, ret);
 
-      for(int i=0;i<ret;i++){
-        Local<Object> device = Object::New(isolate);
-        device->Set(String::NewFromUtf8(isolate,"id"),String::NewFromUtf8(isolate,devices[i].id));
-        device->Set(String::NewFromUtf8(isolate,"name"),String::NewFromUtf8(isolate,devices[i].name));
-        device->Set(String::NewFromUtf8(isolate,"isDefault"),Number::New(isolate,devices[i].is_default));
-        array->Set(i,device);
-      }
+			for (int i = 0; i<ret; i++) {
+				Local<Object> device = Object::New(isolate);
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "id"), utf8_v8string(isolate, devices[i].id));
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "name"), utf8_v8string(isolate, devices[i].name));
+				device->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "isDefault"), Number::New(isolate, devices[i].is_default));
+				array->Set(isolate->GetCurrentContext(), i, device);
+			}
 
-      delete []devices;
+			delete[]devices;
 
-      args.GetReturnValue().Set(array);
-    }
-    else{
-      args.GetReturnValue().Set(String::NewFromUtf8(isolate,"get mic list failed."));
-    }
-  }
+			args.GetReturnValue().Set(array);
+		}
+		else {
+			args.GetReturnValue().Set(utf8_v8string(isolate, "get mic list failed."));
+		}
+	}
 
-  void GetCameras(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void GetCameras(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate,"get camera list not support for now."));
-  }
+		args.GetReturnValue().Set(utf8_v8string(isolate, "get camera list not support for now."));
+	}
 
-  void SetDurationCallBack(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
-    CHECK_PARAM_COUNT(1);
+	void SetDurationCallBack(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-    Persistent<Function>* callback = new Persistent<Function>;
+		Persistent<Function>* callback = new Persistent<Function>;
 		callback->Reset(isolate, args[0].As<Function>());
 
-    locker.Lock();
+		locker.Lock();
 		cb_uv_duration = callback;
 		locker.Unlock();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void SetErrorCallBack(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
-    CHECK_PARAM_COUNT(1);
+	void SetErrorCallBack(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-    Persistent<Function>* callback = new Persistent<Function>;
+		Persistent<Function>* callback = new Persistent<Function>;
 		callback->Reset(isolate, args[0].As<Function>());
 
-    locker.Lock();
+		locker.Lock();
 		cb_uv_error = callback;
 		locker.Unlock();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void SetDeviceChangeCallBack(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
-    CHECK_PARAM_COUNT(1);
+	void SetDeviceChangeCallBack(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-    Persistent<Function>* callback = new Persistent<Function>;
+		Persistent<Function>* callback = new Persistent<Function>;
 		callback->Reset(isolate, args[0].As<Function>());
 
-    locker.Lock();
+		locker.Lock();
 		cb_uv_device_change = callback;
 		locker.Unlock();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void Init(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Init(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    //v_qb v_frame_rate v_output a_speaker a_mic
-    CHECK_PARAM_COUNT(7);
-		CHECK_PARAM_TYPE7("uint32", "uint32"," string", "string", "string", "string", "string");
+		//v_qb v_frame_rate v_output a_speaker a_mic
+		CHECK_PARAM_COUNT(7);
+		CHECK_PARAM_TYPE7("uint32", "uint32", " string", "string", "string", "string", "string");
 
-    int error = 0;
+		int error = 0;
 
-    AMRECORDER_SETTING settings;
-    AMRECORDER_CALLBACK callbacks;
+		AMRECORDER_SETTING settings;
+		AMRECORDER_CALLBACK callbacks;
 
-    callbacks.func_duration = OnRecorderDuration;
-    callbacks.func_error = OnRecorderError;
-    callbacks.func_device_change = OnRecorderDeviceChange;
+		callbacks.func_duration = OnRecorderDuration;
+		callbacks.func_error = OnRecorderError;
+		callbacks.func_device_change = OnRecorderDeviceChange;
 
-    settings.v_left = 0;
-	  settings.v_top = 0;
-	  settings.v_width = GetSystemMetrics(SM_CXSCREEN);
-	  settings.v_height = GetSystemMetrics(SM_CYSCREEN);
-	  settings.v_bit_rate = 64000;
+		settings.v_left = 0;
+		settings.v_top = 0;
+		settings.v_width = GetSystemMetrics(SM_CXSCREEN);
+		settings.v_height = GetSystemMetrics(SM_CYSCREEN);
+		settings.v_bit_rate = 64000;
 
 
-    settings.v_qb = args[0]->Uint32Value();
-    settings.v_frame_rate = args[1]->Uint32Value();
+		settings.v_qb = args[0]->Uint32Value();
+		settings.v_frame_rate = args[1]->Uint32Value();
 
-    String::Utf8Value utf8Output(Local<String>::Cast(args[2]));
-    sprintf_s(settings.output,260,"%s",*utf8Output);
+		String::Utf8Value utf8Output(Local<String>::Cast(args[2]));
+		sprintf_s(settings.output, 260, "%s", *utf8Output);
 
-    String::Utf8Value utf8SpeakerName(Local<String>::Cast(args[3]));
-    sprintf_s(settings.a_speaker.name,260,"%s",*utf8SpeakerName);
+		String::Utf8Value utf8SpeakerName(Local<String>::Cast(args[3]));
+		sprintf_s(settings.a_speaker.name, 260, "%s", *utf8SpeakerName);
 
-    String::Utf8Value utf8SpeakerId(Local<String>::Cast(args[4]));
-    sprintf_s(settings.a_speaker.id,260,"%s",*utf8SpeakerId);
+		String::Utf8Value utf8SpeakerId(Local<String>::Cast(args[4]));
+		sprintf_s(settings.a_speaker.id, 260, "%s", *utf8SpeakerId);
 
-    String::Utf8Value utf8MicName(Local<String>::Cast(args[5]));
-    sprintf_s(settings.a_mic.name,260,"%s",*utf8MicName);
+		String::Utf8Value utf8MicName(Local<String>::Cast(args[5]));
+		sprintf_s(settings.a_mic.name, 260, "%s", *utf8MicName);
 
-    String::Utf8Value utf8MicId(Local<String>::Cast(args[6]));
-    sprintf_s(settings.a_mic.id,260,"%s",*utf8MicId);
+		String::Utf8Value utf8MicId(Local<String>::Cast(args[6]));
+		sprintf_s(settings.a_mic.id, 260, "%s", *utf8MicId);
 
-    error = recorder_init(settings,callbacks);
+		error = recorder_init(settings, callbacks);
 
-    //if(error = 0)//registe all call back to uv callback,this wont be succed,don't know why
-    //  uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
+		//if(error = 0)//registe all call back to uv callback,this wont be succed,don't know why
+		//  uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
 
-    args.GetReturnValue().Set(Int32::New(isolate, error));
-  }
+		args.GetReturnValue().Set(Int32::New(isolate, error));
+	}
 
-  void Release(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Release(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    recorder_release();
+		recorder_release();
 
-    //close uv call back,this will crahs ,don't know why
-    //uv_close((uv_handle_t*)&s_async, NULL);
+		//close uv call back,this will crahs ,don't know why
+		//uv_close((uv_handle_t*)&s_async, NULL);
 
-    locker.Lock();
-    cb_uv_duration = NULL;
-    cb_uv_error = NULL;
+		locker.Lock();
+		cb_uv_duration = NULL;
+		cb_uv_error = NULL;
 		cb_uv_device_change = NULL;
 		locker.Unlock();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void Start(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Start(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    int error = recorder_start();
+		int error = recorder_start();
 
-    args.GetReturnValue().Set(Int32::New(isolate, error));
-  }
+		args.GetReturnValue().Set(Int32::New(isolate, error));
+	}
 
-  void Stop(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Stop(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    recorder_stop();
+		recorder_stop();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void Pause(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Pause(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    recorder_pause();
+		recorder_pause();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-  void Resume(const FunctionCallbackInfo<Value> &args){
-    Isolate* isolate = args.GetIsolate();
+	void Resume(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
 
-    recorder_resume();
+		recorder_resume();
 
-    args.GetReturnValue().Set(Boolean::New(isolate, true));
-  }
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
 
-void Initialize(Local<Object> exports)
-{
-  NODE_SET_METHOD(exports, "GetSpeakers", GetSpeakers);
-  NODE_SET_METHOD(exports, "GetMics", GetMics);
-  NODE_SET_METHOD(exports, "GetCameras", GetCameras);
-  NODE_SET_METHOD(exports, "SetDurationCallBack", SetDurationCallBack);
-  NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
-  NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
-  NODE_SET_METHOD(exports, "Init", Init);
-  NODE_SET_METHOD(exports, "Release", Release);
-  NODE_SET_METHOD(exports, "Start", Start);
-  NODE_SET_METHOD(exports, "Stop", Stop);
-  NODE_SET_METHOD(exports, "Pause", Pause);
-  NODE_SET_METHOD(exports, "Resume", Resume);
-}
+	void Initialize(Local<Object> exports)
+	{
+		NODE_SET_METHOD(exports, "GetSpeakers", GetSpeakers);
+		NODE_SET_METHOD(exports, "GetMics", GetMics);
+		NODE_SET_METHOD(exports, "GetCameras", GetCameras);
+		NODE_SET_METHOD(exports, "SetDurationCallBack", SetDurationCallBack);
+		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
+		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
+		NODE_SET_METHOD(exports, "Init", Init);
+		NODE_SET_METHOD(exports, "Release", Release);
+		NODE_SET_METHOD(exports, "Start", Start);
+		NODE_SET_METHOD(exports, "Stop", Stop);
+		NODE_SET_METHOD(exports, "Pause", Pause);
+		NODE_SET_METHOD(exports, "Resume", Resume);
+	}
 
-NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+	NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
 
 } // namespace recorder
