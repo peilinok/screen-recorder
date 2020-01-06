@@ -1,13 +1,11 @@
 # screen-recorder
 This is a screen recorder by ffmpeg that include desktop、speaker、mircphone
 
-首先感谢雷神的无私奉献，也是出于对其致敬，完全公开此录屏代码并持续更新.
-
 Here is Les's blog:
 
 https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
-## Support
+## Features
 
 1.Record desktop 、microphone、speaker at the same time
 
@@ -15,7 +13,7 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 3.Nodejs addon project
 
-## Features
+## ToDo
 
 1.Review all codes,seperate encoder 、filter、muxer
 
@@ -32,9 +30,12 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 ## How to use?
 
-use with dll,just compile with visual studio
+use visual studio
 
-use in nodejs
+just compile it with visual studio(at least vs2015)
+
+use nodejs 
+
 ```sh
 
 $ npm install ffmpeg-recorder

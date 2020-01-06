@@ -109,6 +109,7 @@ namespace am {
 		if (!(_ci.flags & CURSOR_SHOWING))
 			return;
 
+		//is cursor in the tartet zone
 		if (_ci.ptScreenPos.x < _rect.left ||
 			_ci.ptScreenPos.x > _rect.right ||
 			_ci.ptScreenPos.y < _rect.top ||
@@ -188,7 +189,7 @@ namespace am {
 			bi.biWidth = _width;
 			bi.biHeight = _height * (-1);
 			bi.biPlanes = 1;
-			bi.biBitCount = 32;
+			bi.biBitCount = 32;//should get from system color bits
 			bi.biCompression = BI_RGB;
 			bi.biSizeImage = 0;
 			bi.biXPelsPerMeter = 0;

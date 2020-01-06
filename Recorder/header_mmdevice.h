@@ -2,12 +2,18 @@
 
 #ifdef _WIN32
 
+#include <windows.h>
+
 #include <mmdeviceapi.h>
 #include <propkeydef.h>//must include before functiondiscoverykeys_devpkey
 #include <functiondiscoverykeys_devpkey.h>
 
 #include <wrl/client.h>
 #include <devicetopology.h>
+
+#include <propsys.h>
+#include <AudioClient.h>
+#include <AudioPolicy.h>
 
 class com_initialize {
 public:

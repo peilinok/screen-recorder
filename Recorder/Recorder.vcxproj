@@ -274,7 +274,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="filter_audio.h" />
     <ClInclude Include="headers_ffmpeg.h" />
     <ClInclude Include="log_helper.h" />
-    <ClInclude Include="mmdevice_define.h" />
+    <ClInclude Include="header_mmdevice.h" />
     <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_file.h" />
     <ClInclude Include="muxer_libmp4v2.h" />
@@ -306,7 +306,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="filter_audio.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mmdevice_define.cpp" />
+    <ClCompile Include="header_mmdevice.cpp" />
     <ClCompile Include="muxer_file.cpp" />
     <ClCompile Include="muxer_libmp4v2.cpp" />
     <ClCompile Include="muxer_mkv.cpp" />

@@ -5,7 +5,7 @@
 
 #include "utils_string.h"
 
-#include "mmdevice_define.h"
+#include "header_mmdevice.h"
 
 #include <memory>
 

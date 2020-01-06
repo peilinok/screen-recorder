@@ -204,3 +204,8 @@
 /Recorder/Release_DLL/record_desktop_win_gdi.obj
 /2node/save.mp4
 /2node/platform/win32/recorder.node
+/Recorder/Debug_DLL/muxer_file.obj
+/Recorder/Debug_DLL/muxer_mkv.obj
+/Recorder/Release_DLL/header_mmdevice.obj
+/Recorder/Release_DLL/muxer_file.obj
+/Recorder/Release_DLL/muxer_mkv.obj

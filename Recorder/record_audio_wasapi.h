@@ -5,12 +5,7 @@
 
 #ifdef _WIN32
 
-#include "mmdevice_define.h"
-
-#include <windows.h>
-#include <propsys.h>
-#include <AudioClient.h>
-#include <AudioPolicy.h>
+#include "header_mmdevice.h"
 
 #endif // _WIN32
 
