@@ -34,9 +34,6 @@ namespace am {
 		AVStream *st;               // av stream
 		AVBitStreamFilterContext *filter; //pps|sps adt
 
-		AVFrame *frame;             // current av frame
-		AVFrame *tmp_frame;         // tmp av frame 
-
 		uint64_t pre_pts;
 
 		MUX_SETTING setting;        // output setting
