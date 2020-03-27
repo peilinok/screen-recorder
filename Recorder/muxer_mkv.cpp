@@ -652,12 +652,6 @@ namespace am {
 		if (!_v_stream)
 			return;
 
-		if (_v_stream->frame)
-			av_frame_free(&_v_stream->frame);
-
-		if (_v_stream->tmp_frame)
-			av_frame_free(&_v_stream->tmp_frame);
-
 		if (_v_stream->v_enc)
 			delete _v_stream->v_enc;
 
@@ -673,12 +667,6 @@ namespace am {
 	{
 		if (!_a_stream)
 			return;
-
-		if (_a_stream->frame)
-			av_frame_free(&_a_stream->frame);
-
-		if (_a_stream->tmp_frame)
-			av_frame_free(&_a_stream->tmp_frame);
 
 		if (_a_stream->a_enc)
 			delete _a_stream->a_enc;

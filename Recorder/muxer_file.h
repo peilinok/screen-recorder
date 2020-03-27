@@ -12,7 +12,7 @@ namespace am {
 	{
 	public:
 		muxer_file();
-		~muxer_file();
+		virtual ~muxer_file();
 
 		virtual int init(
 			const char *output_file,
