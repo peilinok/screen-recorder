@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.1.8",
+  "version": "1.1.10",
   "description": "desktop recorder",
   "main": "index.js",
   "engines": {
@@ -11,9 +11,15 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node-gyp rebuild -arch=ia32",
+    "install-normal": "node-gyp rebuild -arch=ia32",
+    "install": "just install",
     "local": "node-gyp rebuild -target=4.1.3 -arch=ia32 -dist-url=https://atom.io/download/atom-shell && xcopy /r /y \".\\build\\Release\\recorder.node\" \".\\platform\\win32\\recorder.node\"",
     "copy": "xcopy /r /y \".\\build\\Release\\recorder.node\" \".\\platform\\win32\\recorder.node\""
+  },
+  "dependencies": {
+    "just-task": "^0.14.3",
+    "rimraf": "^3.0.2",
+    "shelljs": "^0.8.3"
   },
   "repository": {
     "type": "git",

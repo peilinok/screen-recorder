@@ -1,5 +1,8 @@
 node_modules/
+.vscode/
 build/
 yarn.lock
+package-lock.json
+save.mp4
 *.log
 platform/win32/recorder.node

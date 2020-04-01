@@ -217,3 +217,5 @@
 /Recorder/Debug/record_desktop_win_gdi.obj
 /Recorder/Debug_DLL/header_mmdevice.obj
 /Recorder/Release_DLL/headers_mmdevice.obj
+/2node/node_modules
+/2node/package-lock.json
