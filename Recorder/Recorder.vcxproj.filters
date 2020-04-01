@@ -13,183 +13,213 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\muxer">
+      <UniqueIdentifier>{c728c158-0d9c-4769-bd5e-52b2744f7521}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\muxer">
+      <UniqueIdentifier>{d50f186f-c489-4503-be78-0fbc32d85858}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\encoder">
+      <UniqueIdentifier>{3785b6df-1472-4dee-933f-5ff6c140b16e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\encoder">
+      <UniqueIdentifier>{017653cc-c318-4960-8099-8dc6a3ca5407}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\record">
+      <UniqueIdentifier>{06d19726-b0cf-49cb-9562-ecb1d4525c50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\record">
+      <UniqueIdentifier>{5e348938-a8f3-473f-9004-0a584fb52803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\devices">
+      <UniqueIdentifier>{abffc59a-129a-468d-b433-0278780530de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\devices">
+      <UniqueIdentifier>{e67755db-f19e-439c-839b-30e3c6c1ca61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\filters">
+      <UniqueIdentifier>{495cf6d1-c879-4172-900c-e77a3ca74343}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\filters">
+      <UniqueIdentifier>{7b3e2bcb-f9aa-47e1-99f6-fd69cef6f46b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\helpers">
+      <UniqueIdentifier>{4ebe5c56-1ded-4999-8ec8-a412f7e7e7c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\helpers">
+      <UniqueIdentifier>{4a9d1e55-d315-4d38-830e-30283889a177}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\logger">
+      <UniqueIdentifier>{36132240-93e0-4286-8729-4ab2df2ff726}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\defines">
+      <UniqueIdentifier>{6efa3ce5-a902-4756-866e-0b71d7a64e2d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_audio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_desktop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="encoder_aac.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="encoder_264.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="muxer_mp4.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="error_define.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="log_helper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_audio_wasapi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_audio_define.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_audio_factory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_desktop_factory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_desktop_define.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resample_pcm.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ring_buffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="muxer_define.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="muxer_libmp4v2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_audio_dshow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="headers_ffmpeg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="filter_audio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sws_helper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="device_audios.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="device_videos.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="export.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="record_desktop_ffmpeg_gdi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_desktop_ffmpeg_dshow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="record_desktop_win_gdi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="muxer_mkv.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="muxer_define.h">
+      <Filter>Header Files\muxer</Filter>
     </ClInclude>
     <ClInclude Include="muxer_file.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\muxer</Filter>
     </ClInclude>
-    <ClInclude Include="header_mmdevice.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="muxer_libmp4v2.h">
+      <Filter>Header Files\muxer</Filter>
+    </ClInclude>
+    <ClInclude Include="muxer_mkv.h">
+      <Filter>Header Files\muxer</Filter>
+    </ClInclude>
+    <ClInclude Include="muxer_mp4.h">
+      <Filter>Header Files\muxer</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_264.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_aac.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_define.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_dshow.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_factory.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_audio_wasapi.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_define.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_factory.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_ffmpeg_dshow.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_ffmpeg_gdi.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_win_gdi.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="device_audios.h">
+      <Filter>Header Files\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="device_videos.h">
+      <Filter>Header Files\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="filter_audio.h">
+      <Filter>Header Files\filters</Filter>
+    </ClInclude>
+    <ClInclude Include="headers_ffmpeg.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="log_helper.h">
+      <Filter>Header Files\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_string.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="headers_mmdevice.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="error_define.h">
+      <Filter>Header Files\defines</Filter>
+    </ClInclude>
+    <ClInclude Include="ring_buffer.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="resample_pcm.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="sws_helper.h">
+      <Filter>Header Files\helpers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_audio_wasapi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_audio.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_audio_factory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_desktop.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_desktop_factory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resample_pcm.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="encoder_264.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="muxer_mp4.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="encoder_aac.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="muxer_libmp4v2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_audio_dshow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="filter_audio.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sws_helper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="device_audios.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="device_videos.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="export.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="record_desktop_ffmpeg_dshow.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="muxer_file.cpp">
+      <Filter>Source Files\muxer</Filter>
     </ClCompile>
-    <ClCompile Include="record_desktop_ffmpeg_gdi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="record_desktop_win_gdi.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="muxer_libmp4v2.cpp">
+      <Filter>Source Files\muxer</Filter>
     </ClCompile>
     <ClCompile Include="muxer_mkv.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\muxer</Filter>
     </ClCompile>
-    <ClCompile Include="muxer_file.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="muxer_mp4.cpp">
+      <Filter>Source Files\muxer</Filter>
     </ClCompile>
-    <ClCompile Include="header_mmdevice.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="encoder_264.cpp">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_aac.cpp">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio_dshow.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio_factory.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_audio_wasapi.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_factory.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_ffmpeg_dshow.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_ffmpeg_gdi.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_win_gdi.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="device_audios.cpp">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="device_videos.cpp">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="filter_audio.cpp">
+      <Filter>Source Files\filters</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_string.cpp">
+      <Filter>Source Files\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="headers_mmdevice.cpp">
+      <Filter>Source Files\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="resample_pcm.cpp">
+      <Filter>Source Files\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="sws_helper.cpp">
+      <Filter>Source Files\helpers</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "record_desktop.h"
 
 am::record_desktop::record_desktop()

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "device_videos.h"
 
 

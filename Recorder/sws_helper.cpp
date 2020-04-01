@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "sws_helper.h"
 
 #include "error_define.h"

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "record_audio_dshow.h"
 
 #include "log_helper.h"

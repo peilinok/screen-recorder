@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "utils_string.h"
 
 #ifdef WIN32

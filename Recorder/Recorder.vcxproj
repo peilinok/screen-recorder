@@ -264,9 +264,6 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="device_videos.h" />
     <ClInclude Include="encoder_264.h" />
     <ClInclude Include="encoder_aac.h" />
@@ -274,7 +271,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="filter_audio.h" />
     <ClInclude Include="headers_ffmpeg.h" />
     <ClInclude Include="log_helper.h" />
-    <ClInclude Include="header_mmdevice.h" />
+    <ClInclude Include="headers_mmdevice.h" />
     <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_file.h" />
     <ClInclude Include="muxer_libmp4v2.h" />
@@ -295,9 +292,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="record_desktop_win_gdi.h" />
     <ClInclude Include="resample_pcm.h" />
     <ClInclude Include="ring_buffer.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="sws_helper.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="utils_string.h" />
   </ItemGroup>
   <ItemGroup>
@@ -306,7 +301,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="filter_audio.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="header_mmdevice.cpp" />
+    <ClCompile Include="headers_mmdevice.cpp" />
     <ClCompile Include="muxer_file.cpp" />
     <ClCompile Include="muxer_libmp4v2.cpp" />
     <ClCompile Include="muxer_mkv.cpp" />
@@ -323,14 +318,6 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="export.cpp" />
     <ClCompile Include="record_desktop_win_gdi.cpp" />
     <ClCompile Include="resample_pcm.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug_Static|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug_DLL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Static|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_DLL|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="sws_helper.cpp" />
     <ClCompile Include="utils_string.cpp" />
   </ItemGroup>

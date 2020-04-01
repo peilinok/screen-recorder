@@ -209,3 +209,11 @@
 /Recorder/Release_DLL/header_mmdevice.obj
 /Recorder/Release_DLL/muxer_file.obj
 /Recorder/Release_DLL/muxer_mkv.obj
+/Recorder/Debug/header_mmdevice.obj
+/Recorder/Debug/muxer_file.obj
+/Recorder/Debug/muxer_mkv.obj
+/Recorder/Debug/record_desktop_ffmpeg_dshow.obj
+/Recorder/Debug/record_desktop_ffmpeg_gdi.obj
+/Recorder/Debug/record_desktop_win_gdi.obj
+/Recorder/Debug_DLL/header_mmdevice.obj
+/Recorder/Release_DLL/headers_mmdevice.obj
