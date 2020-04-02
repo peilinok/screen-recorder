@@ -219,3 +219,4 @@
 /Recorder/Release_DLL/headers_mmdevice.obj
 /2node/node_modules
 /2node/package-lock.json
+/Recorder/Debug/*.obj

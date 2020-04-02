@@ -7,6 +7,7 @@
 #include "muxer_mp4.h"
 
 #include "utils_string.h"
+#include "utils_winversion.h"
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -188,6 +189,17 @@ void test_audio()
 int main(int argc, char **argv)
 {
 	al_info("record start...");
+
+	am::winversion_info ver = { 0 };
+
+	am::utils_winversion::get_win(&ver);
+
+	bool is_win8_or_above = am::utils_winversion::is_win8_or_above();
+
+	bool is_ia32 = am::utils_winversion::is_32();
+
+	al_info("win version: %d.%d.%d.%d", ver.major, ver.minor, ver.build, ver.revis);
+	al_info("is win8 or above: %s", is_win8_or_above ? "true" : "false");
 
 	show_devices();
 
