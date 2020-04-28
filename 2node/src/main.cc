@@ -226,7 +226,9 @@ namespace recorder
 	typedef enum {
 		uvcb_type_duration = 1,
 		uvcb_type_error,
-		uvcb_type_device_change
+		uvcb_type_device_change,
+		uvcb_type_preview_image,
+		uvcb_type_preview_audio
 	}uvCallbackType;
 
 	typedef struct {
@@ -242,6 +244,14 @@ namespace recorder
 	}uvCallBackDataDeviceChange;
 
 	typedef struct {
+		int size;
+		int width;
+		int height;
+		int type;
+		uint8_t *data;
+	}uvCallBackDataPreviewImage;
+
+	typedef struct {
 		uvCallbackType type;
 		int *data;
 	}uvCallBackChunk;
@@ -249,6 +259,7 @@ namespace recorder
 	static Persistent<Function>* cb_uv_duration = NULL;
 	static Persistent<Function>* cb_uv_error = NULL;
 	static Persistent<Function>* cb_uv_device_change = NULL;
+	static Persistent<Function>* cb_uv_preview_image = NULL;
 
 	static uv_async_t s_async = { 0 };
 	static Locker locker;
@@ -280,7 +291,7 @@ namespace recorder
 			Uint32::New(isolate, data->error)
 		};
 		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+		Local<Function>::New(isolate, *cb_uv_error)->Call(isolate->GetCurrentContext(), recv, argc, argv);
 	}
 
 	void DispatchUvRecorderDeviceChange(Isolate* isolate, uvCallBackDataDeviceChange *data) {
@@ -291,7 +302,18 @@ namespace recorder
 			Uint32::New(isolate, data->type)
 		};
 		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+		Local<Function>::New(isolate, *cb_uv_device_change)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+	}
+
+	void DispatchUvRecorderPreviewImage(Isolate* isolate, uvCallBackDataPreviewImage *data) {
+		if (!cb_uv_preview_image) return;
+
+		const unsigned argc = 5;
+		Local<Value> argv[argc] = {
+			Uint32::New(isolate, data->size)
+		};
+		Local<Value> recv;
+		Local<Function>::New(isolate, *cb_uv_preview_image)->Call(isolate->GetCurrentContext(), recv, argc, argv);
 	}
 
 	void OnRecorderDuration(uint64_t duration) {
@@ -301,7 +323,7 @@ namespace recorder
 		DispatchUvRecorderDuration(Isolate::GetCurrent(), data);
 		delete data;
 
-		return;
+		return;//do not use libuv now
 
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_duration;
@@ -342,6 +364,27 @@ namespace recorder
 		PushUvChunk(uv_cb_chunk);
 	}
 
+	void OnRecorderPreviewImage(const unsigned char *data,unsigned int size,int width,int height,int type){
+		char *buff = new char[sizeof(uvCallBackDataPreviewImage) + size];
+		uvCallBackDataPreviewImage *image = (uvCallBackDataPreviewImage*)buff;
+
+		memcpy(image->data,data,size);
+		image->size = size;
+		image->width = width;
+		image->height = height;
+		image->type = type;
+
+		DispatchUvRecorderPreviewImage(Isolate::GetCurrent(), image);
+
+		return;
+
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_preview_image;
+		uv_cb_chunk.data = (int*)image;
+
+		PushUvChunk(uv_cb_chunk);
+	}
+
 
 	void OnUvCallback(uv_async_t *handle) {
 		locker.Lock();
@@ -359,6 +402,9 @@ namespace recorder
 				break;
 			case uvcb_type_device_change:
 				DispatchUvRecorderDeviceChange(isolate, (uvCallBackDataDeviceChange*)chunk.data);
+				break;
+			case uvcb_type_preview_image:
+				DispatchUvRecorderPreviewImage(isolate,(uvCallBackDataPreviewImage*)chunk.data);
 				break;
 			default:
 				break;
@@ -473,6 +519,21 @@ namespace recorder
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
 
+	void SetPreviewImageCallBack(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("function");
+
+		Persistent<Function>* callback = new Persistent<Function>;
+		callback->Reset(isolate, args[0].As<Function>());
+
+		locker.Lock();
+		cb_uv_preview_image = callback;
+		locker.Unlock();
+
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
+
 	void Init(const FunctionCallbackInfo<Value> &args) {
 		Isolate* isolate = args.GetIsolate();
 
@@ -488,6 +549,7 @@ namespace recorder
 		callbacks.func_duration = OnRecorderDuration;
 		callbacks.func_error = OnRecorderError;
 		callbacks.func_device_change = OnRecorderDeviceChange;
+		callbacks.func_preview_image = OnRecorderPreviewImage;
 
 		settings.v_left = 0;
 		settings.v_top = 0;
@@ -534,6 +596,7 @@ namespace recorder
 		cb_uv_duration = NULL;
 		cb_uv_error = NULL;
 		cb_uv_device_change = NULL;
+		cb_uv_preview_image = NULL;
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -579,6 +642,7 @@ namespace recorder
 		NODE_SET_METHOD(exports, "SetDurationCallBack", SetDurationCallBack);
 		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
 		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
+		NODE_SET_METHOD(exports, "SetPreviewImageCallBack", SetPreviewImageCallBack);
 		NODE_SET_METHOD(exports, "Init", Init);
 		NODE_SET_METHOD(exports, "Release", Release);
 		NODE_SET_METHOD(exports, "Start", Start);

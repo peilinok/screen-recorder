@@ -10,12 +10,15 @@
 #define AMRECORDER_API extern "C"  __declspec(dllexport)
 #endif
 
+#pragma pack(push,1)
 typedef struct {
 	char id[260];
 	char name[260];
 	uint8_t is_default;
 }AMRECORDER_DEVICE;
+#pragma pack(pop)
 
+#pragma pack(push,1)
 typedef struct {
 	int v_left;
 	int v_top;
@@ -31,6 +34,8 @@ typedef struct {
 	AMRECORDER_DEVICE a_mic;
 	AMRECORDER_DEVICE a_speaker;
 }AMRECORDER_SETTING;
+#pragma pack(pop)
+
 
 typedef void(*AMRECORDER_FUNC_DURATION)(uint64_t duration);
 
@@ -38,11 +43,25 @@ typedef void(*AMRECORDER_FUNC_ERROR)(int error);
 
 typedef void(*AMRECORDER_FUNC_DEVICE_CHANGE)(int type);//0 video 1 speaker 2 mic
 
+typedef void(*AMRECORDER_FUNC_PREVIEW_IMAGE)(
+	const unsigned char *data,
+	unsigned int size,
+	int width,
+	int height,
+	int type
+	); // 0 ARGB 1 RGBA ABGR 2 BGRA 3
+
+typedef void(*AMRECORDER_FUNC_PREVIEW_AUDIO)();
+
+#pragma pack(push,1)
 typedef struct {
 	AMRECORDER_FUNC_DURATION func_duration;
 	AMRECORDER_FUNC_ERROR func_error;
 	AMRECORDER_FUNC_DEVICE_CHANGE func_device_change;
+	AMRECORDER_FUNC_PREVIEW_IMAGE func_preview_image;
+	AMRECORDER_FUNC_PREVIEW_AUDIO func_preview_audio;
 }AMRECORDER_CALLBACK;
+#pragma pack(pop)
 
 
 AMRECORDER_API int recorder_init(const AMRECORDER_SETTING &setting, const AMRECORDER_CALLBACK &callbacks);

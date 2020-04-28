@@ -3,6 +3,10 @@
         "tuple": "cpp",
         "utility": "cpp",
         "type_traits": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp",
+        "xmemory": "cpp",
+        "xutility": "cpp"
     }
 }
