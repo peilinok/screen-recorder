@@ -634,6 +634,20 @@ namespace recorder
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
 
+	void Wait(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("uint32");
+
+		int timestamp = args[0]->Uint32Value();
+
+		Sleep(timestamp);
+
+
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
+
 	void Initialize(Local<Object> exports)
 	{
 		NODE_SET_METHOD(exports, "GetSpeakers", GetSpeakers);
@@ -649,6 +663,7 @@ namespace recorder
 		NODE_SET_METHOD(exports, "Stop", Stop);
 		NODE_SET_METHOD(exports, "Pause", Pause);
 		NODE_SET_METHOD(exports, "Resume", Resume);
+		NODE_SET_METHOD(exports, "Wait", Wait);
 	}
 
 	NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)

@@ -44,7 +44,7 @@ module.exports = ({
   logger.info("Electron Version:", electronVersion);
   logger.info("Runtime:", runtime, "\n");
 
-  logger.info("Build C++ addon for Agora Electron SDK...\n")
+  logger.info("Build C++ addon for ffmpeg-recorder...\n")
   
   shell.exec('node-gyp clean', {silent}, (code, stdout, stderr) => {
     // handle error

@@ -63,14 +63,15 @@ class EasyRecorder {
      * 
      * @param {number} qb 0-100
      * @param {number} fps 10-30
+     * @param {string} output output file path
      * @param {string} speakerName 
      * @param {string} speakerId 
      * @param {string} micName 
      * @param {string} micId 
      * @returns {number} 0 succed, otherwise return error code
      */
-    Init(qb,fps,speakerName,speakerId,micName,micId) {
-        return recorder.Init(qb,fps,speakerName,speakerId,micName,micId);
+    Init(qb,fps,output,speakerName,speakerId,micName,micId) {
+        return recorder.Init(qb,fps,output,speakerName,speakerId,micName,micId);
     }
 
     /**
@@ -107,6 +108,14 @@ class EasyRecorder {
      */
     Resume(){
         recorder.Resume();
+    }
+
+    /**
+     * 
+     * @param {number} timestamp 
+     */
+    Wait(timestamp){
+        recorder.Wait(timestamp);
     }
 }
 

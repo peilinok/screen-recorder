@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "description": "desktop recorder",
   "main": "index.js",
   "engines": {
@@ -11,13 +11,15 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "just install"
+    "install": "just install",
+    "build:node": "just build:node",
+    "build:electron": "just build:electron"
   },
   "dependencies": {
     "just-task": "^0.14.3",
+    "node-gyp": "^5.0.0",
     "rimraf": "^3.0.2",
-    "shelljs": "^0.8.3",
-    "node-gyp": "^5.0.0"
+    "shelljs": "^0.8.3"
   },
   "repository": {
     "type": "git",
@@ -29,5 +31,7 @@
   "bugs": {
     "url": "https://github.com/peilinok/screen-recorder/issues"
   },
-  "homepage": "https://github.com/peilinok/screen-recorder#readme"
+  "homepage": "https://github.com/peilinok/screen-recorder#readme",
+  "devDependencies": {
+  }
 }
