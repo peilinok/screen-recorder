@@ -1,6 +1,6 @@
 const { task, option, logger, argv, series, condition } = require('just-task');
 const build = require('./scripts/build');
-const { getArgvFromNpmEnv, getArgvFromPkgJson } = require('./scripts/npm_argv');
+const { getArgvFromPkgJson } = require('./npm_argv');
 
 option('electron_version', {default: '4.1.3'});
 option('runtime', {default: 'electron', choices: ['electron', 'node']});
@@ -37,7 +37,8 @@ task('build:node', () => {
 })
 // trigger when run npm install
 task('install',()=>{
-  const config = Object.assign({}, getArgvFromNpmEnv(), getArgvFromPkgJson())
+  logger.info(getArgvFromPkgJson())
+  const config = Object.assign({}, getArgvFromPkgJson())
   build(Object.assign({}, config, {
     packageVersion: packageVersion
   }))
