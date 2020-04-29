@@ -201,6 +201,7 @@ namespace am {
 		uint8_t *yuv_data = NULL;
 		
 		ret = _v_stream->v_sws->convert(frame, &yuv_data, &len);
+		
 		if (ret == AE_NO && yuv_data && len) {
 			_v_stream->v_enc->put(yuv_data, len, frame);
 		}
@@ -209,6 +210,31 @@ namespace am {
 	void muxer_mp4::on_desktop_error(int error)
 	{
 		al_fatal("on desktop capture error:%d", error);
+	}
+
+	int getPcmDB(const unsigned char *pcmdata, size_t size) {
+
+		int db = 0;
+		float value = 0;
+		double sum = 0;
+		double average = 0;
+		int bit_per_sample = 32;
+		int byte_per_sample = bit_per_sample / 8;
+		int channel_num = 2;
+
+		for (int i = 0; i < size; i += channel_num * byte_per_sample)
+		{
+			memcpy(&value, pcmdata + i, byte_per_sample);
+			sum += abs(value);
+		}
+		average = sum / (double)(size / byte_per_sample /channel_num);
+		if (average > 0)
+		{
+			db = (int)(20 * log10f(average));
+		}
+
+		al_debug("%d   %f     %f", db, average,sum);
+		return db;
 	}
 
 #if 1 //with filter
@@ -225,6 +251,12 @@ namespace am {
 			return;
 
 		_a_stream->a_filter->add_frame(frame, index);
+
+		/*
+		if (index == 1) {
+			getPcmDB(frame->data[0], frame->linesize[0]);
+		}
+		*/
 
 		return;
 	}

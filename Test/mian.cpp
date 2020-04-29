@@ -6,6 +6,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void on_preview_image(
+	const unsigned char *data,
+	unsigned int size,
+	int width,
+	int height,
+	int type) {
+	printf("on_preview_image size:%d type %d\r\n", size, type);
+}
+
 int main()
 {
 	AMRECORDER_DEVICE *speakers = NULL, *mics = NULL;
@@ -36,6 +45,8 @@ int main()
 		if (mics[i].is_default == 1)
 			memcpy(&setting.a_mic, &mics[i], sizeof(AMRECORDER_DEVICE));
 	}
+
+	callback.func_preview_image = on_preview_image;
 
 	int err = recorder_init(setting, callback);
 

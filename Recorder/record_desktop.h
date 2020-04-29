@@ -12,6 +12,7 @@
 namespace am {
 	typedef std::function<void(AVFrame *frame)> cb_desktop_data;
 	typedef std::function<void(int)> cb_desktop_error;
+	typedef std::function<void(const uint8_t *data, int size, int width, int height,AVPixelFormat fmt)> cb_desktop_preview;
 
 	class record_desktop
 	{
@@ -45,6 +46,9 @@ namespace am {
 			_on_data = on_data;
 			_on_error = on_error;
 		}
+		inline void registe_preview(cb_desktop_preview on_preview) {
+			_on_preview = on_preview;
+		}
 		inline const RECORD_DESKTOP_RECT & get_rect() { return _rect; }
 
 		inline const int get_frame_rate() { return _fps; }
@@ -68,13 +72,13 @@ namespace am {
 
 		cb_desktop_data _on_data;
 		cb_desktop_error _on_error;
+		cb_desktop_preview _on_preview;
 
 		AVRational _time_base;
 		int64_t _start_time;
 		AVPixelFormat _pixel_fmt;
 	};
 }
-
 
 
 #endif

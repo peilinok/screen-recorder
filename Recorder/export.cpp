@@ -50,6 +50,9 @@ namespace am {
 		int get_cameras(AMRECORDER_DEVICE **devices);
 
 	private:
+		void on_preview_image(const uint8_t *data, int size, int width, int height, AVPixelFormat fmt);
+
+	private:
 		AMRECORDER_SETTING _setting;
 		AMRECORDER_CALLBACK _callbacks;
 
@@ -154,6 +157,15 @@ namespace am {
 		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
 		AMERROR_CHECK(error);
 #endif 
+		_recorder_desktop->registe_preview(std::bind(
+			&recorder::on_preview_image, 
+			this, 
+			std::placeholders::_1, 
+			std::placeholders::_2, 
+			std::placeholders::_3, 
+			std::placeholders::_4, 
+			std::placeholders::_5
+		));
 
 		error = _recorder_desktop->init(
 		{ 
@@ -289,6 +301,32 @@ namespace am {
 	int recorder::get_cameras(AMRECORDER_DEVICE ** devices)
 	{
 		return -AE_UNSUPPORT;
+	}
+	void recorder::on_preview_image(const uint8_t * data, int size, int width, int height, AVPixelFormat fmt)
+	{
+		if (_callbacks.func_preview_image == NULL)
+			return;
+
+		int converted_type = 0;
+		switch (fmt)
+		{
+		case AV_PIX_FMT_ARGB:
+			converted_type = 0;
+			break;
+		case AV_PIX_FMT_RGBA:
+			converted_type = 1;
+			break;
+		case AV_PIX_FMT_ABGR:
+			converted_type = 2;
+			break;
+		case AV_PIX_FMT_BGRA:
+			converted_type = 3;
+			break;
+		default:
+			break;
+		}
+
+		_callbacks.func_preview_image(data, size, width, height, converted_type);
 	}
 }
 

@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-
 #ifdef AMRECORDER_IMPORT
 #define AMRECORDER_API extern "C"  __declspec(dllimport)
 #else
@@ -36,17 +35,30 @@ typedef struct {
 }AMRECORDER_SETTING;
 #pragma pack(pop)
 
-typedef void(*AMRECORDER_FUNC_DURATION)(uint64_t duration);
 
-typedef void(*AMRECORDER_FUNC_ERROR)(int error);
+typedef void( *AMRECORDER_FUNC_DURATION)(uint64_t duration);
 
-typedef void(*AMRECORDER_FUNC_DEVICE_CHANGE)(int type);//0 video 1 speaker 2 mic
+typedef void( *AMRECORDER_FUNC_ERROR)(int error);
+
+typedef void( *AMRECORDER_FUNC_DEVICE_CHANGE)(int type);//0 video 1 speaker 2 mic
+
+typedef void( *AMRECORDER_FUNC_PREVIEW_IMAGE)(
+	const unsigned char *data,
+	unsigned int size,
+	int width,
+	int height,
+	int type
+	); // 0 ARGB 1 RGBA ABGR 2 BGRA 3
+
+typedef void( *AMRECORDER_FUNC_PREVIEW_AUDIO)();
 
 #pragma pack(push,1)
 typedef struct {
 	AMRECORDER_FUNC_DURATION func_duration;
 	AMRECORDER_FUNC_ERROR func_error;
 	AMRECORDER_FUNC_DEVICE_CHANGE func_device_change;
+	AMRECORDER_FUNC_PREVIEW_IMAGE func_preview_image;
+	AMRECORDER_FUNC_PREVIEW_AUDIO func_preview_audio;
 }AMRECORDER_CALLBACK;
 #pragma pack(pop)
 
