@@ -5,7 +5,7 @@ const deploy = require("./deploy")
 
 module.exports = ({
   electronVersion='4.1.3',
-  runtime='electron',
+  runtime='node',
   platform=process.platform,
   packageVersion,
   debug = false,

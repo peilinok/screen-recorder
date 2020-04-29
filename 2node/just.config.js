@@ -3,7 +3,7 @@ const build = require('./scripts/build');
 const { getArgvFromPkgJson } = require('./npm_argv');
 
 option('electron_version', {default: '4.1.3'});
-option('runtime', {default: 'electron', choices: ['electron', 'node']});
+option('runtime', {default: 'node', choices: ['electron', 'node']});
 option('platform', {default: process.platform, choices: ['darwin', 'win32']});
 option('debug', {default: false, boolean: true});
 option('silent', {default: false, boolean: true});
@@ -15,7 +15,7 @@ const packageVersion = require('./package.json').version;
 task('build:electron', () => {
   build({
     electronVersion: argv().electron_version, 
-    runtime: argv().runtime, 
+    runtime: 'electron', 
     platform: argv().platform, 
     packageVersion, 
     debug: argv().debug, 
