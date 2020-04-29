@@ -53,7 +53,7 @@ class EasyRecorder {
 
     /**
      * 
-     * @param {(image:{data:any,size:number,width:number,height:number,type:number})=>void} cb 
+     * @param {(image:{size:number,width:number,height:number,type:number,data:any})=>void} cb 
      */
     SetPreviewImageCallBack(cb){
         return recorder.SetPreviewImageCallBack(cb);

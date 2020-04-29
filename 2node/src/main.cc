@@ -276,7 +276,6 @@ namespace recorder
 	static std::queue<uvCallBackChunk> cb_chunk_queue;
 
 	void PushUvChunk(const uvCallBackChunk &chunk) {
-		AMLOG("PushUvChunk 0")
 
 		locker.Lock();
 		cb_chunk_queue.push(chunk);
@@ -284,7 +283,6 @@ namespace recorder
 
 		uv_async_send(&s_async);
 
-		AMLOG("PushUvChunk 1")
 	}
 
 	void DispatchUvRecorderDuration(uvCallBackDataDruation *data) {
@@ -341,16 +339,6 @@ namespace recorder
 		HandleScope scope(isolate);
 
 
-		const unsigned argc = 1;
-		Local<Value> argv[argc] = {
-			Uint32::New(isolate,1)
-		};
-		
-		Local<Value> recv;
-		
-		cb_uv_preview_image->callback.Get(isolate)->Call(cb_uv_preview_image->object.Get(isolate), argc, argv);
-
-/*
 		const unsigned argc = 5;
 		Local<Value> argv[argc] = {
 			Uint32::New(isolate, data->size),
@@ -359,7 +347,11 @@ namespace recorder
 			Uint32::New(isolate,data->type),
 			String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
 		};
-*/
+		
+		Local<Value> recv;
+		
+		cb_uv_preview_image->callback.Get(isolate)->Call(cb_uv_preview_image->object.Get(isolate), argc, argv);
+
 	}
 
 	void OnRecorderDuration(uint64_t duration) {
@@ -417,7 +409,6 @@ namespace recorder
 
 
 	void OnUvCallback(uv_async_t *handle) {
-		AMLOG("OnUvCallback 0")
 
 		locker.Lock();
 		while (!cb_chunk_queue.empty()) {
@@ -446,7 +437,6 @@ namespace recorder
 
 		locker.Unlock();
 
-		AMLOG("OnUvCallback 1")
 	}
 
 	void GetSpeakers(const FunctionCallbackInfo<Value> &args) {
