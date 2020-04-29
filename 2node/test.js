@@ -2,29 +2,30 @@ const EasyRecorder = require('./index')
 
 const recorder = new EasyRecorder();
 
-console.log(recorder);
+const onPreviewImage = function(image){
+  console.log('onPreviewImage',image);
+  return
+}
 
 const speakers = recorder.GetSpeakers();
 const mics = recorder.GetMics();
-recorder.SetPreviewImageCallBack(()=>{
-  console.log('on preview image');
-})
 
 console.log(speakers);
 console.log(mics);
 
-const ret = recorder.Init(60,20,".\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
-
-let running = false;
-
+let ret = recorder.Init(60,20,".\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
 console.info('recorder init ret:',ret);
 
+
 if(ret == 0){
-  running = true;
-  recorder.Start();
+
+  ret = recorder.SetPreviewImageCallBack(onPreviewImage);
+  console.info('SetPreviewImageCallBack ret:',ret);
+
+  ret = recorder.Start();
+  console.info('start',ret);
 
   setTimeout(()=>{
-    running = false;
 
     recorder.Stop();
     recorder.Release();

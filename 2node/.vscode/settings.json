@@ -7,6 +7,8 @@
         "vector": "cpp",
         "xstring": "cpp",
         "xmemory": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "deque": "cpp",
+        "queue": "cpp"
     }
 }

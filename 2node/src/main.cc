@@ -18,6 +18,8 @@ namespace recorder
 	using namespace v8;
 	using namespace node;
 
+	#define AMLOG(X) printf("%s:%d %s\r\n",__FILE__,__LINE__,X);
+
 	class Locker
 	{
 	public:
@@ -256,10 +258,17 @@ namespace recorder
 		int *data;
 	}uvCallBackChunk;
 
-	static Persistent<Function>* cb_uv_duration = NULL;
-	static Persistent<Function>* cb_uv_error = NULL;
-	static Persistent<Function>* cb_uv_device_change = NULL;
-	static Persistent<Function>* cb_uv_preview_image = NULL;
+	typedef struct {
+		Isolate* isolate;
+		Persistent<Context> context;
+		Persistent<Function> callback;
+		Persistent<Object> object;
+	}uvCallBackHandler;
+
+	static uvCallBackHandler* cb_uv_duration = NULL;
+	static uvCallBackHandler* cb_uv_error = NULL;
+	static uvCallBackHandler* cb_uv_device_change = NULL;
+	static uvCallBackHandler* cb_uv_preview_image = NULL;
 
 	static uv_async_t s_async = { 0 };
 	static Locker locker;
@@ -267,49 +276,81 @@ namespace recorder
 	static std::queue<uvCallBackChunk> cb_chunk_queue;
 
 	void PushUvChunk(const uvCallBackChunk &chunk) {
+		AMLOG("PushUvChunk 0")
+
 		locker.Lock();
 		cb_chunk_queue.push(chunk);
 		locker.Unlock();
 
 		uv_async_send(&s_async);
+
+		AMLOG("PushUvChunk 1")
 	}
 
-	void DispatchUvRecorderDuration(Isolate* isolate, uvCallBackDataDruation *data) {
+	void DispatchUvRecorderDuration(uvCallBackDataDruation *data) {
 		if (!cb_uv_duration) return;
+
+		Isolate * isolate = cb_uv_duration->isolate;
+
+		HandleScope scope(isolate);
 
 		const unsigned argc = 1;
 		Local<Value> argv[argc] = { Uint32::New(isolate, data->duration) };
 		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_duration)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+
+		cb_uv_duration->callback.Get(isolate)->Call(cb_uv_duration->object.Get(isolate), argc, argv);
 	}
 
-	void DispatchUvRecorderError(Isolate* isolate, uvCallBackDataError *data) {
+	void DispatchUvRecorderError(uvCallBackDataError *data) {
 		if (!cb_uv_error) return;
+
+		Isolate * isolate = cb_uv_error->isolate;
+
+		HandleScope scope(isolate);
 
 		const unsigned argc = 1;
 		Local<Value> argv[argc] = {
 			Uint32::New(isolate, data->error)
 		};
 		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_error)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+
+		cb_uv_error->callback.Get(isolate)->Call(cb_uv_error->object.Get(isolate), argc, argv);
 	}
 
-	void DispatchUvRecorderDeviceChange(Isolate* isolate, uvCallBackDataDeviceChange *data) {
+	void DispatchUvRecorderDeviceChange(uvCallBackDataDeviceChange *data) {
 		if (!cb_uv_device_change) return;
+
+		Isolate * isolate = cb_uv_device_change->isolate;
+
+		HandleScope scope(isolate);
 
 		const unsigned argc = 1;
 		Local<Value> argv[argc] = {
 			Uint32::New(isolate, data->type)
 		};
 		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_device_change)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+
+		cb_uv_device_change->callback.Get(isolate)->Call(cb_uv_device_change->object.Get(isolate), argc, argv);
 	}
 
-	void DispatchUvRecorderPreviewImage(Isolate* isolate, uvCallBackDataPreviewImage *data) {
+	void DispatchUvRecorderPreviewImage(uvCallBackDataPreviewImage *data) {
 		if (!cb_uv_preview_image) return;
+		
+		Isolate * isolate = cb_uv_preview_image->isolate;
+		
+		HandleScope scope(isolate);
 
 
-return;
+		const unsigned argc = 1;
+		Local<Value> argv[argc] = {
+			Uint32::New(isolate,1)
+		};
+		
+		Local<Value> recv;
+		
+		cb_uv_preview_image->callback.Get(isolate)->Call(cb_uv_preview_image->object.Get(isolate), argc, argv);
+
+/*
 		const unsigned argc = 5;
 		Local<Value> argv[argc] = {
 			Uint32::New(isolate, data->size),
@@ -318,18 +359,13 @@ return;
 			Uint32::New(isolate,data->type),
 			String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
 		};
-		Local<Value> recv;
-		Local<Function>::New(isolate, *cb_uv_preview_image)->Call(isolate->GetCurrentContext(), recv, argc, argv);
+*/
 	}
 
 	void OnRecorderDuration(uint64_t duration) {
 		uvCallBackDataDruation *data = new uvCallBackDataDruation;
 		data->duration = duration;
 
-		DispatchUvRecorderDuration(Isolate::GetCurrent(), data);
-		delete data;
-
-		return;//do not use libuv now
 
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_duration;
@@ -342,11 +378,6 @@ return;
 		uvCallBackDataError *data = new uvCallBackDataError;
 		data->error = error;
 
-		DispatchUvRecorderError(Isolate::GetCurrent(), data);
-		delete data;
-
-		return;
-
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_error;
 		uv_cb_chunk.data = (int*)data;
@@ -357,11 +388,6 @@ return;
 	void OnRecorderDeviceChange(int type) {
 		uvCallBackDataDeviceChange *data = new uvCallBackDataDeviceChange;
 		data->type = type;
-
-		DispatchUvRecorderDeviceChange(Isolate::GetCurrent(), data);
-		delete data;
-
-		return;
 
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_device_change;
@@ -382,48 +408,45 @@ return;
 		image->height = height;
 		image->type = type;
 
-		DispatchUvRecorderPreviewImage(Isolate::GetCurrent(), image);
-
-		delete[] buff;
-
-		return;
-
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_preview_image;
-		uv_cb_chunk.data = (int*)image;
+		uv_cb_chunk.data = (int*)buff;
 
 		PushUvChunk(uv_cb_chunk);
 	}
 
 
 	void OnUvCallback(uv_async_t *handle) {
+		AMLOG("OnUvCallback 0")
+
 		locker.Lock();
 		while (!cb_chunk_queue.empty()) {
 			uvCallBackChunk &chunk = cb_chunk_queue.front();
 			cb_chunk_queue.pop();
-			Isolate* isolate = Isolate::GetCurrent();
 			switch (chunk.type)
 			{
 			case uvcb_type_duration:
-				DispatchUvRecorderDuration(isolate, (uvCallBackDataDruation*)chunk.data);
+				DispatchUvRecorderDuration((uvCallBackDataDruation*)chunk.data);
 				break;
 			case uvcb_type_error:
-				DispatchUvRecorderError(isolate, (uvCallBackDataError*)chunk.data);
+				DispatchUvRecorderError((uvCallBackDataError*)chunk.data);
 				break;
 			case uvcb_type_device_change:
-				DispatchUvRecorderDeviceChange(isolate, (uvCallBackDataDeviceChange*)chunk.data);
+				DispatchUvRecorderDeviceChange((uvCallBackDataDeviceChange*)chunk.data);
 				break;
 			case uvcb_type_preview_image:
-				DispatchUvRecorderPreviewImage(isolate,(uvCallBackDataPreviewImage*)chunk.data);
+				DispatchUvRecorderPreviewImage((uvCallBackDataPreviewImage*)chunk.data);
 				break;
 			default:
 				break;
 			}
 
-			delete chunk.data;
+			delete[] chunk.data;
 		}
 
 		locker.Unlock();
+
+		AMLOG("OnUvCallback 1")
 	}
 
 	void GetSpeakers(const FunctionCallbackInfo<Value> &args) {
@@ -489,11 +512,19 @@ return;
 		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-		Persistent<Function>* callback = new Persistent<Function>;
-		callback->Reset(isolate, args[0].As<Function>());
-
 		locker.Lock();
-		cb_uv_duration = callback;
+
+		if (cb_uv_duration != NULL) {
+			delete cb_uv_duration;
+			cb_uv_duration = NULL;
+		}
+
+		cb_uv_duration = new uvCallBackHandler;
+		cb_uv_duration->isolate = isolate;
+		cb_uv_duration->context.Reset(isolate, isolate->GetCurrentContext());
+		cb_uv_duration->object.Reset(isolate, args.This());
+		cb_uv_duration->callback.Reset(isolate, args[0].As<Function>());
+
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -504,11 +535,19 @@ return;
 		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-		Persistent<Function>* callback = new Persistent<Function>;
-		callback->Reset(isolate, args[0].As<Function>());
-
 		locker.Lock();
-		cb_uv_error = callback;
+
+		if (cb_uv_error != NULL) {
+			delete cb_uv_error;
+			cb_uv_error = NULL;
+		}
+
+		cb_uv_error = new uvCallBackHandler;
+		cb_uv_error->isolate = isolate;
+		cb_uv_error->context.Reset(isolate, isolate->GetCurrentContext());
+		cb_uv_error->object.Reset(isolate, args.This());
+		cb_uv_error->callback.Reset(isolate, args[0].As<Function>());
+
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -519,11 +558,19 @@ return;
 		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
 
-		Persistent<Function>* callback = new Persistent<Function>;
-		callback->Reset(isolate, args[0].As<Function>());
-
 		locker.Lock();
-		cb_uv_device_change = callback;
+
+		if (cb_uv_device_change != NULL) {
+			delete cb_uv_device_change;
+			cb_uv_device_change = NULL;
+		}
+
+		cb_uv_device_change = new uvCallBackHandler;
+		cb_uv_device_change->isolate = isolate;
+		cb_uv_device_change->context.Reset(isolate, isolate->GetCurrentContext());
+		cb_uv_device_change->object.Reset(isolate, args.This());
+		cb_uv_device_change->callback.Reset(isolate, args[0].As<Function>());
+
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -533,12 +580,20 @@ return;
 		Isolate* isolate = args.GetIsolate();
 		CHECK_PARAM_COUNT(1);
 		CHECK_PARAM_TYPE1("function");
-
-		Persistent<Function>* callback = new Persistent<Function>;
-		callback->Reset(isolate, args[0].As<Function>());
+		CHECK_PARAM_VALID(args[0],"function");
 
 		locker.Lock();
-		cb_uv_preview_image = callback;
+		if(cb_uv_preview_image != NULL){
+			delete cb_uv_preview_image;
+			cb_uv_preview_image = NULL;
+		}
+
+		cb_uv_preview_image = new uvCallBackHandler;
+		cb_uv_preview_image->isolate = isolate;
+		cb_uv_preview_image->context.Reset(isolate, isolate->GetCurrentContext());
+		cb_uv_preview_image->object.Reset(isolate, args.This());
+		cb_uv_preview_image->callback.Reset(isolate, args[0].As<Function>());
+
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -588,8 +643,11 @@ return;
 
 		error = recorder_init(settings, callbacks);
 
-		//if(error = 0)//registe all call back to uv callback,this wont be succed,don't know why
-		//  uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
+		if (error == 0)//registe all call back to uv callback,this wont be succed,don't know why
+		{
+			int ret = uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
+			printf("uv init result:%d\r\n", ret);
+		}
 
 		args.GetReturnValue().Set(Int32::New(isolate, error));
 	}
@@ -600,12 +658,14 @@ return;
 		recorder_release();
 
 		//close uv call back,this will crahs ,don't know why
-		//uv_close((uv_handle_t*)&s_async, NULL);
+		uv_close((uv_handle_t*)&s_async, NULL);
 
 		locker.Lock();
 		cb_uv_duration = NULL;
 		cb_uv_error = NULL;
 		cb_uv_device_change = NULL;
+
+		delete cb_uv_preview_image;
 		cb_uv_preview_image = NULL;
 		locker.Unlock();
 

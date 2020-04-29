@@ -32,7 +32,7 @@ class EasyRecorder {
      * @param {(duration:number)=>void} cb 
      */
     SetDurationCallBack(cb){
-        recorder.SetDurationCallBack(cb);
+        return recorder.SetDurationCallBack(cb);
     }
 
     /**
@@ -40,7 +40,7 @@ class EasyRecorder {
      * @param {(type:0|1|2)=>void} cb 
      */
     SetDeviceChangeCallBack(cb){
-        recorder.SetDeviceChangeCallBack(cb);
+        return recorder.SetDeviceChangeCallBack(cb);
     }
 
     /**
@@ -48,7 +48,7 @@ class EasyRecorder {
      * @param {(error:number)=>void} cb 
      */
     SetErrorCallBack(cb){
-        recorder.SetErrorCallBack(cb);
+        return recorder.SetErrorCallBack(cb);
     }
 
     /**
@@ -56,7 +56,7 @@ class EasyRecorder {
      * @param {(image:{data:any,size:number,width:number,height:number,type:number})=>void} cb 
      */
     SetPreviewImageCallBack(cb){
-        recorder.SetPreviewImageCallBack(cb);
+        return recorder.SetPreviewImageCallBack(cb);
     }
 
     /**
@@ -78,14 +78,14 @@ class EasyRecorder {
      * release recorder resources
      */
     Release(){
-        recorder.Release();
+        return recorder.Release();
     }
 
     /**
      * start to record
      */
     Start(){
-        recorder.Start();
+        return recorder.Start();
     }
     
 
@@ -93,21 +93,21 @@ class EasyRecorder {
      * stop to record
      */
     Stop(){
-        recorder.Stop();
+        return recorder.Stop();
     }
 
     /**
      * pause recording
      */
     Pause(){
-        recorder.Pause();
+        return recorder.Pause();
     }
 
     /**
      * resume recording
      */
     Resume(){
-        recorder.Resume();
+        return recorder.Resume();
     }
 
     /**
@@ -115,7 +115,7 @@ class EasyRecorder {
      * @param {number} timestamp 
      */
     Wait(timestamp){
-        recorder.Wait(timestamp);
+        return recorder.Wait(timestamp);
     }
 }
 
