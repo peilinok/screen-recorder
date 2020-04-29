@@ -308,9 +308,15 @@ namespace recorder
 	void DispatchUvRecorderPreviewImage(Isolate* isolate, uvCallBackDataPreviewImage *data) {
 		if (!cb_uv_preview_image) return;
 
+
+return;
 		const unsigned argc = 5;
 		Local<Value> argv[argc] = {
-			Uint32::New(isolate, data->size)
+			Uint32::New(isolate, data->size),
+			Uint32::New(isolate,data->width),
+			Uint32::New(isolate,data->height),
+			Uint32::New(isolate,data->type),
+			String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
 		};
 		Local<Value> recv;
 		Local<Function>::New(isolate, *cb_uv_preview_image)->Call(isolate->GetCurrentContext(), recv, argc, argv);
@@ -368,13 +374,17 @@ namespace recorder
 		char *buff = new char[sizeof(uvCallBackDataPreviewImage) + size];
 		uvCallBackDataPreviewImage *image = (uvCallBackDataPreviewImage*)buff;
 
+		image->data = (uint8_t*)(buff + sizeof(uvCallBackDataPreviewImage));
 		memcpy(image->data,data,size);
+
 		image->size = size;
 		image->width = width;
 		image->height = height;
 		image->type = type;
 
 		DispatchUvRecorderPreviewImage(Isolate::GetCurrent(), image);
+
+		delete[] buff;
 
 		return;
 

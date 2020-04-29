@@ -27,6 +27,18 @@ $ npm install ffmpeg-recorder
 $ yarn add ffmpeg-recorder
 ```
 
+### 3.Add parameters to your package.json file
+
+```json
+"ffmpeg_recorder": {
+    "electron_version": "7.1.4",
+    "platform": "win32",
+    "msvs_version": "2015",
+    "debug": false,
+    "silent": false
+  }
+```
+
 
 ## Test code
 

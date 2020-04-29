@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "description": "desktop recorder",
   "main": "index.js",
   "engines": {
@@ -33,11 +33,11 @@
   },
   "homepage": "https://github.com/peilinok/screen-recorder#readme",
   "devDependencies": {},
-  "ffmpeg_recorder":{
-    "electron_version":"7.1.4",
-    "platform":"win32",
-    "msvs_version":"2015",
-    "debug":false,
-    "silent":false
+  "ffmpeg_recorder-debug": {
+    "electron_version": "7.1.4",
+    "platform": "win32",
+    "msvs_version": "2015",
+    "debug": false,
+    "silent": false
   }
 }
