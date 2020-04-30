@@ -296,7 +296,7 @@ namespace recorder
 		Local<Value> argv[argc] = { Uint32::New(isolate, data->duration) };
 		Local<Value> recv;
 
-		cb_uv_duration->callback.Get(isolate)->Call(cb_uv_duration->object.Get(isolate), argc, argv);
+		cb_uv_duration->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_duration->object.Get(isolate), argc, argv);
 	}
 
 	void DispatchUvRecorderError(uvCallBackDataError *data) {
@@ -312,7 +312,7 @@ namespace recorder
 		};
 		Local<Value> recv;
 
-		cb_uv_error->callback.Get(isolate)->Call(cb_uv_error->object.Get(isolate), argc, argv);
+		cb_uv_error->callback.Get(isolate)->Call(isolate->GetCurrentContext(),cb_uv_error->object.Get(isolate), argc, argv);
 	}
 
 	void DispatchUvRecorderDeviceChange(uvCallBackDataDeviceChange *data) {
@@ -328,7 +328,7 @@ namespace recorder
 		};
 		Local<Value> recv;
 
-		cb_uv_device_change->callback.Get(isolate)->Call(cb_uv_device_change->object.Get(isolate), argc, argv);
+		cb_uv_device_change->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_device_change->object.Get(isolate), argc, argv);
 	}
 
 	void DispatchUvRecorderPreviewImage(uvCallBackDataPreviewImage *data) {
@@ -350,7 +350,7 @@ namespace recorder
 		
 		Local<Value> recv;
 		
-		cb_uv_preview_image->callback.Get(isolate)->Call(cb_uv_preview_image->object.Get(isolate), argc, argv);
+		cb_uv_preview_image->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_preview_image->object.Get(isolate), argc, argv);
 
 	}
 
