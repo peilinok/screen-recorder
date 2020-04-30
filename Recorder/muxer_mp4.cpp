@@ -205,7 +205,7 @@ namespace am {
 		if (ret == AE_NO && yuv_data && len) {
 			_v_stream->v_enc->put(yuv_data, len, frame);
 
-			if (_on_yuv_data) _on_yuv_data(yuv_data, len, frame->width, frame->height);
+			if (_on_yuv_data) _on_yuv_data(yuv_data, len, frame->width, frame->height, 0);
 		}
 	}
 

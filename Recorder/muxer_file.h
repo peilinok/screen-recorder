@@ -10,7 +10,7 @@ namespace am {
 	struct MUX_STREAM_T;
 	struct MUX_SETTING_T;
 
-	typedef std::function<void(const uint8_t *data, int size, int width, int height)> cb_yuv_data;
+	typedef std::function<void(const uint8_t *data, int size, int width, int height,int type)> cb_yuv_data;
 
 	class muxer_file
 	{

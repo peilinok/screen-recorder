@@ -8,7 +8,6 @@ am::record_desktop::record_desktop()
 
 	_on_data = nullptr;
 	_on_error = nullptr;
-	_on_preview = nullptr;
 
 	_device_name = "";
 	_data_type = RECORD_DESKTOP_DATA_TYPES::AT_DESKTOP_BGRA;

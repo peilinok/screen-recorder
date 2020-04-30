@@ -286,8 +286,6 @@ namespace am {
 
 			if (_on_data) _on_data(frame);
 
-			if (_on_preview) _on_preview(_buffer, _buffer_size, _width, _height, AV_PIX_FMT_BGRA);
-
 			do_sleep(dur, pre_pts, frame->pts);
 
 			pre_pts = frame->pts;

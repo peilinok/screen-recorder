@@ -2,7 +2,7 @@ const { task, option, logger, argv, series, condition } = require('just-task');
 const build = require('./scripts/build');
 const { getArgvFromPkgJson } = require('./npm_argv');
 
-option('electron_version', {default: '4.1.3'});
+option('electron_version', {default: '7.1.4'});
 option('runtime', {default: 'node', choices: ['electron', 'node']});
 option('platform', {default: process.platform, choices: ['darwin', 'win32']});
 option('debug', {default: false, boolean: true});
