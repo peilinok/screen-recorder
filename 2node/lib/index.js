@@ -1,11 +1,42 @@
+"use strict";
 const platform = process.platform;
 let recorder = undefined
 
 if(platform === 'win32')
-  recorder = require('./platform/win32/recorder.node')
+  recorder = require('../platform/win32/recorder.node')
 
+if(global.navigator === undefined)
+    global.navigator = {
+        userAgent:'nodejs'
+    }   
+
+const GLRender = require('./glrender');
+const SoftRender = require('./render');
 
 class EasyRecorder {
+
+    constructor(){
+        this.previewEnable = false;
+
+        this.glRender = new GLRender();
+        this.softRender = new SoftRender();
+
+        this._onYuvData = this._onYuvData.bind(this);
+    }
+
+    /**
+     * 
+     * @param {number} size 
+     * @param {number} width 
+     * @param {number} height 
+     * @param {number} type 
+     * @param {Buffer} data 
+     */
+    _onYuvData(size,width,height,type,data){
+        if(this.previewEnable === true)
+          this.softRender.Render(size,width,height,type,data);
+    }
+
     /**
      * @returns {{id:string,name:string,isDefault:boolean}[]}
      */
@@ -55,8 +86,31 @@ class EasyRecorder {
      * 
      * @param {(image:{size:number,width:number,height:number,type:number,data:Buffer})=>void} cb 
      */
-    SetPreviewYuvCallBack(cb){
+    _SetPreviewYuvCallBack(cb){
         return recorder.SetPreviewYuvCallBack(cb);
+    }
+
+    /**
+     * set preview element
+     * @param {Element} element 
+     */
+    SetPreviewElement(element){
+        this.softRender.Bind(element);
+    }
+
+    /**
+     * un set preview element
+     */
+    UnSetPreviewElement(){
+        this.softRender.UnBind();
+    }
+
+    /**
+     * 
+     * @param {boolean} enable 
+     */
+    EnablePreview(enable = false){
+        this.previewEnable = enable
     }
 
     /**
@@ -71,7 +125,12 @@ class EasyRecorder {
      * @returns {number} 0 succed, otherwise return error code
      */
     Init(qb,fps,output,speakerName,speakerId,micName,micId) {
-        return recorder.Init(qb,fps,output,speakerName,speakerId,micName,micId);
+        let ret = recorder.Init(qb,fps,output,speakerName,speakerId,micName,micId);
+        if(ret === 0){
+            recorder.SetPreviewYuvCallBack(this._onYuvData);
+        }
+
+        return ret
     }
 
     /**

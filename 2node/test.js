@@ -1,13 +1,8 @@
-const EasyRecorder = require('./index')
+"use strict";
+const EasyRecorder = require('./lib/index')
 
 
 const recorder = new EasyRecorder();
-
-
-const onPreviewYuv = function (size,width,height,type,data) {
-  console.log('onPreviewYuv',size,width,height,type,Buffer.isBuffer(data),data.length);
-  return
-}
 
 const speakers = recorder.GetSpeakers();
 const mics = recorder.GetMics();
@@ -20,9 +15,6 @@ console.info('recorder init ret:',ret);
 
 
 if(ret == 0){
-
-  ret = recorder.SetPreviewYuvCallBack(onPreviewYuv);
-  console.info('SetPreviewYuvCallBack',ret);
 
   ret = recorder.Start();
   console.info('start',ret);

@@ -633,7 +633,7 @@ namespace recorder
 
 		error = recorder_init(settings, callbacks);
 
-		if (error == 0)//registe all call back to uv callback,this wont be succed,don't know why
+		if (error == 0)
 		{
 			int ret = uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
 			printf("uv init result:%d\r\n", ret);
@@ -647,16 +647,35 @@ namespace recorder
 
 		recorder_release();
 
-		//close uv call back,this will crahs ,don't know why
 		uv_close((uv_handle_t*)&s_async, NULL);
 
 		locker.Lock();
-		cb_uv_duration = NULL;
-		cb_uv_error = NULL;
-		cb_uv_device_change = NULL;
 
-		delete cb_uv_preview_yuv;
-		cb_uv_preview_yuv = NULL;
+		while (!cb_chunk_queue.empty()) {
+			uvCallBackChunk &chunk = cb_chunk_queue.front();
+			cb_chunk_queue.pop();
+
+			delete[] chunk.data;
+		}
+
+
+
+		if(cb_uv_duration != NULL){
+			delete cb_uv_duration;
+			cb_uv_duration = NULL;
+		}
+		if(cb_uv_error != NULL){
+			delete cb_uv_error;
+			cb_uv_error = NULL;
+		}
+		if(cb_uv_device_change != NULL){
+			delete cb_uv_device_change;
+			cb_uv_device_change = NULL;
+		}
+		if(cb_uv_preview_yuv != NULL){
+			delete cb_uv_preview_yuv;
+			cb_uv_preview_yuv = NULL;
+		}
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));

@@ -1,8 +1,8 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.1.21",
+  "version": "1.1.22",
   "description": "desktop recorder",
-  "main": "index.js",
+  "main": "lib/index.js",
   "engines": {
     "node": ">=10.0"
   },
@@ -20,7 +20,9 @@
     "nan": "^2.14.1",
     "node-gyp": "^5.0.0",
     "rimraf": "^3.0.2",
-    "shelljs": "^0.8.3"
+    "shelljs": "^0.8.3",
+    "yuv-buffer": "^1.0.0",
+    "yuv-canvas": "^1.2.6"
   },
   "repository": {
     "type": "git",
