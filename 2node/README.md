@@ -8,16 +8,17 @@ Only support windows(at least windows7 sp1) for now.
 ## Features
 
 - Save screen、speaker、miccrophone to a signle file as mp4
+- yuv data callback
+
+## ScreenShots
+
+![](screenshots/recording.png)
 
 
 ## Usage
 
 
-### 1.Install DirectShow device(Optional After 1.1.1)
-
-https://github.com/rdp/screen-capture-recorder-to-video-windows-free
-
-### 2.Add ffmpeg-recorder addon to your package.json
+### 1.Add ffmpeg-recorder addon to your package.json
 
 ```sh
 $ npm install ffmpeg-recorder
@@ -27,7 +28,7 @@ $ npm install ffmpeg-recorder
 $ yarn add ffmpeg-recorder
 ```
 
-### 3.Add parameters to your package.json file
+### 2.Add parameters to your package.json file
 
 build electron version:
 
@@ -54,13 +55,24 @@ or build node version:
   }
 ```
 
+## UI Project
+
+https://github.com/peilinok/EasyRecorder
+
 ## Test code
 
 ``` sh
 
-const recorder = require('ffmpeg-recorder')
+const EasyRecorder = require('./index')
 
-console.log(recorder);
+
+const recorder = new EasyRecorder();
+
+
+const onPreviewYuv = function (size,width,height,type,data) {
+  console.log('onPreviewYuv',size,width,height,type,Buffer.isBuffer(data),data.length);
+  return
+}
 
 const speakers = recorder.GetSpeakers();
 const mics = recorder.GetMics();
@@ -68,22 +80,22 @@ const mics = recorder.GetMics();
 console.log(speakers);
 console.log(mics);
 
-const ret = recorder.Init(60,20,"d:\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
+let ret = recorder.Init(60,20,".\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
+console.info('recorder init ret:',ret);
 
-let running = false;
 
 if(ret == 0){
-  running = true;
-  recorder.Start();
+
+  ret = recorder.SetPreviewYuvCallBack(onPreviewYuv);
+  console.info('SetPreviewYuvCallBack',ret);
+
+  ret = recorder.Start();
+  console.info('start',ret);
 
   setTimeout(()=>{
-    running = false;
 
     recorder.Stop();
     recorder.Release();
   },10000);
 }
-
-
-
 ```
