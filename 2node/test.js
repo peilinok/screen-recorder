@@ -1,9 +1,10 @@
 const EasyRecorder = require('./index')
 
+
 const recorder = new EasyRecorder();
 
 const onPreviewImage = function(size,width,height,type,data){
-  console.log('onPreviewImage',size,width,height,type);
+  console.log('onPreviewImage',size,width,height,type,Buffer.isBuffer(data),data.length);
   return
 }
 

@@ -1,6 +1,7 @@
 #include <node.h>
 #include <node_buffer.h>
 #include <uv.h>
+#include <nan.h>
 
 #ifdef WIN32
 #include "../platform/win32/export.h"
@@ -338,14 +339,14 @@ namespace recorder
 		
 		HandleScope scope(isolate);
 
-
 		const unsigned argc = 5;
 		Local<Value> argv[argc] = {
 			Uint32::New(isolate, data->size),
 			Uint32::New(isolate,data->width),
 			Uint32::New(isolate,data->height),
 			Uint32::New(isolate,data->type),
-			String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
+			Nan::CopyBuffer((const char *)data->data, data->size).ToLocalChecked()
+			//String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
 		};
 		
 		Local<Value> recv;
