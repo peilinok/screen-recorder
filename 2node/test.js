@@ -3,13 +3,9 @@ const EasyRecorder = require('./index')
 
 const recorder = new EasyRecorder();
 
-const onPreviewImage = function(size,width,height,type,data){
-  console.log('onPreviewImage',size,width,height,type,Buffer.isBuffer(data),data.length);
-  return
-}
 
-const onPreviewYuv = function (size,width,height,data) {
-  console.log('onPreviewYuv',size,width,height,Buffer.isBuffer(data),data.length);
+const onPreviewYuv = function (size,width,height,type,data) {
+  console.log('onPreviewYuv',size,width,height,type,Buffer.isBuffer(data),data.length);
   return
 }
 
@@ -24,9 +20,6 @@ console.info('recorder init ret:',ret);
 
 
 if(ret == 0){
-
-  ret = recorder.SetPreviewImageCallBack(onPreviewImage);
-  console.info('SetPreviewImageCallBack ret:',ret);
 
   ret = recorder.SetPreviewYuvCallBack(onPreviewYuv);
   console.info('SetPreviewYuvCallBack',ret);

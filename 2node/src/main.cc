@@ -230,7 +230,6 @@ namespace recorder
 		uvcb_type_duration = 1,
 		uvcb_type_error,
 		uvcb_type_device_change,
-		uvcb_type_preview_image,
 		uvcb_type_preview_audio,
 		uvcb_type_preview_yuv
 	}uvCallbackType;
@@ -253,7 +252,7 @@ namespace recorder
 		int height;
 		int type;
 		uint8_t *data;
-	}uvCallBackDataPreviewImage;
+	}uvCallBackDataPreviewYUV;
 
 	typedef struct {
 		uvCallbackType type;
@@ -270,7 +269,6 @@ namespace recorder
 	static uvCallBackHandler* cb_uv_duration = NULL;
 	static uvCallBackHandler* cb_uv_error = NULL;
 	static uvCallBackHandler* cb_uv_device_change = NULL;
-	static uvCallBackHandler* cb_uv_preview_image = NULL;
 	static uvCallBackHandler* cb_uv_preview_yuv = NULL;
 
 	static uv_async_t s_async = { 0 };
@@ -334,11 +332,11 @@ namespace recorder
 		cb_uv_device_change->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_device_change->object.Get(isolate), argc, argv);
 	}
 
-	void DispatchUvRecorderPreviewImage(uvCallBackDataPreviewImage *data) {
-		if (!cb_uv_preview_image) return;
-		
-		Isolate * isolate = cb_uv_preview_image->isolate;
-		
+	void DispatchUvRecorderPreviewYuv(uvCallBackDataPreviewYUV *data) {
+		if (!cb_uv_preview_yuv) return;
+
+		Isolate * isolate = cb_uv_preview_yuv->isolate;
+
 		HandleScope scope(isolate);
 
 		const unsigned argc = 5;
@@ -347,28 +345,6 @@ namespace recorder
 			Uint32::New(isolate,data->width),
 			Uint32::New(isolate,data->height),
 			Uint32::New(isolate,data->type),
-			Nan::CopyBuffer((const char *)data->data, data->size).ToLocalChecked()
-			//String::NewFromUtf8(isolate,(const char*)data->data,NewStringType::kInternalized,data->size).ToLocalChecked()
-		};
-		
-		Local<Value> recv;
-		
-		cb_uv_preview_image->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_preview_image->object.Get(isolate), argc, argv);
-
-	}
-
-	void DispatchUvRecorderPreviewYuv(uvCallBackDataPreviewImage *data) {
-		if (!cb_uv_preview_yuv) return;
-
-		Isolate * isolate = cb_uv_preview_yuv->isolate;
-
-		HandleScope scope(isolate);
-
-		const unsigned argc = 4;
-		Local<Value> argv[argc] = {
-			Uint32::New(isolate, data->size),
-			Uint32::New(isolate,data->width),
-			Uint32::New(isolate,data->height),
 			Nan::CopyBuffer((const char *)data->data, data->size).ToLocalChecked()
 		};
 
@@ -412,35 +388,17 @@ namespace recorder
 		PushUvChunk(uv_cb_chunk);
 	}
 
-	void OnRecorderPreviewImage(const unsigned char *data,unsigned int size,int width,int height,int type){
-		char *buff = new char[sizeof(uvCallBackDataPreviewImage) + size];
-		uvCallBackDataPreviewImage *image = (uvCallBackDataPreviewImage*)buff;
+	void OnRecorderPreviewYuv(const unsigned char *data, unsigned int size, int width, int height,int type) {
+		char *buff = new char[sizeof(uvCallBackDataPreviewYUV) + size];
+		uvCallBackDataPreviewYUV *chunk = (uvCallBackDataPreviewYUV*)buff;
 
-		image->data = (uint8_t*)(buff + sizeof(uvCallBackDataPreviewImage));
-		memcpy(image->data,data,size);
+		chunk->data = (uint8_t*)(buff + sizeof(uvCallBackDataPreviewYUV));
+		memcpy(chunk->data, data, size);
 
-		image->size = size;
-		image->width = width;
-		image->height = height;
-		image->type = type;
-
-		uvCallBackChunk uv_cb_chunk;
-		uv_cb_chunk.type = uvcb_type_preview_image;
-		uv_cb_chunk.data = (int*)buff;
-
-		PushUvChunk(uv_cb_chunk);
-	}
-
-	void OnRecorderPreviewYuv(const unsigned char *data, unsigned int size, int width, int height) {
-		char *buff = new char[sizeof(uvCallBackDataPreviewImage) + size];
-		uvCallBackDataPreviewImage *image = (uvCallBackDataPreviewImage*)buff;
-
-		image->data = (uint8_t*)(buff + sizeof(uvCallBackDataPreviewImage));
-		memcpy(image->data, data, size);
-
-		image->size = size;
-		image->width = width;
-		image->height = height;
+		chunk->size = size;
+		chunk->width = width;
+		chunk->height = height;
+		chunk->type = type;
 
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_preview_yuv;
@@ -467,11 +425,8 @@ namespace recorder
 			case uvcb_type_device_change:
 				DispatchUvRecorderDeviceChange((uvCallBackDataDeviceChange*)chunk.data);
 				break;
-			case uvcb_type_preview_image:
-				DispatchUvRecorderPreviewImage((uvCallBackDataPreviewImage*)chunk.data);
-				break;
 			case uvcb_type_preview_yuv:
-				DispatchUvRecorderPreviewYuv((uvCallBackDataPreviewImage*)chunk.data);
+				DispatchUvRecorderPreviewYuv((uvCallBackDataPreviewYUV*)chunk.data);
 				break;
 			default:
 				break;
@@ -611,29 +566,6 @@ namespace recorder
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
 
-	void SetPreviewImageCallBack(const FunctionCallbackInfo<Value> &args) {
-		Isolate* isolate = args.GetIsolate();
-		CHECK_PARAM_COUNT(1);
-		CHECK_PARAM_TYPE1("function");
-		CHECK_PARAM_VALID(args[0],"function");
-
-		locker.Lock();
-		if(cb_uv_preview_image != NULL){
-			delete cb_uv_preview_image;
-			cb_uv_preview_image = NULL;
-		}
-
-		cb_uv_preview_image = new uvCallBackHandler;
-		cb_uv_preview_image->isolate = isolate;
-		cb_uv_preview_image->context.Reset(isolate, isolate->GetCurrentContext());
-		cb_uv_preview_image->object.Reset(isolate, args.This());
-		cb_uv_preview_image->callback.Reset(isolate, args[0].As<Function>());
-
-		locker.Unlock();
-
-		args.GetReturnValue().Set(Boolean::New(isolate, true));
-	}
-
 	void SetPreviewYuvCallBack(const FunctionCallbackInfo<Value> &args) {
 		Isolate* isolate = args.GetIsolate();
 		CHECK_PARAM_COUNT(1);
@@ -672,7 +604,6 @@ namespace recorder
 		callbacks.func_duration = OnRecorderDuration;
 		callbacks.func_error = OnRecorderError;
 		callbacks.func_device_change = OnRecorderDeviceChange;
-		callbacks.func_preview_rgb = OnRecorderPreviewImage;
 		callbacks.func_preview_yuv = OnRecorderPreviewYuv;
 
 		settings.v_left = 0;
@@ -724,8 +655,8 @@ namespace recorder
 		cb_uv_error = NULL;
 		cb_uv_device_change = NULL;
 
-		delete cb_uv_preview_image;
-		cb_uv_preview_image = NULL;
+		delete cb_uv_preview_yuv;
+		cb_uv_preview_yuv = NULL;
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -785,7 +716,6 @@ namespace recorder
 		NODE_SET_METHOD(exports, "SetDurationCallBack", SetDurationCallBack);
 		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
 		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
-		NODE_SET_METHOD(exports, "SetPreviewImageCallBack", SetPreviewImageCallBack);
 		NODE_SET_METHOD(exports, "SetPreviewYuvCallBack", SetPreviewYuvCallBack);
 		NODE_SET_METHOD(exports, "Init", Init);
 		NODE_SET_METHOD(exports, "Release", Release);

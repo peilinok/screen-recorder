@@ -52,16 +52,8 @@ class EasyRecorder {
     }
 
     /**
-     * type 0 ARGB | 1 RGBA | ABGR 2 | BGRA 3
-     * @param {(image:{size:number,width:number,height:number,type:number,data:Buffer})=>void} cb 
-     */
-    SetPreviewImageCallBack(cb){
-        return recorder.SetPreviewImageCallBack(cb);
-    }
-
-    /**
      * 
-     * @param {(image:{size:number,width:number,height:number,data:Buffer})=>void} cb 
+     * @param {(image:{size:number,width:number,height:number,type:number,data:Buffer})=>void} cb 
      */
     SetPreviewYuvCallBack(cb){
         return recorder.SetPreviewYuvCallBack(cb);
