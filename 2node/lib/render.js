@@ -77,6 +77,12 @@ class SoftRender{
           this.yuv.drawFrame(frame);
     }
 
+    Clear(){
+        if(this.yuv === undefined) return;
+
+        this.yuv.clear();
+    }
+
 }
 
 module.exports = SoftRender;

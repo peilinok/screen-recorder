@@ -111,6 +111,7 @@ class EasyRecorder {
      */
     EnablePreview(enable = false){
         this.previewEnable = enable
+        this.softRender.Clear();
     }
 
     /**

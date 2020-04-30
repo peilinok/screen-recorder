@@ -10,10 +10,6 @@ Only support windows(at least windows7 sp1) for now.
 - Save screen、speaker、miccrophone to a signle file as mp4
 - yuv data callback
 
-## ScreenShots
-
-![](screenshots/recording.png)
-
 
 ## Usage
 
@@ -55,24 +51,17 @@ or build node version:
   }
 ```
 
-## UI Project
 
-https://github.com/peilinok/EasyRecorder
 
 ## Test code
 
-``` sh
+```js
 
-const EasyRecorder = require('./index')
+"use strict";
+const EasyRecorder = require('./lib/index')
 
 
 const recorder = new EasyRecorder();
-
-
-const onPreviewYuv = function (size,width,height,type,data) {
-  console.log('onPreviewYuv',size,width,height,type,Buffer.isBuffer(data),data.length);
-  return
-}
 
 const speakers = recorder.GetSpeakers();
 const mics = recorder.GetMics();
@@ -86,9 +75,6 @@ console.info('recorder init ret:',ret);
 
 if(ret == 0){
 
-  ret = recorder.SetPreviewYuvCallBack(onPreviewYuv);
-  console.info('SetPreviewYuvCallBack',ret);
-
   ret = recorder.Start();
   console.info('start',ret);
 
@@ -98,4 +84,28 @@ if(ret == 0){
     recorder.Release();
   },10000);
 }
+
 ```
+
+## Enable preview
+
+``` js
+
+recorder.EnablePreview(true);
+recorder.SetPreviewElement(document.getElementById("dom-id"));
+
+```
+
+## Disable preview
+
+``` js
+
+recorder.EnablePreview(false);
+
+```
+
+## EasyRecorder UI Project
+
+https://github.com/peilinok/EasyRecorder
+
+![](screenshots/recording.png)
