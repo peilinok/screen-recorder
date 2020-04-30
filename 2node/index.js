@@ -61,6 +61,14 @@ class EasyRecorder {
 
     /**
      * 
+     * @param {(image:{size:number,width:number,height:number,data:Buffer})=>void} cb 
+     */
+    SetPreviewYuvCallBack(cb){
+        return recorder.SetPreviewYuvCallBack(cb);
+    }
+
+    /**
+     * 
      * @param {number} qb 0-100
      * @param {number} fps 10-30
      * @param {string} output output file path

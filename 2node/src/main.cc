@@ -231,7 +231,8 @@ namespace recorder
 		uvcb_type_error,
 		uvcb_type_device_change,
 		uvcb_type_preview_image,
-		uvcb_type_preview_audio
+		uvcb_type_preview_audio,
+		uvcb_type_preview_yuv
 	}uvCallbackType;
 
 	typedef struct {
@@ -270,6 +271,7 @@ namespace recorder
 	static uvCallBackHandler* cb_uv_error = NULL;
 	static uvCallBackHandler* cb_uv_device_change = NULL;
 	static uvCallBackHandler* cb_uv_preview_image = NULL;
+	static uvCallBackHandler* cb_uv_preview_yuv = NULL;
 
 	static uv_async_t s_async = { 0 };
 	static Locker locker;
@@ -355,6 +357,27 @@ namespace recorder
 
 	}
 
+	void DispatchUvRecorderPreviewYuv(uvCallBackDataPreviewImage *data) {
+		if (!cb_uv_preview_yuv) return;
+
+		Isolate * isolate = cb_uv_preview_yuv->isolate;
+
+		HandleScope scope(isolate);
+
+		const unsigned argc = 4;
+		Local<Value> argv[argc] = {
+			Uint32::New(isolate, data->size),
+			Uint32::New(isolate,data->width),
+			Uint32::New(isolate,data->height),
+			Nan::CopyBuffer((const char *)data->data, data->size).ToLocalChecked()
+		};
+
+		Local<Value> recv;
+
+		cb_uv_preview_yuv->callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb_uv_preview_yuv->object.Get(isolate), argc, argv);
+
+	}
+
 	void OnRecorderDuration(uint64_t duration) {
 		uvCallBackDataDruation *data = new uvCallBackDataDruation;
 		data->duration = duration;
@@ -408,6 +431,24 @@ namespace recorder
 		PushUvChunk(uv_cb_chunk);
 	}
 
+	void OnRecorderPreviewYuv(const unsigned char *data, unsigned int size, int width, int height) {
+		char *buff = new char[sizeof(uvCallBackDataPreviewImage) + size];
+		uvCallBackDataPreviewImage *image = (uvCallBackDataPreviewImage*)buff;
+
+		image->data = (uint8_t*)(buff + sizeof(uvCallBackDataPreviewImage));
+		memcpy(image->data, data, size);
+
+		image->size = size;
+		image->width = width;
+		image->height = height;
+
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_preview_yuv;
+		uv_cb_chunk.data = (int*)buff;
+
+		PushUvChunk(uv_cb_chunk);
+	}
+
 
 	void OnUvCallback(uv_async_t *handle) {
 
@@ -428,6 +469,9 @@ namespace recorder
 				break;
 			case uvcb_type_preview_image:
 				DispatchUvRecorderPreviewImage((uvCallBackDataPreviewImage*)chunk.data);
+				break;
+			case uvcb_type_preview_yuv:
+				DispatchUvRecorderPreviewYuv((uvCallBackDataPreviewImage*)chunk.data);
 				break;
 			default:
 				break;
@@ -590,6 +634,29 @@ namespace recorder
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
 
+	void SetPreviewYuvCallBack(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("function");
+		CHECK_PARAM_VALID(args[0], "function");
+
+		locker.Lock();
+		if (cb_uv_preview_yuv != NULL) {
+			delete cb_uv_preview_yuv;
+			cb_uv_preview_yuv = NULL;
+		}
+
+		cb_uv_preview_yuv = new uvCallBackHandler;
+		cb_uv_preview_yuv->isolate = isolate;
+		cb_uv_preview_yuv->context.Reset(isolate, isolate->GetCurrentContext());
+		cb_uv_preview_yuv->object.Reset(isolate, args.This());
+		cb_uv_preview_yuv->callback.Reset(isolate, args[0].As<Function>());
+
+		locker.Unlock();
+
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
+
 	void Init(const FunctionCallbackInfo<Value> &args) {
 		Isolate* isolate = args.GetIsolate();
 
@@ -605,7 +672,8 @@ namespace recorder
 		callbacks.func_duration = OnRecorderDuration;
 		callbacks.func_error = OnRecorderError;
 		callbacks.func_device_change = OnRecorderDeviceChange;
-		callbacks.func_preview_image = OnRecorderPreviewImage;
+		callbacks.func_preview_rgb = OnRecorderPreviewImage;
+		callbacks.func_preview_yuv = OnRecorderPreviewYuv;
 
 		settings.v_left = 0;
 		settings.v_top = 0;
@@ -718,6 +786,7 @@ namespace recorder
 		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
 		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
 		NODE_SET_METHOD(exports, "SetPreviewImageCallBack", SetPreviewImageCallBack);
+		NODE_SET_METHOD(exports, "SetPreviewYuvCallBack", SetPreviewYuvCallBack);
 		NODE_SET_METHOD(exports, "Init", Init);
 		NODE_SET_METHOD(exports, "Release", Release);
 		NODE_SET_METHOD(exports, "Start", Start);

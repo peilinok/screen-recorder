@@ -50,7 +50,8 @@ namespace am {
 		int get_cameras(AMRECORDER_DEVICE **devices);
 
 	private:
-		void on_preview_image(const uint8_t *data, int size, int width, int height, AVPixelFormat fmt);
+		void on_preview_rgb(const uint8_t *data, int size, int width, int height, AVPixelFormat fmt);
+		void on_preview_yuv(const uint8_t *data, int size, int width, int height);
 
 	private:
 		AMRECORDER_SETTING _setting;
@@ -158,7 +159,7 @@ namespace am {
 		AMERROR_CHECK(error);
 #endif 
 		_recorder_desktop->registe_preview(std::bind(
-			&recorder::on_preview_image, 
+			&recorder::on_preview_rgb, 
 			this, 
 			std::placeholders::_1, 
 			std::placeholders::_2, 
@@ -199,6 +200,15 @@ namespace am {
 #else
 		_muxer = new muxer_mp4();
 #endif 
+
+		_muxer->registe_yuv_data(std::bind(
+			&recorder::on_preview_yuv,
+			this,
+			std::placeholders::_1,
+			std::placeholders::_2,
+			std::placeholders::_3,
+			std::placeholders::_4
+		));
 
 		error = _muxer->init(setting.output, _recorder_desktop, audios, 2, mux_setting);
 		AMERROR_CHECK(error);
@@ -302,9 +312,9 @@ namespace am {
 	{
 		return -AE_UNSUPPORT;
 	}
-	void recorder::on_preview_image(const uint8_t * data, int size, int width, int height, AVPixelFormat fmt)
+	void recorder::on_preview_rgb(const uint8_t * data, int size, int width, int height, AVPixelFormat fmt)
 	{
-		if (_callbacks.func_preview_image == NULL)
+		if (_callbacks.func_preview_rgb == NULL)
 			return;
 
 		int converted_type = 0;
@@ -326,7 +336,12 @@ namespace am {
 			break;
 		}
 
-		_callbacks.func_preview_image(data, size, width, height, converted_type);
+		_callbacks.func_preview_rgb(data, size, width, height, converted_type);
+	}
+	void recorder::on_preview_yuv(const uint8_t * data, int size, int width, int height)
+	{
+		if (_callbacks.func_preview_rgb != NULL)
+			_callbacks.func_preview_yuv(data, size, width, height);
 	}
 }
 

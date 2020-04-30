@@ -42,12 +42,20 @@ typedef void( *AMRECORDER_FUNC_ERROR)(int error);
 
 typedef void( *AMRECORDER_FUNC_DEVICE_CHANGE)(int type);//0 video 1 speaker 2 mic
 
-typedef void( *AMRECORDER_FUNC_PREVIEW_IMAGE)(
+//MAY Abandoned later
+typedef void( *AMRECORDER_FUNC_PREVIEW_RGB)(
 	const unsigned char *data,
 	unsigned int size,
 	int width,
 	int height,
 	int type
+	); // 0 ARGB 1 RGBA ABGR 2 BGRA 3
+
+typedef void(*AMRECORDER_FUNC_PREVIEW_YUV)(
+	const unsigned char *data,
+	unsigned int size,
+	int width,
+	int height
 	); // 0 ARGB 1 RGBA ABGR 2 BGRA 3
 
 typedef void( *AMRECORDER_FUNC_PREVIEW_AUDIO)();
@@ -57,7 +65,8 @@ typedef struct {
 	AMRECORDER_FUNC_DURATION func_duration;
 	AMRECORDER_FUNC_ERROR func_error;
 	AMRECORDER_FUNC_DEVICE_CHANGE func_device_change;
-	AMRECORDER_FUNC_PREVIEW_IMAGE func_preview_image;
+	AMRECORDER_FUNC_PREVIEW_RGB func_preview_rgb;
+	AMRECORDER_FUNC_PREVIEW_YUV func_preview_yuv;
 	AMRECORDER_FUNC_PREVIEW_AUDIO func_preview_audio;
 }AMRECORDER_CALLBACK;
 #pragma pack(pop)
