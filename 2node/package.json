@@ -29,7 +29,7 @@
     "url": "git+https://github.com/peilinok/screen-recorder.git"
   },
   "author": "sylar",
-  "license": "ISC",
+  "license": "GPL",
   "gypfile": true,
   "bugs": {
     "url": "https://github.com/peilinok/screen-recorder/issues"
