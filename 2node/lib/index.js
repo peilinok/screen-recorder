@@ -10,16 +10,14 @@ if(global.navigator === undefined)
         userAgent:'nodejs'
     }   
 
-const GLRender = require('./glrender');
-const SoftRender = require('./render');
+const Render = require('./render');
 
 class EasyRecorder {
 
     constructor(){
         this.previewEnable = false;
 
-        this.glRender = new GLRender();
-        this.softRender = new SoftRender();
+        this.render = new Render();
 
         this._onYuvData = this._onYuvData.bind(this);
     }
@@ -34,7 +32,7 @@ class EasyRecorder {
      */
     _onYuvData(size,width,height,type,data){
         if(this.previewEnable === true)
-          this.softRender.Render(size,width,height,type,data);
+          this.render.Draw(size,width,height,type,data);
     }
 
     /**
@@ -95,14 +93,14 @@ class EasyRecorder {
      * @param {Element} element 
      */
     SetPreviewElement(element){
-        this.softRender.Bind(element);
+        this.render.Bind(element);
     }
 
     /**
      * un set preview element
      */
     UnSetPreviewElement(){
-        this.softRender.UnBind();
+        this.render.UnBind();
     }
 
     /**
@@ -111,7 +109,7 @@ class EasyRecorder {
      */
     EnablePreview(enable = false){
         this.previewEnable = enable
-        this.softRender.Clear();
+        this.render.Clear();
     }
 
     /**
@@ -145,6 +143,7 @@ class EasyRecorder {
      * start to record
      */
     Start(){
+        this.render.Clear();
         return recorder.Start();
     }
     
@@ -153,6 +152,7 @@ class EasyRecorder {
      * stop to record
      */
     Stop(){
+        this.render.Clear();
         return recorder.Stop();
     }
 

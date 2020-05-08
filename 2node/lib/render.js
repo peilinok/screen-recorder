@@ -3,7 +3,7 @@ const YUVBuffer = require('yuv-buffer');
 const YUVCanvas = require('yuv-canvas');
 
 
-class SoftRender{
+class Render{
     constructor(){
         this.element = undefined;
         this.container = undefined;
@@ -17,6 +17,10 @@ class SoftRender{
      * @param {Element} element 
      */
     Bind(element){
+        if(element === undefined){
+            console.error("invalid bind parameter of element",element);
+            return;
+        }
         this.element = element;
         let container = document.createElement('div');
         Object.assign(container.style, {
@@ -31,7 +35,7 @@ class SoftRender{
         // create canvas
         this.canvas = document.createElement('canvas');
         this.container.appendChild(this.canvas);
-        this.yuv = YUVCanvas.attach(this.canvas, { webGL: false });
+        this.yuv = YUVCanvas.attach(this.canvas, { webGL: true });
     }
 
     /**
@@ -54,7 +58,7 @@ class SoftRender{
      * @param {number} type 
      * @param {Buffer} data 
      */
-    Render(size,width,height,type,data){
+    Draw(size,width,height,type,data){
         if(this.yuv === undefined) return;
 
         const format = YUVBuffer.format({
@@ -85,4 +89,4 @@ class SoftRender{
 
 }
 
-module.exports = SoftRender;
+module.exports = Render;
