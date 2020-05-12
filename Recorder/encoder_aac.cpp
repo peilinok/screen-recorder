@@ -208,7 +208,7 @@ namespace am {
 
 	int encoder_aac::encode(AVFrame * frame, AVPacket * packet)
 	{
-		int ret = avcodec_send_frame(_encoder_ctx, _frame);
+		int ret = avcodec_send_frame(_encoder_ctx, frame);
 		if (ret < 0) {
 			return AE_FFMPEG_ENCODE_FRAME_FAILED;
 		}

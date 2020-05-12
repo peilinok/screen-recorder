@@ -120,9 +120,12 @@ namespace am {
 			return AE_NO;
 
 		int error = AE_NO;
+		int audio_num = 0;
 
 		_setting = setting;
 		_callbacks = callbacks;
+
+		am::record_audio *audios[2] = { 0 };
 
 #if USE_DSHOW
 
@@ -140,18 +143,30 @@ namespace am {
 
 		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_DSHOW, &_recorder_desktop);
 		AMERROR_CHECK(error);
+
+		audios = { _recorder_speaker,_recorder_mic };
 #else
-		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
-		AMERROR_CHECK(error);
+		if (std::string(setting.a_speaker.name).length() && std::string(setting.a_speaker.id).length()) {
+			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
+			AMERROR_CHECK(error);
 
-		error = _recorder_speaker->init(setting.a_speaker.name, setting.a_speaker.id, false);
-		AMERROR_CHECK(error);
+			error = _recorder_speaker->init(setting.a_speaker.name, setting.a_speaker.id, false);
+			AMERROR_CHECK(error);
 
-		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
-		AMERROR_CHECK(error);
+			audios[audio_num] = _recorder_speaker;
+			audio_num++;
+		}
 
-		error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
-		AMERROR_CHECK(error);
+		if (std::string(setting.a_mic.name).length() && std::string(setting.a_speaker.id).length()) {
+			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
+			AMERROR_CHECK(error);
+
+			error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
+			AMERROR_CHECK(error);
+
+			audios[audio_num] = _recorder_mic;
+			audio_num++;
+		}
 
 		//error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_GDI, &_recorder_desktop);
 		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
@@ -178,12 +193,6 @@ namespace am {
 		mux_setting.a_sample_rate = 44100;
 		mux_setting.a_bit_rate = 128000;
 
-#if USE_DSHOW
-		am::record_audio *audios[2] = { _recorder_speaker,_recorder_mic };
-#else
-		am::record_audio *audios[2] = { _recorder_mic,_recorder_speaker };
-#endif
-
 
 #if 0
 		_muxer = new muxer_mkv();
@@ -201,7 +210,7 @@ namespace am {
 			std::placeholders::_5
 		));
 
-		error = _muxer->init(setting.output, _recorder_desktop, audios, 2, mux_setting);
+		error = _muxer->init(setting.output, _recorder_desktop, audios, audio_num, mux_setting);
 		AMERROR_CHECK(error);
 
 		_inited = true;

@@ -12,15 +12,15 @@ void on_preview_image(
 	int width,
 	int height,
 	int type) {
-	printf("on_preview_image size:%d type %d\r\n", size, type);
+	//printf("on_preview_image size:%d type %d\r\n", size, type);
 }
 
 int main()
 {
 	AMRECORDER_DEVICE *speakers = NULL, *mics = NULL;
 
-	AMRECORDER_SETTING setting;
-	AMRECORDER_CALLBACK callback;
+	AMRECORDER_SETTING setting = {0};
+	AMRECORDER_CALLBACK callback = {0};
 
 	int nspeaker = recorder_get_speakers(&speakers);
 	
@@ -41,12 +41,14 @@ int main()
 			memcpy(&setting.a_speaker, &speakers[i], sizeof(AMRECORDER_DEVICE));
 	}
 
+#if 1 //only record speaker
 	for (int i = 0; i < nmic; i++) {
 		if (mics[i].is_default == 1)
 			memcpy(&setting.a_mic, &mics[i], sizeof(AMRECORDER_DEVICE));
 	}
+#endif
 
-	callback.func_preview_image = on_preview_image;
+	callback.func_preview_yuv = on_preview_image;
 
 	int err = recorder_init(setting, callback);
 

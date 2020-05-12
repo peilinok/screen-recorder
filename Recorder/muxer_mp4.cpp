@@ -68,7 +68,7 @@ namespace am {
 					break;
 			}
 
-			if (_fmt->audio_codec != AV_CODEC_ID_NONE) {
+			if (_fmt->audio_codec != AV_CODEC_ID_NONE && source_audios_nb) {
 				error = add_audio_stream(setting, source_audios, source_audios_nb);
 				if (error != AE_NO)
 					break;
@@ -239,7 +239,6 @@ namespace am {
 		return db;
 	}
 
-#if 1 //with filter
 	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false
@@ -252,7 +251,40 @@ namespace am {
 			|| !_a_stream->a_rs[index])
 			return;
 
-		_a_stream->a_filter->add_frame(frame, index);
+		if(_a_stream->a_filter != nullptr)
+			_a_stream->a_filter->add_frame(frame, index);
+		else {
+			AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
+			AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
+			resample_pcm *resampler = _a_stream->a_rs[index];
+
+			int copied_len = 0;
+			int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+			int remain_len = sample_len;
+
+			while (remain_len > 0) {//should add is_planner codes
+									//cache pcm
+				copied_len = min(samples->size - samples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
+					samples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				//got enough pcm to encoder,resample and mix
+				if (samples->sample_in == samples->size) {
+					int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
+					if (ret > 0) {
+						_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+					}
+					else {
+						al_debug("resample audio %d failed,%d", index, ret);
+					}
+
+					samples->sample_in = 0;
+				}
+			}
+		}
 
 		/*
 		if (index == 1) {
@@ -262,51 +294,6 @@ namespace am {
 
 		return;
 	}
-#else
-	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
-	{
-		if (_running == false
-			|| !_a_stream
-			|| !_a_stream->a_samples
-			|| !_a_stream->a_samples[index]
-			|| !_a_stream->a_resamples
-			|| !_a_stream->a_resamples[index]
-			|| !_a_stream->a_rs
-			|| !_a_stream->a_rs[index])
-			return;
-
-		AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
-		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
-		resample_pcm *resampler = _a_stream->a_rs[index];
-
-		int copied_len = 0;
-		int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
-		int remain_len = sample_len;
-
-		while (remain_len > 0) {//should add is_planner codes
-			//cache pcm
-			copied_len = min(samples->size - samples->sample_in, remain_len);
-			if (copied_len) {
-				memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
-				samples->sample_in += copied_len;
-				remain_len = remain_len - copied_len;
-			}
-
-			//got enough pcm to encoder,resample and mix
-			if (samples->sample_in == samples->size) {
-				int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
-				if (ret > 0) {
-					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
-				}
-				else {
-					al_debug("resample audio %d failed,%d", index, ret);
-				}
-
-				samples->sample_in = 0;
-			}
-		}
-	}
-#endif
 
 	void muxer_mp4::on_audio_error(int error, int index)
 	{
@@ -565,42 +552,44 @@ namespace am {
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
-			_a_stream->a_filter = new am::filter_audio();
-			error = _a_stream->a_filter->init(
-			{
-				NULL,NULL,
-				_a_stream->a_src[0]->get_time_base(),
-				_a_stream->a_src[0]->get_sample_rate(),
-				_a_stream->a_src[0]->get_fmt(),
-				_a_stream->a_src[0]->get_channel_num(),
-				av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
-			},
-			{
-				NULL,NULL,
-				_a_stream->a_src[1]->get_time_base(),
-				_a_stream->a_src[1]->get_sample_rate(),
-				_a_stream->a_src[1]->get_fmt(),
-				_a_stream->a_src[1]->get_channel_num(),
-				av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
-			},
-			{
-				NULL,NULL,
-				{ 1,AV_TIME_BASE },
-				setting.a_sample_rate,
-				setting.a_sample_fmt,
-				setting.a_nb_channel,
-				av_get_default_channel_layout(setting.a_nb_channel)
-			}
-			);
+			if (_a_stream->a_nb >= 2) {
+				_a_stream->a_filter = new am::filter_audio();
+				error = _a_stream->a_filter->init(
+				{
+					NULL,NULL,
+					_a_stream->a_src[0]->get_time_base(),
+					_a_stream->a_src[0]->get_sample_rate(),
+					_a_stream->a_src[0]->get_fmt(),
+					_a_stream->a_src[0]->get_channel_num(),
+					av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
+				},
+				{
+					NULL,NULL,
+					_a_stream->a_src[1]->get_time_base(),
+					_a_stream->a_src[1]->get_sample_rate(),
+					_a_stream->a_src[1]->get_fmt(),
+					_a_stream->a_src[1]->get_channel_num(),
+					av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
+				},
+				{
+					NULL,NULL,
+					{ 1,AV_TIME_BASE },
+					setting.a_sample_rate,
+					setting.a_sample_fmt,
+					setting.a_nb_channel,
+					av_get_default_channel_layout(setting.a_nb_channel)
+				}
+				);
 
-			if (error != AE_NO) {
-				break;
-			}
+				if (error != AE_NO) {
+					break;
+				}
 
-			_a_stream->a_filter->registe_cb(
-				std::bind(&muxer_mp4::on_filter_audio_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_filter_audio_error, this, std::placeholders::_1)
-			);
+				_a_stream->a_filter->registe_cb(
+					std::bind(&muxer_mp4::on_filter_audio_data, this, std::placeholders::_1),
+					std::bind(&muxer_mp4::on_filter_audio_error, this, std::placeholders::_1)
+				);
+			}
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
 			if (!codec) {
@@ -812,10 +801,16 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _a_stream->pre_pts;
-		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+
+		if (_a_stream->a_filter) 
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+		else
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_enc->get_time_base(), { 1,AV_TIME_BASE });
+
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
+
 		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
