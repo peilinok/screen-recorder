@@ -41,9 +41,9 @@ namespace am {
 
 		void on_audio_error(int error, int index);
 
-		void on_filter_audio_data(AVFrame *frame);
+		void on_filter_amix_data(AVFrame *frame);
 
-		void on_filter_audio_error(int error);
+		void on_filter_amix_error(int error);
 
 
 

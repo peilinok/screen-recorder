@@ -11,7 +11,7 @@ namespace am {
 		filter_aresample();
 		~filter_aresample();
 
-		int init(const FILTER_CTX &ctx_in, const FILTER_CTX &ctx_out);
+		int init(const FILTER_CTX &ctx_in, const FILTER_CTX &ctx_out, int index);
 
 		inline void registe_cb(on_filter_data cb_on_filter_data, on_filter_error cb_on_filter_error) {
 			_on_filter_data = cb_on_filter_data;
@@ -33,6 +33,8 @@ namespace am {
 
 
 	private:
+		int _index;
+
 		FILTER_CTX _ctx_in;
 		FILTER_CTX _ctx_out;
 

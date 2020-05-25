@@ -22,6 +22,8 @@ namespace am {
 		_running = false;
 
 		_cond_notify = false;
+
+		_index = -1;
 	}
 
 
@@ -31,12 +33,14 @@ namespace am {
 		cleanup();
 	}
 
-	int filter_aresample::init(const FILTER_CTX & ctx_in, const FILTER_CTX & ctx_out)
+	int filter_aresample::init(const FILTER_CTX & ctx_in, const FILTER_CTX & ctx_out, int index)
 	{
 		int error = AE_NO;
 		int ret = 0;
 
 		if (_inited) return AE_NO;
+
+		_index = index;
 
 		do {
 			_ctx_in = ctx_in;
@@ -211,12 +215,12 @@ namespace am {
 
 				if (ret < 0) {
 					al_fatal("avfilter get frame error:%d", ret);
-					if (_on_filter_error) _on_filter_error(ret);
+					if (_on_filter_error) _on_filter_error(ret, _index);
 					break;
 				}
 
 				if (_on_filter_data)
-					_on_filter_data(frame);
+					_on_filter_data(frame, _index);
 
 				av_frame_unref(frame);
 			}

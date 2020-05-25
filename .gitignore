@@ -220,3 +220,12 @@
 /2node/node_modules
 /2node/package-lock.json
 /Recorder/Debug/*.obj
+/Recorder/Debug_DLL/headers_mmdevice.obj
+/Recorder/Debug_DLL/utils_winversion.obj
+/Test/Release_DLL/Test.Build.CppClean.log
+/Recorder/Release_DLL/filter.obj
+/Recorder/Release_DLL/filter_amix.obj
+/Recorder/Release_DLL/filter_aresample.obj
+/Test/Release_DLL/Test.tlog/link-rc.read.1.tlog
+/Test/Release_DLL/Test.tlog/link-rc.write.1.tlog
+/Test/Release_DLL/Test.tlog/unsuccessfulbuild

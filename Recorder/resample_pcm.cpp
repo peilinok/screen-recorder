@@ -43,6 +43,8 @@ namespace am {
 				break;
 			}
 
+
+
 			*resapmled_frame_size = av_samples_get_buffer_size(NULL, _sample_dst->nb_channels, _sample_dst->nb_samples, _sample_dst->fmt, 1);
 
 		} while (0);
@@ -62,7 +64,7 @@ namespace am {
 		out[0] = dst;
 		out[1] = dst + dst_len / 2;
 
-		const uint8_t *in1[2] = { src,src + src_len / 2 };
+		const uint8_t *in1[2] = { src,NULL };
 
 		/*
 		uint8_t *in[2] = { 0 };

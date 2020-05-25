@@ -7,8 +7,8 @@
 
 #include "record_audio.h"
 #include "encoder_aac.h"
-#include "resample_pcm.h"
-#include "filter_audio.h"
+#include "filter_amix.h"
+#include "filter_aresample.h"
 
 #include "ring_buffer.h"
 
@@ -114,8 +114,14 @@ namespace am {
 		if (_a_stream && _a_stream->a_enc)
 			_a_stream->a_enc->start();
 
-		if (_a_stream && _a_stream->a_filter)
-			_a_stream->a_filter->start();
+		if (_a_stream && _a_stream->a_nb >= 2 && _a_stream->a_filter_amix)
+			_a_stream->a_filter_amix->start();
+
+		if (_a_stream && _a_stream->a_nb < 2 && _a_stream->a_filter_aresample) {
+			for (int i = 0; i < _a_stream->a_nb; i++) {
+				_a_stream->a_filter_aresample[i]->start();
+			}
+		}
 
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
@@ -154,9 +160,16 @@ namespace am {
 		if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
-		al_debug("stop audio filter...");
-		if (_a_stream && _a_stream->a_filter)
-			_a_stream->a_filter->stop();
+		al_debug("stop audio amix filter...");
+		if (_a_stream && _a_stream->a_filter_amix)
+			_a_stream->a_filter_amix->stop();
+
+		al_debug("stop audio aresampler filter...");
+		if (_a_stream && _a_stream->a_filter_aresample) {
+			for (int i = 0; i < _a_stream->a_nb; i++) {
+				_a_stream->a_filter_aresample[i]->stop();
+			}
+		}
 
 
 		al_debug("stop video encoder...");
@@ -241,56 +254,14 @@ namespace am {
 
 	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
 	{
-		if (_running == false
-			|| !_a_stream
-			|| !_a_stream->a_samples
-			|| !_a_stream->a_samples[index]
-			|| !_a_stream->a_resamples
-			|| !_a_stream->a_resamples[index]
-			|| !_a_stream->a_rs
-			|| !_a_stream->a_rs[index])
+		if (_running == false)
 			return;
 
-		if(_a_stream->a_filter != nullptr)
-			_a_stream->a_filter->add_frame(frame, index);
-		else {
-			AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
-			AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
-			resample_pcm *resampler = _a_stream->a_rs[index];
-
-			int copied_len = 0;
-			int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
-			int remain_len = sample_len;
-
-			while (remain_len > 0) {//should add is_planner codes
-									//cache pcm
-				copied_len = min(samples->size - samples->sample_in, remain_len);
-				if (copied_len) {
-					memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
-					samples->sample_in += copied_len;
-					remain_len = remain_len - copied_len;
-				}
-
-				//got enough pcm to encoder,resample and mix
-				if (samples->sample_in == samples->size) {
-					int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
-					if (ret > 0) {
-						_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
-					}
-					else {
-						al_debug("resample audio %d failed,%d", index, ret);
-					}
-
-					samples->sample_in = 0;
-				}
-			}
+		if (_a_stream->a_filter_amix != nullptr)
+			_a_stream->a_filter_amix->add_frame(frame, index);
+		else if(_a_stream->a_filter_aresample != nullptr && _a_stream->a_filter_aresample[index] != nullptr) {
+			_a_stream->a_filter_aresample[index]->add_frame(frame);
 		}
-
-		/*
-		if (index == 1) {
-			getPcmDB(frame->data[0], frame->linesize[0]);
-		}
-		*/
 
 		return;
 	}
@@ -300,7 +271,7 @@ namespace am {
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_filter_audio_data(AVFrame * frame)
+	void muxer_mp4::on_filter_amix_data(AVFrame * frame, int)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -310,7 +281,7 @@ namespace am {
 
 		int copied_len = 0;
 		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
-			sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
 
 		int remain_len = sample_len;
 
@@ -338,7 +309,7 @@ namespace am {
 				copied_len = min(resamples->size - resamples->sample_in, remain_len);
 				if (copied_len) {
 					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
-					memcpy(resamples->buff + resamples->size/2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
+					memcpy(resamples->buff + resamples->size / 2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
 					resamples->sample_in += copied_len;
 					remain_len = remain_len - copied_len;
 				}
@@ -352,9 +323,66 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_filter_audio_error(int error)
+	void muxer_mp4::on_filter_amix_error(int error, int)
 	{
-		al_fatal("on filter audio error:%d", error);
+		al_fatal("on filter amix audio error:%d", error);
+	}
+
+	void muxer_mp4::on_filter_aresample_data(AVFrame * frame, int index)
+	{
+		if (_running == false || !_a_stream->a_enc)
+			return;
+
+
+		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[0];
+
+		int copied_len = 0;
+		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+
+		int remain_len = sample_len;
+
+		//for data is planar,should copy data[0] data[1] to correct buff pos
+		if (av_sample_fmt_is_planar((AVSampleFormat)frame->format) == 0) {
+			while (remain_len > 0) {
+				//cache pcm
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				//got enough pcm to encoder,resample and mix
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+		else {//resample size is channels*frame->linesize[0],for 2 channels
+			while (remain_len > 0) {
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
+					memcpy(resamples->buff + resamples->size / 2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+	}
+
+	void muxer_mp4::on_filter_aresample_error(int error, int index)
+	{
+		al_fatal("on filter aresample[%d] audio error:%d", index, error);
 	}
 
 	void muxer_mp4::on_enc_264_data(AVPacket *packet)
@@ -495,7 +523,7 @@ namespace am {
 		memset(_a_stream, 0, sizeof(MUX_STREAM));
 
 		_a_stream->a_nb = source_audios_nb;
-		_a_stream->a_rs = new resample_pcm*[_a_stream->a_nb];
+		_a_stream->a_filter_aresample = new filter_aresample*[_a_stream->a_nb];
 		_a_stream->a_resamples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_samples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_src = new record_audio*[_a_stream->a_nb];
@@ -527,34 +555,38 @@ namespace am {
 					i
 				);
 
-				SAMPLE_SETTING src_setting = {
-					_a_stream->a_enc->get_nb_samples(),
-					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
-					_a_stream->a_src[i]->get_channel_num(),
-					_a_stream->a_src[i]->get_fmt(),
-					_a_stream->a_src[i]->get_sample_rate()
-				};
-				SAMPLE_SETTING dst_setting = {
-					_a_stream->a_enc->get_nb_samples(),
-					av_get_default_channel_layout(setting.a_nb_channel),
-					setting.a_nb_channel,
-					setting.a_sample_fmt,
-					setting.a_sample_rate
-				};
-
-				_a_stream->a_rs[i] = new resample_pcm();
+				_a_stream->a_filter_aresample[i] = new filter_aresample();
 				_a_stream->a_resamples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_rs[i]->init(&src_setting, &dst_setting, &_a_stream->a_resamples[i]->size);
-				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
+				_a_stream->a_filter_aresample[i]->init({
+					NULL,NULL,
+					_a_stream->a_src[i]->get_time_base(),
+					_a_stream->a_src[i]->get_sample_rate(),
+					_a_stream->a_src[i]->get_fmt(),
+					_a_stream->a_src[i]->get_channel_num(),
+					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num())
+				}, {
+					NULL,NULL,
+					{ 1,AV_TIME_BASE },
+					setting.a_sample_rate,
+					setting.a_sample_fmt,
+					setting.a_nb_channel,
+					av_get_default_channel_layout(setting.a_nb_channel)
+				}, i);
 
+				_a_stream->a_filter_aresample[i]->registe_cb(
+					std::bind(&muxer_mp4::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mp4::on_filter_aresample_error, this, std::placeholders::_1, std::placeholders::_2));
+
+				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 				_a_stream->a_samples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 1);
+				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(
+					NULL, _a_stream->a_src[i]->get_channel_num(), _a_stream->a_enc->get_nb_samples(), _a_stream->a_src[i]->get_fmt(), 1);
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
 			if (_a_stream->a_nb >= 2) {
-				_a_stream->a_filter = new am::filter_audio();
-				error = _a_stream->a_filter->init(
+				_a_stream->a_filter_amix = new am::filter_amix();
+				error = _a_stream->a_filter_amix->init(
 				{
 					NULL,NULL,
 					_a_stream->a_src[0]->get_time_base(),
@@ -585,9 +617,9 @@ namespace am {
 					break;
 				}
 
-				_a_stream->a_filter->registe_cb(
-					std::bind(&muxer_mp4::on_filter_audio_data, this, std::placeholders::_1),
-					std::bind(&muxer_mp4::on_filter_audio_error, this, std::placeholders::_1)
+				_a_stream->a_filter_amix->registe_cb(
+					std::bind(&muxer_mp4::on_filter_amix_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mp4::on_filter_amix_error, this, std::placeholders::_1, std::placeholders::_2)
 				);
 			}
 
@@ -684,13 +716,13 @@ namespace am {
 		if (_a_stream->a_enc)
 			delete _a_stream->a_enc;
 
-		if (_a_stream->a_filter)
-			delete _a_stream->a_filter;
+		if (_a_stream->a_filter_amix)
+			delete _a_stream->a_filter_amix;
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				if (_a_stream->a_rs && _a_stream->a_rs[i])
-					delete _a_stream->a_rs[i];
+				if (_a_stream->a_filter_aresample && _a_stream->a_filter_aresample[i])
+					delete _a_stream->a_filter_aresample[i];
 
 				if (_a_stream->a_samples && _a_stream->a_samples[i]) {
 					delete[] _a_stream->a_samples[i]->buff;
@@ -703,8 +735,8 @@ namespace am {
 				}
 			}
 
-			if (_a_stream->a_rs)
-				delete[] _a_stream->a_rs;
+			if (_a_stream->a_filter_aresample)
+				delete[] _a_stream->a_filter_aresample;
 
 			if (_a_stream->a_samples)
 				delete[] _a_stream->a_samples;
@@ -767,7 +799,7 @@ namespace am {
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
 
-		//al_debug("V:%lld", packet->pts);
+		al_debug("V:%lld", packet->pts);
 
 #if 0
 		static FILE *fp = NULL;
@@ -802,8 +834,8 @@ namespace am {
 
 		packet->pts = packet->pts - _a_stream->pre_pts;
 
-		if (_a_stream->a_filter) 
-			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+		if (_a_stream->a_filter_amix)
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
 		else
 			packet->pts = av_rescale_q(packet->pts, _a_stream->a_enc->get_time_base(), { 1,AV_TIME_BASE });
 
@@ -811,7 +843,7 @@ namespace am {
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
-		//al_debug("A:%lld %lld", packet->pts, packet->dts);
+		al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
 

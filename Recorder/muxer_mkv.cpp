@@ -9,7 +9,7 @@
 #include "record_audio.h"
 #include "encoder_aac.h"
 #include "resample_pcm.h"
-#include "filter_audio.h"
+#include "filter_amix.h"
 
 #include "ring_buffer.h"
 
@@ -115,8 +115,8 @@ namespace am {
 		if (_a_stream && _a_stream->a_enc)
 			_a_stream->a_enc->start();
 
-		if (_a_stream && _a_stream->a_filter)
-			_a_stream->a_filter->start();
+		if (_a_stream && _a_stream->a_filter_amix)
+			_a_stream->a_filter_amix->start();
 
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
@@ -156,8 +156,8 @@ namespace am {
 			_v_stream->v_src->stop();
 
 		al_debug("stop audio filter...");
-		if (_a_stream && _a_stream->a_filter)
-			_a_stream->a_filter->stop();
+		if (_a_stream && _a_stream->a_filter_amix)
+			_a_stream->a_filter_amix->stop();
 
 
 		al_debug("stop video encoder...");
@@ -225,7 +225,7 @@ namespace am {
 			|| !_a_stream->a_rs[index])
 			return;
 
-		_a_stream->a_filter->add_frame(frame, index);
+		_a_stream->a_filter_amix->add_frame(frame, index);
 
 		return;
 	}
@@ -280,7 +280,7 @@ namespace am {
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mkv::on_filter_audio_data(AVFrame * frame)
+	void muxer_mkv::on_filter_amix_data(AVFrame * frame)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -332,7 +332,7 @@ namespace am {
 		}
 	}
 
-	void muxer_mkv::on_filter_audio_error(int error)
+	void muxer_mkv::on_filter_amix_error(int error)
 	{
 		al_fatal("on filter audio error:%d", error);
 	}
@@ -538,8 +538,8 @@ namespace am {
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
-			_a_stream->a_filter = new am::filter_audio();
-			error = _a_stream->a_filter->init(
+			_a_stream->a_filter_amix = new am::filter_amix();
+			error = _a_stream->a_filter_amix->init(
 			{
 				NULL,NULL,
 				_a_stream->a_src[0]->get_time_base(),
@@ -570,9 +570,9 @@ namespace am {
 				break;
 			}
 
-			_a_stream->a_filter->registe_cb(
-				std::bind(&muxer_mkv::on_filter_audio_data, this, std::placeholders::_1),
-				std::bind(&muxer_mkv::on_filter_audio_error, this, std::placeholders::_1)
+			_a_stream->a_filter_amix->registe_cb(
+				std::bind(&muxer_mkv::on_filter_amix_data, this, std::placeholders::_1),
+				std::bind(&muxer_mkv::on_filter_amix_error, this, std::placeholders::_1)
 			);
 
 			AVStream *st = avformat_new_stream(_fmt_ctx, NULL);
@@ -671,8 +671,8 @@ namespace am {
 		if (_a_stream->a_enc)
 			delete _a_stream->a_enc;
 
-		if (_a_stream->a_filter)
-			delete _a_stream->a_filter;
+		if (_a_stream->a_filter_amix)
+			delete _a_stream->a_filter_amix;
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
@@ -789,7 +789,7 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _a_stream->pre_pts;
-		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter->get_time_base(), { 1,AV_TIME_BASE });
+		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts

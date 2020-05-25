@@ -36,12 +36,14 @@ int main()
 
 	sprintf(setting.output, "..\\..\\save.mp4");
 
+#if 1 //record speaker mic
 	for (int i = 0; i < nspeaker; i++) {
 		if (speakers[i].is_default == 1)
 			memcpy(&setting.a_speaker, &speakers[i], sizeof(AMRECORDER_DEVICE));
 	}
+#endif
 
-#if 1 //only record speaker
+#if 0 //record mic
 	for (int i = 0; i < nmic; i++) {
 		if (mics[i].is_default == 1)
 			memcpy(&setting.a_mic, &mics[i], sizeof(AMRECORDER_DEVICE));

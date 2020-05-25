@@ -124,15 +124,14 @@ namespace am {
 				break;
 			}
 
-			if (_aac_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {
-				_aac_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+			if (_aac_fmt_ctx->oformat->flags | AV_CODEC_FLAG_GLOBAL_HEADER) {
 				_aac_stream->codec->extradata_size = _encoder_ctx->extradata_size;// +AV_INPUT_BUFFER_PADDING_SIZE;
 				_aac_stream->codec->extradata = (uint8_t*)av_memdup(_encoder_ctx->extradata, _encoder_ctx->extradata_size);
 			}
 #endif
 
 			_inited = true;
-		
+
 		} while (0);
 
 		if (err != AE_NO) {
@@ -198,6 +197,7 @@ namespace am {
 		
 		_cond_notify = true;
 		_cond_var.notify_all();
+
 		return 0;
 	}
 
@@ -213,7 +213,8 @@ namespace am {
 			return AE_FFMPEG_ENCODE_FRAME_FAILED;
 		}
 
-		while (ret >= 0) {
+
+		while (ret == 0) {
 			av_init_packet(packet);
 
 			ret = avcodec_receive_packet(_encoder_ctx, packet);
@@ -225,12 +226,14 @@ namespace am {
 				return AE_FFMPEG_READ_PACKET_FAILED;
 			}
 
-			//al_debug("AP:%lld", packet->pts);
-
+			
 			if (ret == 0 && _on_data)
 				_on_data(packet);
+			
 
 #ifdef SAVE_AAC
+			av_packet_rescale_ts(packet, _encoder_ctx->time_base, _aac_stream->time_base);
+			packet->stream_index = _aac_stream->index;
 			av_write_frame(_aac_fmt_ctx, packet);
 #endif
 
@@ -259,7 +262,6 @@ namespace am {
 				_cond_var.wait_for(lock, std::chrono::milliseconds(300));
 
 			while ((len = _ring_buffer->get(_buff, _buff_size, pcm_frame))) {
-
 				_frame->pts = pcm_frame.pts;
 				_frame->pkt_pts = pcm_frame.pkt_pts;
 				_frame->pkt_dts = pcm_frame.pkt_dts;
@@ -272,9 +274,11 @@ namespace am {
 
 					break;
 				}
+
 			}
 
 			_cond_notify = false;
+
 		}
 
 		//flush pcm data in encoder

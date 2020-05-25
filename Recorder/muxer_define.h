@@ -12,9 +12,9 @@ namespace am {
 	class sws_helper;
 
 	class encoder_aac;
-	class filter_audio;
+	class filter_amix;
+	class filter_aresample;
 	class record_audio;
-	class resample_pcm;
 
 	typedef struct MUX_SETTING_T {
 		int v_frame_rate;
@@ -44,12 +44,12 @@ namespace am {
 		sws_helper *v_sws;          // video sws
 
 		//audio
-		encoder_aac *a_enc;         // audio encoder
-		filter_audio *a_filter;      // audio mixer
-		int a_nb;                   // audio source num
-		record_audio **a_src;       // audio sources
-		resample_pcm **a_rs;        // audio resamplers
-		AUDIO_SAMPLE **a_samples;   // audio sample data
-		AUDIO_SAMPLE **a_resamples; // audio resampled data
+		encoder_aac *a_enc;                     // audio encoder
+		filter_amix *a_filter_amix;             // audio mixer
+		filter_aresample **a_filter_aresample;  // audio resamplers
+		int a_nb;							    // audio source num
+		record_audio **a_src;				    // audio sources
+		AUDIO_SAMPLE **a_samples;			    // audio sample data
+		AUDIO_SAMPLE **a_resamples;			    // audio resampled data
 	}MUX_STREAM;
 }

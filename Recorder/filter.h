@@ -23,8 +23,19 @@ namespace am {
 		int64_t channel_layout;
 	}FILTER_CTX;
 
-	typedef std::function<void(AVFrame *)> on_filter_data;
-	typedef std::function<void(int)> on_filter_error;
+	/**
+	* filter data callback
+	* @param frame pointer to a AVFrame
+	* @param index resource index ,default is -1
+	*/
+	typedef std::function<void(AVFrame *frame, int index)> on_filter_data;
+
+	/**
+	* filter error callback
+	* @param code error code
+	* @param index resource index ,default is -1
+	*/
+	typedef std::function<void(int code, int index)> on_filter_error;
 
 	void format_pad_arg(char *arg, int size, const FILTER_CTX &ctx);
 }

@@ -249,12 +249,12 @@ namespace am {
 
 				if (ret < 0) {
 					al_fatal("avfilter get frame error:%d", ret);
-					if (_on_filter_error) _on_filter_error(ret);
+					if (_on_filter_error) _on_filter_error(ret, -1);
 					break;
 				}
 
-				if (_on_filter_data) 
-					_on_filter_data(frame);
+				if (_on_filter_data)
+					_on_filter_data(frame, -1);
 
 				av_frame_unref(frame);
 			}
