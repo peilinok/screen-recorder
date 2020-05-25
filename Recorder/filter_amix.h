@@ -1,35 +1,15 @@
-#ifndef FILTER_AUDIO
-#define FILTER_AUDIO
+#ifndef FILTER_AMIX
+#define FILTER_AMIX
 
-#include <thread>
-#include <atomic>
-#include <functional>
-#include <string>
-#include <mutex>
-#include <condition_variable>
+#include "filter.h"
 
-#include "headers_ffmpeg.h"
 
 namespace am {
-	typedef struct {
-		AVFilterContext *ctx;
-		AVFilterInOut *inout;
-
-		AVRational time_base;
-		int sample_rate;
-		AVSampleFormat sample_fmt;
-		int nb_channel;
-		int64_t channel_layout;
-	}FILTER_CTX;
-
-	typedef std::function<void(AVFrame *)> on_filter_data;
-	typedef std::function<void(int)> on_filter_error;
-
-	class filter_audio
+	class filter_amix
 	{
 	public:
-		filter_audio();
-		~filter_audio();
+		filter_amix();
+		~filter_amix();
 
 		int init(const FILTER_CTX &ctx_in0, const FILTER_CTX &ctx_in1, const FILTER_CTX &ctx_out);
 

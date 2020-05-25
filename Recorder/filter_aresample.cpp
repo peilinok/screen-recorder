@@ -1,24 +1,19 @@
-#include "filter_audio.h"
+#include "filter_aresample.h"
 
 #include <chrono>
+#include <sstream>
 
 #include "error_define.h"
 #include "log_helper.h"
 
 namespace am {
 
-	static void print_frame(const AVFrame *frame, int index)
-	{
-		al_debug("index:%d %lld %d", index, frame->pts, frame->nb_samples);
-	}
-
-	filter_audio::filter_audio()
+	filter_aresample::filter_aresample()
 	{
 		av_register_all();
 		avfilter_register_all();
 
-		memset(&_ctx_in_0, 0, sizeof(FILTER_CTX));
-		memset(&_ctx_in_1, 0, sizeof(FILTER_CTX));
+		memset(&_ctx_in, 0, sizeof(FILTER_CTX));
 		memset(&_ctx_out, 0, sizeof(FILTER_CTX));
 
 		_filter_graph = NULL;
@@ -27,27 +22,16 @@ namespace am {
 		_running = false;
 
 		_cond_notify = false;
-
 	}
 
 
-	filter_audio::~filter_audio()
+	filter_aresample::~filter_aresample()
 	{
 		stop();
 		cleanup();
 	}
 
-	static void format_pad_arg(char *arg, int size, const FILTER_CTX &ctx)
-	{
-		sprintf_s(arg, size, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=0x%I64x",
-			ctx.time_base.num,
-			ctx.time_base.den,
-			ctx.sample_rate,
-			av_get_sample_fmt_name(ctx.sample_fmt),
-			av_get_default_channel_layout(ctx.nb_channel));
-	}
-
-	int filter_audio::init(const FILTER_CTX & ctx_in0, const FILTER_CTX & ctx_in1, const FILTER_CTX & ctx_out)
+	int filter_aresample::init(const FILTER_CTX & ctx_in, const FILTER_CTX & ctx_out)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -55,8 +39,7 @@ namespace am {
 		if (_inited) return AE_NO;
 
 		do {
-			_ctx_in_0 = ctx_in0;
-			_ctx_in_1 = ctx_in1;
+			_ctx_in = ctx_in;
 			_ctx_out = ctx_out;
 
 			_filter_graph = avfilter_graph_alloc();
@@ -65,24 +48,28 @@ namespace am {
 				break;
 			}
 
-			const std::string filter_desrc = "[in0][in1]amix=inputs=2:duration=first:dropout_transition=0[out]";
+			char layout_name[256] = { 0 };
+			av_get_channel_layout_string(layout_name, 256, ctx_out.nb_channel, ctx_out.channel_layout);
 
-			_ctx_in_0.inout = avfilter_inout_alloc();
-			_ctx_in_1.inout = avfilter_inout_alloc();
+
+			std::stringstream filter_desrcss;
+			filter_desrcss << "aresample=";
+			filter_desrcss << ctx_out.sample_rate;
+			filter_desrcss << ",aformat=sample_fmts=";
+			filter_desrcss << av_get_sample_fmt_name(ctx_out.sample_fmt);
+			filter_desrcss << ":channel_layouts=";
+			filter_desrcss << layout_name;
+
+			std::string filter_desrc = filter_desrcss.str();
+
+			_ctx_in.inout = avfilter_inout_alloc();
 			_ctx_out.inout = avfilter_inout_alloc();
 
-			char pad_args0[512] = { 0 }, pad_args1[512] = { 0 };
+			char pad_args[512] = { 0 };
 
-			format_pad_arg(pad_args0, 512, _ctx_in_0);
-			format_pad_arg(pad_args1, 512, _ctx_in_1);
+			format_pad_arg(pad_args, 512, _ctx_in);
 
-			ret = avfilter_graph_create_filter(&_ctx_in_0.ctx, avfilter_get_by_name("abuffer"), "in0", pad_args0, NULL, _filter_graph);
-			if (ret < 0) {
-				error = AE_FILTER_CREATE_FILTER_FAILED;
-				break;
-			}
-
-			ret = avfilter_graph_create_filter(&_ctx_in_1.ctx, avfilter_get_by_name("abuffer"), "in1", pad_args1, NULL, _filter_graph);
+			ret = avfilter_graph_create_filter(&_ctx_in.ctx, avfilter_get_by_name("abuffer"), "in", pad_args, NULL, _filter_graph);
 			if (ret < 0) {
 				error = AE_FILTER_CREATE_FILTER_FAILED;
 				break;
@@ -98,24 +85,17 @@ namespace am {
 			av_opt_set_bin(_ctx_out.ctx, "channel_layouts", (uint8_t*)&_ctx_out.channel_layout, sizeof(_ctx_out.channel_layout), AV_OPT_SEARCH_CHILDREN);
 			av_opt_set_bin(_ctx_out.ctx, "sample_rates", (uint8_t*)&_ctx_out.sample_rate, sizeof(_ctx_out.sample_rate), AV_OPT_SEARCH_CHILDREN);
 
-			_ctx_in_0.inout->name = av_strdup("in0");
-			_ctx_in_0.inout->filter_ctx = _ctx_in_0.ctx;
-			_ctx_in_0.inout->pad_idx = 0;
-			_ctx_in_0.inout->next = _ctx_in_1.inout;
-
-			_ctx_in_1.inout->name = av_strdup("in1");
-			_ctx_in_1.inout->filter_ctx = _ctx_in_1.ctx;
-			_ctx_in_1.inout->pad_idx = 0;
-			_ctx_in_1.inout->next = NULL;
+			_ctx_in.inout->name = av_strdup("in");
+			_ctx_in.inout->filter_ctx = _ctx_in.ctx;
+			_ctx_in.inout->pad_idx = 0;
+			_ctx_in.inout->next = NULL;
 
 			_ctx_out.inout->name = av_strdup("out");
 			_ctx_out.inout->filter_ctx = _ctx_out.ctx;
 			_ctx_out.inout->pad_idx = 0;
 			_ctx_out.inout->next = NULL;
 
-			AVFilterInOut *inoutputs[2] = { _ctx_in_0.inout,_ctx_in_1.inout };
-
-			ret = avfilter_graph_parse_ptr(_filter_graph, filter_desrc.c_str(), &_ctx_out.inout, inoutputs, NULL);
+			ret = avfilter_graph_parse_ptr(_filter_graph, filter_desrc.c_str(), &_ctx_out.inout, &_ctx_in.inout, NULL);
 			if (ret < 0) {
 				error = AE_FILTER_PARSE_PTR_FAILED;
 				break;
@@ -137,19 +117,10 @@ namespace am {
 			cleanup();
 		}
 
-		//if (_ctx_in_0.inout)
-		//	avfilter_inout_free(&_ctx_in_0.inout);
-
-		//if (_ctx_in_1.inout)
-		//	avfilter_inout_free(&_ctx_in_1.inout);
-
-		//if (_ctx_out.inout)
-		//	avfilter_inout_free(&_ctx_out.inout);
-
 		return error;
 	}
 
-	int filter_audio::start()
+	int filter_aresample::start()
 	{
 		if (!_inited)
 			return AE_NEED_INIT;
@@ -158,12 +129,12 @@ namespace am {
 			return AE_NO;
 
 		_running = true;
-		_thread = std::thread(std::bind(&filter_audio::filter_loop, this));
+		_thread = std::thread(std::bind(&filter_aresample::filter_loop, this));
 
 		return 0;
 	}
 
-	int filter_audio::stop()
+	int filter_aresample::stop()
 	{
 		if (!_inited || !_running)
 			return AE_NO;
@@ -179,7 +150,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	int filter_audio::add_frame(AVFrame * frame, int index)
+	int filter_aresample::add_frame(AVFrame * frame)
 	{
 		std::unique_lock<std::mutex> lock(_mutex);
 
@@ -187,26 +158,8 @@ namespace am {
 		int ret = 0;
 
 		do {
-			AVFilterContext *ctx = NULL;
-			switch (index) {
-			case 0:
-				ctx = _ctx_in_0.ctx;
-				break;
-			case 1:
-				ctx = _ctx_in_1.ctx;
-				break;
-			default:
-				ctx = NULL;
-				break;
-			}
-
-			if (!ctx) {
-				error = AE_FILTER_INVALID_CTX_INDEX;
-				break;
-			}
-
 			//print_frame(frame, index);
-			int ret = av_buffersrc_add_frame_flags(ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF);
+			int ret = av_buffersrc_add_frame_flags(_ctx_in.ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF);
 			if (ret < 0) {
 				error = AE_FILTER_ADD_FRAME_FAILED;
 				break;
@@ -224,24 +177,23 @@ namespace am {
 		return error;
 	}
 
-	const AVRational & filter_audio::get_time_base()
+	const AVRational & filter_aresample::get_time_base()
 	{
 		return av_buffersink_get_time_base(_ctx_out.ctx);
 	}
 
-	void filter_audio::cleanup()
+	void filter_aresample::cleanup()
 	{
 		if (_filter_graph)
 			avfilter_graph_free(&_filter_graph);
 
-		memset(&_ctx_in_0, 0, sizeof(FILTER_CTX));
-		memset(&_ctx_in_1, 0, sizeof(FILTER_CTX));
+		memset(&_ctx_in, 0, sizeof(FILTER_CTX));
 		memset(&_ctx_out, 0, sizeof(FILTER_CTX));
 
 		_inited = false;
 	}
 
-	void filter_audio::filter_loop()
+	void filter_aresample::filter_loop()
 	{
 		AVFrame *frame = av_frame_alloc();
 
@@ -249,7 +201,7 @@ namespace am {
 		while (_running) {
 			std::unique_lock<std::mutex> lock(_mutex);
 			while (!_cond_notify && _running)
-				_cond_var.wait_for(lock,std::chrono::milliseconds(300));
+				_cond_var.wait_for(lock, std::chrono::milliseconds(300));
 
 			while (_running && _cond_notify) {
 				ret = av_buffersink_get_frame(_ctx_out.ctx, frame);
@@ -263,7 +215,7 @@ namespace am {
 					break;
 				}
 
-				if (_on_filter_data) 
+				if (_on_filter_data)
 					_on_filter_data(frame);
 
 				av_frame_unref(frame);
