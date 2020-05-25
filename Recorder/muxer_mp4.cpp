@@ -577,6 +577,8 @@ namespace am {
 					std::bind(&muxer_mp4::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
 					std::bind(&muxer_mp4::on_filter_aresample_error, this, std::placeholders::_1, std::placeholders::_2));
 
+				_a_stream->a_resamples[i]->size = av_samples_get_buffer_size(
+					NULL, setting.a_nb_channel, _a_stream->a_enc->get_nb_samples(), setting.a_sample_fmt, 1);
 				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 				_a_stream->a_samples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
 				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(
@@ -799,7 +801,7 @@ namespace am {
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
 
-		al_debug("V:%lld", packet->pts);
+		//al_debug("V:%lld", packet->pts);
 
 #if 0
 		static FILE *fp = NULL;
@@ -843,7 +845,7 @@ namespace am {
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
-		al_debug("A:%lld %lld", packet->pts, packet->dts);
+		//al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
 

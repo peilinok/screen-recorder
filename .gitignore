@@ -229,3 +229,15 @@
 /Test/Release_DLL/Test.tlog/link-rc.read.1.tlog
 /Test/Release_DLL/Test.tlog/link-rc.write.1.tlog
 /Test/Release_DLL/Test.tlog/unsuccessfulbuild
+/Recorder/Debug_DLL/filter.obj
+/Recorder/Debug_DLL/filter_amix.obj
+/Recorder/Debug_DLL/filter_aresample.obj
+/Recorder/Release/filter.obj
+/Recorder/Release/filter_amix.obj
+/Recorder/Release/filter_aresample.obj
+/Recorder/Release/headers_mmdevice.obj
+/Recorder/Release/muxer_file.obj
+/Recorder/Release/record_desktop_ffmpeg_dshow.obj
+/Recorder/Release/record_desktop_ffmpeg_gdi.obj
+/Recorder/Release/record_desktop_win_gdi.obj
+/Recorder/Release/utils_winversion.obj
