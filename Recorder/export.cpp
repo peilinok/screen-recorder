@@ -12,6 +12,7 @@
 
 #include "error_define.h"
 #include "log_helper.h"
+#include "utils_string.h"
 
 #include <string>
 #include <atomic>
@@ -146,7 +147,7 @@ namespace am {
 
 		audios = { _recorder_speaker,_recorder_mic };
 #else
-		if (std::string(setting.a_speaker.name).length() && std::string(setting.a_speaker.id).length()) {
+		if (utils_string::utf8_ascii(setting.a_speaker.name).length() && utils_string::utf8_ascii(setting.a_speaker.id).length()) {
 			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
 			AMERROR_CHECK(error);
 
@@ -157,7 +158,9 @@ namespace am {
 			audio_num++;
 		}
 
-		if (std::string(setting.a_mic.name).length() && std::string(setting.a_speaker.id).length()) {
+		
+
+		if (utils_string::utf8_ascii(setting.a_mic.name).length() && utils_string::utf8_ascii(setting.a_mic.id).length()) {
 			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
 			AMERROR_CHECK(error);
 
