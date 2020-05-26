@@ -345,6 +345,7 @@ namespace am {
 		//for data is planar,should copy data[0] data[1] to correct buff pos
 		if (av_sample_fmt_is_planar((AVSampleFormat)frame->format) == 0) {
 			while (remain_len > 0) {
+
 				//cache pcm
 				copied_len = min(resamples->size - resamples->sample_in, remain_len);
 				if (copied_len) {
@@ -364,6 +365,7 @@ namespace am {
 		else {//resample size is channels*frame->linesize[0],for 2 channels
 			while (remain_len > 0) {
 				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+
 				if (copied_len) {
 					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
 					memcpy(resamples->buff + resamples->size / 2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
@@ -557,21 +559,22 @@ namespace am {
 
 				_a_stream->a_filter_aresample[i] = new filter_aresample();
 				_a_stream->a_resamples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_filter_aresample[i]->init({
-					NULL,NULL,
-					_a_stream->a_src[i]->get_time_base(),
-					_a_stream->a_src[i]->get_sample_rate(),
-					_a_stream->a_src[i]->get_fmt(),
-					_a_stream->a_src[i]->get_channel_num(),
-					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num())
-				}, {
-					NULL,NULL,
-					{ 1,AV_TIME_BASE },
-					setting.a_sample_rate,
-					setting.a_sample_fmt,
-					setting.a_nb_channel,
-					av_get_default_channel_layout(setting.a_nb_channel)
-				}, i);
+				
+				
+				FILTER_CTX ctx_in = { 0 }, ctx_out = { 0 };
+				ctx_in.time_base = _a_stream->a_src[i]->get_time_base();
+				ctx_in.channel_layout = av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num());
+				ctx_in.nb_channel = _a_stream->a_src[i]->get_channel_num();
+				ctx_in.sample_fmt = _a_stream->a_src[i]->get_fmt();
+				ctx_in.sample_rate = _a_stream->a_src[i]->get_sample_rate();
+
+				ctx_out.time_base = { 1,AV_TIME_BASE };
+				ctx_out.channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
+				ctx_out.nb_channel = setting.a_nb_channel;
+				ctx_out.sample_fmt = setting.a_sample_fmt;
+				ctx_out.sample_rate = setting.a_sample_rate;
+
+				_a_stream->a_filter_aresample[i]->init(ctx_in, ctx_out, i);
 
 				_a_stream->a_filter_aresample[i]->registe_cb(
 					std::bind(&muxer_mp4::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
@@ -784,9 +787,6 @@ namespace am {
 
 		if (_paused) return AE_NO;
 
-		//if (_a_stream->pre_pts == (uint64_t)-1)
-		//	return 0;
-
 		packet->stream_index = _v_stream->st->index;
 
 		if (_v_stream->pre_pts == (uint64_t)-1) {
@@ -794,7 +794,6 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _v_stream->pre_pts;
-		//packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
@@ -802,24 +801,16 @@ namespace am {
 
 
 		//al_debug("V:%lld", packet->pts);
-
-#if 0
-		static FILE *fp = NULL;
-		if (fp == NULL) {
-			fp = fopen("..\\..\\save.264", "wb+");
-			//write sps pps
-			fwrite(_v_stream->v_enc->get_extradata(), 1, _v_stream->v_enc->get_extradata_size(), fp);
-		}
-
-		fwrite(packet->data, 1, packet->size, fp);
-
-		fflush(fp);
-#endif
 		
 		av_assert0(packet->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 
+		if (ret != 0) {
+			al_fatal("write video frame error:%d", ret);
+		}
+
+		return ret;
 	}
 
 	int muxer_mp4::write_audio(AVPacket *packet)
@@ -836,10 +827,10 @@ namespace am {
 
 		packet->pts = packet->pts - _a_stream->pre_pts;
 
-		if (_a_stream->a_filter_amix)
+		if (_a_stream->a_filter_amix != nullptr)
 			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
 		else
-			packet->pts = av_rescale_q(packet->pts, _a_stream->a_enc->get_time_base(), { 1,AV_TIME_BASE });
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_aresample[0]->get_time_base(), { 1,AV_TIME_BASE });
 
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
@@ -850,6 +841,9 @@ namespace am {
 		av_assert0(packet->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
+		if (ret != 0) {
+			al_fatal("write audio frame error:%d", ret);
+		}
 
 		return ret;
 	}

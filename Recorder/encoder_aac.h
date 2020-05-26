@@ -10,7 +10,7 @@
 #include "headers_ffmpeg.h"
 #include "ring_buffer.h"
 
-#define SAVE_AAC
+//#define SAVE_AAC
 
 namespace am {
 	typedef std::function<void(AVPacket *packet)> cb_aac_data;
