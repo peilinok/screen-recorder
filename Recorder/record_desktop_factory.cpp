@@ -1,7 +1,8 @@
 #include "record_desktop_factory.h"
 #include "record_desktop_ffmpeg_gdi.h"
 #include "record_desktop_ffmpeg_dshow.h"
-#include "record_desktop_win_gdi.h"
+#include "record_desktop_gdi.h"
+#include "record_desktop_duplication.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -18,7 +19,7 @@ int record_desktop_new(RECORD_DESKTOP_TYPES type, am::record_desktop ** recorder
 		*recorder = (am::record_desktop*)new am::record_desktop_ffmpeg_dshow();
 		break;
 	case DT_DESKTOP_WIN_GDI:
-		*recorder = (am::record_desktop*)new am::record_desktop_win_gdi();
+		*recorder = (am::record_desktop*)new am::record_desktop_gdi();
 		break;
 	default:
 		err = AE_UNSUPPORT;

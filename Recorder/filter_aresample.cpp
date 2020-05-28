@@ -111,8 +111,6 @@ namespace am {
 				break;
 			}
 
-			//al_debug("dump graph:\r\n%s", avfilter_graph_dump(_filter_graph, NULL));
-
 			_inited = true;
 		} while (0);
 
@@ -162,7 +160,6 @@ namespace am {
 		int ret = 0;
 
 		do {
-			//print_frame(frame, index);
 			int ret = av_buffersrc_add_frame_flags(_ctx_in.ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF);
 			if (ret < 0) {
 				error = AE_FILTER_ADD_FRAME_FAILED;

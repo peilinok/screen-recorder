@@ -1,11 +1,11 @@
-#include "record_desktop_win_gdi.h"
+#include "record_desktop_gdi.h"
 
 #include "error_define.h"
 #include "log_helper.h"
 
 namespace am {
 
-	record_desktop_win_gdi::record_desktop_win_gdi()
+	record_desktop_gdi::record_desktop_gdi()
 	{
 		_data_type = RECORD_DESKTOP_DATA_TYPES::AT_DESKTOP_BGRA;
 		_buffer = NULL;
@@ -19,13 +19,13 @@ namespace am {
 		_ci = { 0 };
 	}
 
-	record_desktop_win_gdi::~record_desktop_win_gdi()
+	record_desktop_gdi::~record_desktop_gdi()
 	{
 		stop();
 		clean_up();
 	}
 
-	int record_desktop_win_gdi::init(const RECORD_DESKTOP_RECT & rect, const int fps)
+	int record_desktop_gdi::init(const RECORD_DESKTOP_RECT & rect, const int fps)
 	{
 		int error = AE_NO;
 		if (_inited == true) {
@@ -58,7 +58,7 @@ namespace am {
 		return error;
 	}
 
-	int record_desktop_win_gdi::start()
+	int record_desktop_gdi::start()
 	{
 		if (_running == true) {
 			al_warn("record desktop gdi is already running");
@@ -70,24 +70,24 @@ namespace am {
 		}
 
 		_running = true;
-		_thread = std::thread(std::bind(&record_desktop_win_gdi::record_func, this));
+		_thread = std::thread(std::bind(&record_desktop_gdi::record_func, this));
 
 		return AE_NO;
 	}
 
-	int record_desktop_win_gdi::pause()
+	int record_desktop_gdi::pause()
 	{
 		_paused = true;
 		return AE_NO;
 	}
 
-	int record_desktop_win_gdi::resume()
+	int record_desktop_gdi::resume()
 	{
 		_paused = false;
 		return AE_NO;
 	}
 
-	int record_desktop_win_gdi::stop()
+	int record_desktop_gdi::stop()
 	{
 		_running = false;
 		if (_thread.joinable())
@@ -96,7 +96,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	void record_desktop_win_gdi::clean_up()
+	void record_desktop_gdi::clean_up()
 	{
 		_inited = false;
 
@@ -104,7 +104,7 @@ namespace am {
 			delete[] _buffer;
 	}
 
-	void record_desktop_win_gdi::draw_cursor(HDC hdc)
+	void record_desktop_gdi::draw_cursor(HDC hdc)
 	{
 		if (!(_ci.flags & CURSOR_SHOWING))
 			return;
@@ -135,7 +135,7 @@ namespace am {
 		DestroyIcon(icon);
 	}
 
-	int record_desktop_win_gdi::do_record()
+	int record_desktop_gdi::do_record()
 	{
 		//int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
 		//int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
@@ -238,7 +238,7 @@ namespace am {
 		return  AE_NO;
 	}
 
-	void record_desktop_win_gdi::do_sleep(int64_t dur, int64_t pre, int64_t now)
+	void record_desktop_gdi::do_sleep(int64_t dur, int64_t pre, int64_t now)
 	{
 		int64_t delay = now - pre;
 		dur = delay > dur ? max(0, dur - (delay - dur)) : (dur + dur - delay);
@@ -249,7 +249,7 @@ namespace am {
 			av_usleep(dur);
 	}
 
-	void record_desktop_win_gdi::record_func()
+	void record_desktop_gdi::record_func()
 	{
 		AVFrame *frame = av_frame_alloc();
 

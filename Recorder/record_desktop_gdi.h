@@ -1,5 +1,5 @@
-#ifndef RECORD_DESKTOP_WIN_GDI
-#define RECORD_DESKTOP_WIN_GDI
+#ifndef RECORD_DESKTOP_GDI
+#define RECORD_DESKTOP_GDI
 
 #include "record_desktop.h"
 
@@ -7,12 +7,12 @@
 
 namespace am {
 
-	class record_desktop_win_gdi :
+	class record_desktop_gdi :
 		public record_desktop
 	{
 	public:
-		record_desktop_win_gdi();
-		~record_desktop_win_gdi();
+		record_desktop_gdi();
+		~record_desktop_gdi();
 
 		virtual int init(
 			const RECORD_DESKTOP_RECT &rect,
