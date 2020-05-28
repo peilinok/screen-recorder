@@ -108,9 +108,6 @@
     <ClInclude Include="record_desktop_ffmpeg_gdi.h">
       <Filter>Header Files\record</Filter>
     </ClInclude>
-    <ClInclude Include="record_desktop_win_gdi.h">
-      <Filter>Header Files\record</Filter>
-    </ClInclude>
     <ClInclude Include="device_audios.h">
       <Filter>Header Files\devices</Filter>
     </ClInclude>
@@ -152,6 +149,12 @@
     </ClInclude>
     <ClInclude Include="filter.h">
       <Filter>Header Files\filters</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_duplication.h">
+      <Filter>Header Files\record</Filter>
+    </ClInclude>
+    <ClInclude Include="record_desktop_gdi.h">
+      <Filter>Header Files\record</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -200,9 +203,6 @@
     <ClCompile Include="record_desktop_ffmpeg_gdi.cpp">
       <Filter>Source Files\record</Filter>
     </ClCompile>
-    <ClCompile Include="record_desktop_win_gdi.cpp">
-      <Filter>Source Files\record</Filter>
-    </ClCompile>
     <ClCompile Include="device_audios.cpp">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -232,6 +232,12 @@
     </ClCompile>
     <ClCompile Include="filter.cpp">
       <Filter>Source Files\filters</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_duplication.cpp">
+      <Filter>Source Files\record</Filter>
+    </ClCompile>
+    <ClCompile Include="record_desktop_gdi.cpp">
+      <Filter>Source Files\record</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
-#ifndef RECORD_DESKTOP_GDI
-#define RECORD_DESKTOP_GDI
+#ifndef RECORD_DESKTOP_FFMPEG_GDI
+#define RECORD_DESKTOP_FFMPEG_GDI
 
 #include "record_desktop.h"
 
