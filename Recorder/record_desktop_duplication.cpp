@@ -154,31 +154,31 @@ namespace am {
 			HRESULT hr = S_OK;
 
 			// Driver types supported
-			D3D_DRIVER_TYPE DriverTypes[] =
+			D3D_DRIVER_TYPE driver_types[] =
 			{
 				D3D_DRIVER_TYPE_HARDWARE,
 				D3D_DRIVER_TYPE_WARP,
 				D3D_DRIVER_TYPE_REFERENCE,
 			};
-			UINT NumDriverTypes = ARRAYSIZE(DriverTypes);
+			UINT n_driver_types = ARRAYSIZE(driver_types);
 
 			// Feature levels supported
-			D3D_FEATURE_LEVEL FeatureLevels[] =
+			D3D_FEATURE_LEVEL feature_levels[] =
 			{
 				D3D_FEATURE_LEVEL_11_0,
 				D3D_FEATURE_LEVEL_10_1,
 				D3D_FEATURE_LEVEL_10_0,
 				D3D_FEATURE_LEVEL_9_1
 			};
-			UINT NumFeatureLevels = ARRAYSIZE(FeatureLevels);
+			UINT n_feature_levels = ARRAYSIZE(feature_levels);
 
-			D3D_FEATURE_LEVEL FeatureLevel;
+			D3D_FEATURE_LEVEL feature_level;
 
 			// Create device
-			for (UINT DriverTypeIndex = 0; DriverTypeIndex < NumDriverTypes; ++DriverTypeIndex)
+			for (UINT driver_index = 0; driver_index < n_driver_types; ++driver_index)
 			{
-				hr = create_device(nullptr, DriverTypes[DriverTypeIndex], nullptr, 0, FeatureLevels, NumFeatureLevels,
-					D3D11_SDK_VERSION, &_d3d_device, &FeatureLevel, &_d3d_ctx);
+				hr = create_device(nullptr, driver_types[driver_index], nullptr, 0, feature_levels, n_feature_levels,
+					D3D11_SDK_VERSION, &_d3d_device, &feature_level, &_d3d_ctx);
 				if (SUCCEEDED(hr))
 				{
 					// Device creation success, no need to loop anymore
@@ -201,13 +201,13 @@ namespace am {
 			}
 
 			// Input layout
-			D3D11_INPUT_ELEMENT_DESC Layout[] =
+			D3D11_INPUT_ELEMENT_DESC layouts[] =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 			};
-			UINT NumElements = ARRAYSIZE(Layout);
-			hr = _d3d_device->CreateInputLayout(Layout, NumElements, g_VS, Size, &_d3d_inlayout);
+			UINT n_layouts = ARRAYSIZE(layouts);
+			hr = _d3d_device->CreateInputLayout(layouts, n_layouts, g_VS, Size, &_d3d_inlayout);
 			if (FAILED(hr))
 			{
 				error = AE_D3D_CREATE_INLAYOUT_FAILED;
@@ -225,16 +225,16 @@ namespace am {
 			}
 
 			// Set up sampler
-			D3D11_SAMPLER_DESC SampDesc;
-			RtlZeroMemory(&SampDesc, sizeof(SampDesc));
-			SampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-			SampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			SampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			SampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-			SampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-			SampDesc.MinLOD = 0;
-			SampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-			hr = _d3d_device->CreateSamplerState(&SampDesc, &_d3d_samplerlinear);
+			D3D11_SAMPLER_DESC sampler_desc;
+			RtlZeroMemory(&sampler_desc, sizeof(sampler_desc));
+			sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+			sampler_desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+			sampler_desc.MinLOD = 0;
+			sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
+			hr = _d3d_device->CreateSamplerState(&sampler_desc, &_d3d_samplerlinear);
 			if (FAILED(hr))
 			{
 				error = AE_D3D_CREATE_SAMPLERSTATE_FAILED;
@@ -369,11 +369,11 @@ namespace am {
 
 	int record_desktop_duplication::do_record()
 	{
-		IDXGIResource* DesktopResource = nullptr;
+		IDXGIResource* dxgi_res = nullptr;
 		DXGI_OUTDUPL_FRAME_INFO FrameInfo;
 
 		// Get new frame
-		HRESULT hr = _duplication->AcquireNextFrame(500, &FrameInfo, &DesktopResource);
+		HRESULT hr = _duplication->AcquireNextFrame(500, &FrameInfo, &dxgi_res);
 		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
 		if (FAILED(hr)) return AE_DUP_ACQUIRE_FRAME_FAILED;
@@ -386,29 +386,29 @@ namespace am {
 		}
 
 		// QI for IDXGIResource
-		hr = DesktopResource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&_image));
-		DesktopResource->Release();
-		DesktopResource = nullptr;
+		hr = dxgi_res->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&_image));
+		dxgi_res->Release();
+		dxgi_res = nullptr;
 		if (FAILED(hr)) return AE_DUP_QI_FRAME_FAILED;
 
 		//
 		// copy old description
 		//
-		D3D11_TEXTURE2D_DESC frameDescriptor;
-		_image->GetDesc(&frameDescriptor);
+		D3D11_TEXTURE2D_DESC frame_desc;
+		_image->GetDesc(&frame_desc);
 
 		//
 		// create a new staging buffer for fill frame image
 		//
-		ID3D11Texture2D *hNewDesktopImage = NULL;
-		frameDescriptor.Usage = D3D11_USAGE_STAGING;
-		frameDescriptor.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-		frameDescriptor.BindFlags = 0;
-		frameDescriptor.MiscFlags = 0;
-		frameDescriptor.MipLevels = 1;
-		frameDescriptor.ArraySize = 1;
-		frameDescriptor.SampleDesc.Count = 1;
-		hr = _d3d_device->CreateTexture2D(&frameDescriptor, NULL, &hNewDesktopImage);
+		ID3D11Texture2D *new_image = NULL;
+		frame_desc.Usage = D3D11_USAGE_STAGING;
+		frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		frame_desc.BindFlags = 0;
+		frame_desc.MiscFlags = 0;
+		frame_desc.MipLevels = 1;
+		frame_desc.ArraySize = 1;
+		frame_desc.SampleDesc.Count = 1;
+		hr = _d3d_device->CreateTexture2D(&frame_desc, NULL, &new_image);
 		if (FAILED(hr))
 		{
 			free_duplicated_frame();
@@ -418,31 +418,31 @@ namespace am {
 		//
 		// copy next staging buffer to new staging buffer
 		//
-		_d3d_ctx->CopyResource(hNewDesktopImage, _image);
+		_d3d_ctx->CopyResource(new_image, _image);
 
 		free_duplicated_frame();
 
 		//
 		// create staging buffer for map bits
 		//
-		IDXGISurface *hStagingSurf = NULL;
-		hr = hNewDesktopImage->QueryInterface(__uuidof(IDXGISurface), (void **)(&hStagingSurf));
-		hNewDesktopImage->Release();
+		IDXGISurface *dxgi_surface = NULL;
+		hr = new_image->QueryInterface(__uuidof(IDXGISurface), (void **)(&dxgi_surface));
+		new_image->Release();
 		if (FAILED(hr))
 		{
 			return FALSE;
 		}
 
-		DXGI_MAPPED_RECT mappedRect;
-		hr = hStagingSurf->Map(&mappedRect, DXGI_MAP_READ);
+		DXGI_MAPPED_RECT mapped_rect;
+		hr = dxgi_surface->Map(&mapped_rect, DXGI_MAP_READ);
 		if (SUCCEEDED(hr))
 		{
-			memcpy(_buffer, mappedRect.pBits, _buffer_size);
-			hStagingSurf->Unmap();
+			memcpy(_buffer, mapped_rect.pBits, _buffer_size);
+			dxgi_surface->Unmap();
 		}
 
-		hStagingSurf->Release();
-		hStagingSurf = nullptr;
+		dxgi_surface->Release();
+		dxgi_surface = nullptr;
 
 		return AE_NO;
 	}
