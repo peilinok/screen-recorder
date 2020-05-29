@@ -8,6 +8,7 @@ enum AM_ERROR{
 	AE_UNSUPPORT,
 	AE_INVALID_CONTEXT,
 	AE_NEED_INIT,
+	AE_TIMEOUT,
 
 	//AE_CO_
 	AE_CO_INITED_FAILED,
@@ -97,6 +98,7 @@ static const char *ERRORS_STR[] = {
 	"not support for now",              //AE_UNSUPPORT
 	"invalid context",                  //AE_INVALID_CONTEXT
 	"need init first",                  //AE_NEED_INIT
+	"operation timeout",                //AE_TIMEOUT
 
 	"com init failed",                  //AE_CO_INITED_FAILED
 	"com create instance failed",       //AE_CO_CREATE_FAILED

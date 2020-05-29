@@ -374,7 +374,7 @@ namespace am {
 
 		// Get new frame
 		HRESULT hr = _duplication->AcquireNextFrame(500, &FrameInfo, &DesktopResource);
-		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_NO;
+		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
 		if (FAILED(hr)) return AE_DUP_ACQUIRE_FRAME_FAILED;
 
@@ -433,9 +433,6 @@ namespace am {
 			return FALSE;
 		}
 
-		//
-		// copy bits to user space
-		//
 		DXGI_MAPPED_RECT mappedRect;
 		hr = hStagingSurf->Map(&mappedRect, DXGI_MAP_READ);
 		if (SUCCEEDED(hr))
@@ -486,6 +483,12 @@ namespace am {
 		while (_running)
 		{
 			error = do_record();
+			//timeout is no new picture,no need to update
+			if (error == AE_TIMEOUT) {
+				//al_debug("timeout");
+				continue;
+			}
+
 			if (error != AE_NO) {
 				if (_on_error) _on_error(error);
 				break;
