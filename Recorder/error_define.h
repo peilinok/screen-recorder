@@ -9,6 +9,7 @@ enum AM_ERROR{
 	AE_INVALID_CONTEXT,
 	AE_NEED_INIT,
 
+	//AE_CO_
 	AE_CO_INITED_FAILED,
 	AE_CO_CREATE_FAILED,
 	AE_CO_GETENDPOINT_FAILED,
@@ -29,6 +30,7 @@ enum AM_ERROR{
 	AE_CO_GET_PACKET_FAILED,
 	AE_CO_PADDING_UNEXPECTED,
 
+	//AE_FFMPEG_
 	AE_FFMPEG_OPEN_INPUT_FAILED,
 	AE_FFMPEG_FIND_STREAM_FAILED,
 	AE_FFMPEG_FIND_DECODER_FAILED,
@@ -49,9 +51,11 @@ enum AM_ERROR{
 	AE_FFMPEG_FIND_INPUT_FMT_FAILED,
 	AE_FFMPEG_WRITE_HEADER_FAILED,
 
+	//AE_MP4V2_
 	AE_MP4V2_CREATE_FAILED,
 	AE_MP4V2_ADD_TRACK_FAILED,
 
+	//AE_FILTER_
 	AE_FILTER_ALLOC_GRAPH_FAILED,
 	AE_FILTER_CREATE_FILTER_FAILED,
 	AE_FILTER_PARSE_PTR_FAILED,
@@ -59,11 +63,32 @@ enum AM_ERROR{
 	AE_FILTER_INVALID_CTX_INDEX,
 	AE_FILTER_ADD_FRAME_FAILED,
 
+	//AE_GDI_
 	AE_GDI_GET_DC_FAILED,
 	AE_GDI_CREATE_DC_FAILED,
 	AE_GDI_CREATE_BMP_FAILED,
 	AE_GDI_BITBLT_FAILED,
 	AE_GDI_GET_DIBITS_FAILED,
+
+	//AE_D3D_
+	AE_D3D_LOAD_FAILED,
+	AE_D3D_GET_PROC_FAILED,
+	AE_D3D_CREATE_DEVICE_FAILED,
+	AE_D3D_CREATE_VERTEX_SHADER_FAILED,
+	AE_D3D_CREATE_INLAYOUT_FAILED,
+	AE_D3D_CREATE_PIXEL_SHADER_FAILED,
+	AE_D3D_CREATE_SAMPLERSTATE_FAILED,
+
+	//AE_DUP_
+	AE_DUP_ATTATCH_FAILED,
+	AE_DUP_QI_FAILED,
+	AE_DUP_GET_PARENT_FAILED,
+	AE_DUP_ENUM_OUTPUT_FAILED,
+	AE_DUP_DUPLICATE_MAX_FAILED,
+	AE_DUP_DUPLICATE_FAILED,
+	AE_DUP_RELEASE_FRAME_FAILED,
+	AE_DUP_ACQUIRE_FRAME_FAILED,
+	AE_DUP_QI_FRAME_FAILED,
 };
 
 static const char *ERRORS_STR[] = {
@@ -130,6 +155,24 @@ static const char *ERRORS_STR[] = {
 	"gdi create bmp failed",            //AE_GDI_CREATE_BMP_FAILED
 	"gdi bitblt failed",                //AE_GDI_BITBLT_FAILED
 	"gid geet dibbits failed",          //AE_GDI_GET_DIBITS_FAILED
+
+	"d3d11 library load failed",        //AE_D3D_LOAD_FAILED
+	"d3d11 proc get failed",            //AE_D3D_GET_PROC_FAILED
+	"d3d11 create device failed",       //AE_D3D_CREATE_DEVICE_FAILED
+	"d3d11 create vertex shader failed",//AE_D3D_CREATE_VERTEX_SHADER_FAILED
+	"d3d11 create input layout failed", //AE_D3D_CREATE_INLAYOUT_FAILED
+	"d3d11 create pixel shader failed", //AE_D3D_CREATE_PIXEL_SHADER_FAILED
+	"d3d11 create sampler state failed",//AE_D3D_CREATE_SAMPLERSTATE_FAILED
+
+	"duplication attatch desktop failed", //AE_DUP_ATTATCH_FAILED
+	"duplication query interface failed", //AE_DUP_QI_FAILED
+	"duplication get parent failed",      //AE_DUP_GET_PARENT_FAILED
+	"duplication enum ouput failed",      //AE_DUP_ENUM_OUTPUT_FAILED
+	"duplication duplicate unavailable",  //AE_DUP_DUPLICATE_MAX_FAILED
+	"duplication duplicate failed",       //AE_DUP_DUPLICATE_FAILED
+	"duplication release frame failed",   //AE_DUP_RELEASE_FRAME_FAILED
+	"duplication acquire frame failed",   //AE_DUP_ACQUIRE_FRAME_FAILED
+	"duplication qi frame failed",        //AE_DUP_QI_FRAME_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]

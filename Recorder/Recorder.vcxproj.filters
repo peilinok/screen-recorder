@@ -55,6 +55,12 @@
     <Filter Include="Header Files\defines">
       <UniqueIdentifier>{6efa3ce5-a902-4756-866e-0b71d7a64e2d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\helpers\win">
+      <UniqueIdentifier>{524dd0a6-01e1-4df1-99a4-6453e72b2f00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\helpers\win">
+      <UniqueIdentifier>{86ee3356-e233-46ea-a2cf-9250808ac3f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export.h">
@@ -156,6 +162,9 @@
     <ClInclude Include="record_desktop_gdi.h">
       <Filter>Header Files\record</Filter>
     </ClInclude>
+    <ClInclude Include="system_lib.h">
+      <Filter>Header Files\helpers\win</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -239,5 +248,16 @@
     <ClCompile Include="record_desktop_gdi.cpp">
       <Filter>Source Files\record</Filter>
     </ClCompile>
+    <ClCompile Include="system_lib.cpp">
+      <Filter>Source Files\helpers\win</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="d3d_pixelshader.hlsl">
+      <Filter>Source Files\helpers</Filter>
+    </FxCompile>
+    <FxCompile Include="d3d_vertexshader.hlsl">
+      <Filter>Source Files\helpers</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

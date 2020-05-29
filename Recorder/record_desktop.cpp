@@ -19,4 +19,5 @@ am::record_desktop::record_desktop()
 
 am::record_desktop::~record_desktop()
 {
+	
 }

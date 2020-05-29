@@ -22,10 +22,11 @@
 
 #define USE_WASAPI 1
 
-#define V_FRAME_RATE 20
+#define V_FRAME_RATE 25
 #define V_BIT_RATE 64000
 #define V_WIDTH 1920
 #define V_HEIGHT 1080
+#define V_QUALITY 80
 
 #define A_SAMPLE_CHANNEL 2
 #define A_SAMPLE_RATE 44100
@@ -83,7 +84,8 @@ int start_muxer() {
 #endif // !USE_WASAPI
 
 
-	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
+	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_DUPLICATION, &_recorder_desktop);
+	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
 	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_DSHOW, &_recorder_desktop);
 
 	RECORD_DESKTOP_RECT rect;
@@ -105,7 +107,7 @@ int start_muxer() {
 	setting.v_bit_rate = V_BIT_RATE;
 	setting.v_width = V_WIDTH;
 	setting.v_height = V_HEIGHT;
-	setting.v_qb = 60;
+	setting.v_qb = V_QUALITY;
 
 	setting.a_nb_channel = A_SAMPLE_CHANNEL;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;

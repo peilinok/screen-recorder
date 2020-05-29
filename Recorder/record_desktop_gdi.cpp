@@ -256,7 +256,7 @@ namespace am {
 		int64_t pre_pts = 0;
 		int64_t dur = AV_TIME_BASE / _fps;
 
-		bool ret = true;
+		int ret = AE_NO;
 		while (_running)
 		{
 			ret = do_record();

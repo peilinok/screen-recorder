@@ -242,3 +242,4 @@
 /Recorder/Release/record_desktop_win_gdi.obj
 /Recorder/Release/utils_winversion.obj
 /Recorder/Release_DLL/utils_winversion.obj
+/Recorder/Debug/Recorder.tlog/*.tlog
