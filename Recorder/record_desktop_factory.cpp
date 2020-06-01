@@ -23,6 +23,7 @@ int record_desktop_new(RECORD_DESKTOP_TYPES type, am::record_desktop ** recorder
 		break;
 	case DT_DESKTOP_WIN_DUPLICATION:
 		*recorder = (am::record_desktop*)new am::record_desktop_duplication();
+		break;
 	default:
 		err = AE_UNSUPPORT;
 		break;

@@ -12,10 +12,10 @@ namespace am {
 		int revis;
 	}winversion_info;
 
-	class utils_winversion
+	class system_version
 	{
 	private:
-		utils_winversion();
+		system_version();
 
 	public:
 		static bool get_dll(const std::string tar, winversion_info *info);

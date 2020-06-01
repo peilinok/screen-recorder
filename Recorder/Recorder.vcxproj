@@ -298,7 +298,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="sws_helper.h" />
     <ClInclude Include="system_lib.h" />
     <ClInclude Include="utils_string.h" />
-    <ClInclude Include="utils_winversion.h" />
+    <ClInclude Include="system_version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="device_videos.cpp" />
@@ -328,7 +328,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="sws_helper.cpp" />
     <ClCompile Include="system_lib.cpp" />
     <ClCompile Include="utils_string.cpp" />
-    <ClCompile Include="utils_winversion.cpp" />
+    <ClCompile Include="system_version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="d3d_pixelshader.hlsl">

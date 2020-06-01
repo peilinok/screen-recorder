@@ -30,7 +30,7 @@ int main()
 	setting.v_top = 0;
 	setting.v_width = 1920;
 	setting.v_height = 1080;
-	setting.v_qb = 60;
+	setting.v_qb = 100;
 	setting.v_bit_rate = 64000;
 	setting.v_frame_rate = 30;
 

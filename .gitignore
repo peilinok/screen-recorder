@@ -243,3 +243,5 @@
 /Recorder/Release/utils_winversion.obj
 /Recorder/Release_DLL/utils_winversion.obj
 /Recorder/Debug/Recorder.tlog/*.tlog
+/Recorder/Debug_DLL/Recorder.tlog/*.tlog
+/Recorder/Debug_DLL/*.obj

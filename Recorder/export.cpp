@@ -14,6 +14,10 @@
 #include "log_helper.h"
 #include "utils_string.h"
 
+#ifdef _WIN32
+#include "system_version.h"
+#endif
+
 #include <string>
 #include <atomic>
 #include <mutex>
@@ -142,9 +146,6 @@ namespace am {
 		error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name), std::string("audio=") + std::string(setting.a_mic.name), true);
 		AMERROR_CHECK(error);
 
-		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_DSHOW, &_recorder_desktop);
-		AMERROR_CHECK(error);
-
 		audios = { _recorder_speaker,_recorder_mic };
 #else
 		if (utils_string::utf8_ascii(setting.a_speaker.name).length() && utils_string::utf8_ascii(setting.a_speaker.id).length()) {
@@ -170,26 +171,46 @@ namespace am {
 			audios[audio_num] = _recorder_mic;
 			audio_num++;
 		}
-
-		//error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_GDI, &_recorder_desktop);
-		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
-		AMERROR_CHECK(error);
 #endif 
 
-		error = _recorder_desktop->init(
-		{ 
-			setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top 
-		}, 
-			setting.v_frame_rate
-		);
-		AMERROR_CHECK(error);
+#ifdef _WIN32
+		if (system_version::is_win8_or_above()) {
+			error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_DUPLICATION, &_recorder_desktop);
+			if (error == AE_NO) {
+
+				error = _recorder_desktop->init(
+				{
+					setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top
+				},
+					setting.v_frame_rate
+				);
+
+				if (error != AE_NO)
+					record_desktop_destroy(&_recorder_desktop);
+			}
+		}
+
+		if(_recorder_desktop == nullptr){
+			error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
+			AMERROR_CHECK(error);
+
+			error = _recorder_desktop->init(
+			{
+				setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top
+			},
+				setting.v_frame_rate
+			);
+
+			AMERROR_CHECK(error);
+		}
+#endif // _WIN32
 
 		am::MUX_SETTING mux_setting;
 		mux_setting.v_frame_rate = setting.v_frame_rate;
 		mux_setting.v_bit_rate = setting.v_bit_rate;
 		mux_setting.v_width = setting.v_width;
 		mux_setting.v_height = setting.v_height;
-		mux_setting.v_qb = 60;
+		mux_setting.v_qb = setting.v_qb;
 
 		mux_setting.a_nb_channel = 2;
 		mux_setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;

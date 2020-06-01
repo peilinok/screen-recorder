@@ -1,4 +1,4 @@
-#include "utils_winversion.h"
+#include "system_version.h"
 
 #include <Windows.h>
 
@@ -54,7 +54,7 @@ static bool initialize_version_functions(void)
 
 namespace am {
 
-	bool utils_winversion::get_dll(const std::string tar, winversion_info * info)
+	bool system_version::get_dll(const std::string tar, winversion_info * info)
 	{
 		VS_FIXEDFILEINFO *file_info = NULL;
 		UINT len = 0;
@@ -97,7 +97,7 @@ namespace am {
 		return true;
 	}
 
-	void utils_winversion::get_win(winversion_info * info)
+	void system_version::get_win(winversion_info * info)
 	{
 		static winversion_info ver = { 0 };
 		static bool got_version = false;
@@ -136,7 +136,7 @@ namespace am {
 		*info = ver;
 	}
 
-	bool utils_winversion::is_win8_or_above()
+	bool system_version::is_win8_or_above()
 	{
 		winversion_info info;
 
@@ -146,7 +146,7 @@ namespace am {
 		return info.major > 6 || (info.major == 6 && info.minor >= 2);
 	}
 
-	bool utils_winversion::is_32()
+	bool system_version::is_32()
 	{
 #if defined(_WIN64)
 		return false;

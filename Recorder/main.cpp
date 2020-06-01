@@ -11,7 +11,7 @@
 #include "muxer_mp4.h"
 
 #include "utils_string.h"
-#include "utils_winversion.h"
+#include "system_version.h"
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -85,8 +85,6 @@ int start_muxer() {
 
 
 	record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_DUPLICATION, &_recorder_desktop);
-	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
-	//record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_FFMPEG_DSHOW, &_recorder_desktop);
 
 	RECORD_DESKTOP_RECT rect;
 	rect.left = 0;
@@ -393,11 +391,11 @@ int main(int argc, char **argv)
 
 	am::winversion_info ver = { 0 };
 
-	am::utils_winversion::get_win(&ver);
+	am::system_version::get_win(&ver);
 
-	bool is_win8_or_above = am::utils_winversion::is_win8_or_above();
+	bool is_win8_or_above = am::system_version::is_win8_or_above();
 
-	bool is_ia32 = am::utils_winversion::is_32();
+	bool is_ia32 = am::system_version::is_32();
 
 	al_info("win version: %d.%d.%d.%d", ver.major, ver.minor, ver.build, ver.revis);
 	al_info("is win8 or above: %s", is_win8_or_above ? "true" : "false");

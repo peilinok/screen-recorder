@@ -144,9 +144,6 @@
     <ClInclude Include="sws_helper.h">
       <Filter>Header Files\helpers</Filter>
     </ClInclude>
-    <ClInclude Include="utils_winversion.h">
-      <Filter>Header Files\helpers</Filter>
-    </ClInclude>
     <ClInclude Include="filter_aresample.h">
       <Filter>Header Files\filters</Filter>
     </ClInclude>
@@ -163,6 +160,9 @@
       <Filter>Header Files\record</Filter>
     </ClInclude>
     <ClInclude Include="system_lib.h">
+      <Filter>Header Files\helpers\win</Filter>
+    </ClInclude>
+    <ClInclude Include="system_version.h">
       <Filter>Header Files\helpers\win</Filter>
     </ClInclude>
   </ItemGroup>
@@ -230,9 +230,6 @@
     <ClCompile Include="sws_helper.cpp">
       <Filter>Source Files\helpers</Filter>
     </ClCompile>
-    <ClCompile Include="utils_winversion.cpp">
-      <Filter>Source Files\helpers</Filter>
-    </ClCompile>
     <ClCompile Include="filter_aresample.cpp">
       <Filter>Source Files\filters</Filter>
     </ClCompile>
@@ -251,13 +248,16 @@
     <ClCompile Include="system_lib.cpp">
       <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
+    <ClCompile Include="system_version.cpp">
+      <Filter>Source Files\helpers\win</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="d3d_pixelshader.hlsl">
-      <Filter>Source Files\helpers</Filter>
+      <Filter>Source Files\helpers\win</Filter>
     </FxCompile>
     <FxCompile Include="d3d_vertexshader.hlsl">
-      <Filter>Source Files\helpers</Filter>
+      <Filter>Source Files\helpers\win</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
