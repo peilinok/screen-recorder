@@ -109,3 +109,5 @@ recorder.EnablePreview(false);
 https://github.com/peilinok/EasyRecorder
 
 ![](screenshots/recording.png)
+
+![](screenshots/settings.png)

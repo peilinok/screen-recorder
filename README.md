@@ -13,6 +13,10 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 3.Nodejs addon project
 
+4.Support Duplication and gdi desktop grabber in windows
+
+5.Use wasapi to record microphone & speaker in windows
+
 ## ToDo
 
 1.Review all codes,seperate encoder 、filter、muxer
@@ -21,11 +25,9 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 3.Add hardware use
 
-4.Add more capture with DX、DSHOW、WSAPI
+4.Add cross-platform support
 
-5.Add cross-platform support
-
-6.Add more filters for video and audio
+5.Add more filters for video and audio
 
 
 ## How to use?

@@ -245,3 +245,5 @@
 /Recorder/Debug/Recorder.tlog/*.tlog
 /Recorder/Debug_DLL/Recorder.tlog/*.tlog
 /Recorder/Debug_DLL/*.obj
+/Recorder/Release_DLL/Recorder.tlog/*.tlog
+/Recorder/Release_DLL/*.obj
