@@ -10,6 +10,8 @@
 
 namespace am {
 
+#define BPP 4
+
 	record_desktop_duplication::record_desktop_duplication()
 	{
 		_data_type = RECORD_DESKTOP_DATA_TYPES::AT_DESKTOP_BGRA;
@@ -351,6 +353,9 @@ namespace am {
 	{
 		if (_duplication) _duplication->Release();
 		if (_image) _image->Release();
+
+		_duplication = nullptr;
+		_image = nullptr;
 	}
 
 	bool record_desktop_duplication::attatch_desktop()
@@ -386,7 +391,8 @@ namespace am {
 		// timeout will return when desktop has no chane
 		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
-		if (FAILED(hr)) return AE_DUP_ACQUIRE_FRAME_FAILED;
+		if (FAILED(hr)) 
+			return AE_DUP_ACQUIRE_FRAME_FAILED;
 
 		// if still holding old frame, destroy it
 		if (_image)
@@ -515,10 +521,140 @@ namespace am {
 		return AE_NO;
 	}
 
+	static unsigned int bit_reverse(unsigned int n)
+	{
+
+		n = ((n >> 1) & 0x55555555) | ((n << 1) & 0xaaaaaaaa);
+
+		n = ((n >> 2) & 0x33333333) | ((n << 2) & 0xcccccccc);
+
+		n = ((n >> 4) & 0x0f0f0f0f) | ((n << 4) & 0xf0f0f0f0);
+
+		n = ((n >> 8) & 0x00ff00ff) | ((n << 8) & 0xff00ff00);
+
+		n = ((n >> 16) & 0x0000ffff) | ((n << 16) & 0xffff0000);
+
+		return n;
+	}
+
 	void record_desktop_duplication::draw_cursor()
 	{
-		for (int h = 0; h < _cursor_info.shape.Height; h++) {
-			memcpy(_buffer + (_cursor_info.position.y + h) *_width * 4 + _cursor_info.position.x * 4, _cursor_info.buff + _cursor_info.shape.Width *h * 4, _cursor_info.shape.Width * 4);
+		if (_cursor_info.visible == false) return;
+		int width = 0, height = 0, left = 0, top = 0;
+
+		width = _cursor_info.shape.Width;
+		height = _cursor_info.shape.Height;
+		left = _cursor_info.position.x;
+		top = _cursor_info.position.y;
+
+		//skip invisible pixel
+		left = min(max(_rect.left, left), _rect.right);
+		top = min(max(_rect.top, top), _rect.bottom);
+		width = min(left + width, _rect.right) - left;
+
+		//notice here
+		if (_cursor_info.shape.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME)
+			height = height / 2;
+
+		height = min(top + height, _rect.bottom) - top;
+
+		//al_debug("left:%d top:%d width:%d height:%d type:%d", left, top, width, height, _cursor_info.shape.Type);
+
+		switch (_cursor_info.shape.Type)
+		{
+
+			// The pointer type is a color mouse pointer, 
+			// which is a color bitmap. The bitmap's size 
+			// is specified by width and height in a 32 bpp 
+			// ARGB DIB format.
+			// should trans cursor to BGRA?
+			case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR:
+			{
+				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
+				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
+
+				for (int row = 0; row < height; row++) {
+					for (int col = 0; col < width; col++) {
+						unsigned int cur_cursor_val = cursor_32[col + (row * (_cursor_info.shape.Pitch / sizeof(UINT)))];
+						
+						//skip black or empty value
+						if (cur_cursor_val == 0x00000000)
+							continue;
+						else
+							screen_32[(abs(top) + row) *_width + abs(left) + col] = (cur_cursor_val);
+					}
+				}
+				break;
+			}
+
+			// The pointer type is a monochrome mouse pointer, 
+			// which is a monochrome bitmap. The bitmap's size 
+			// is specified by width and height in a 1 bits per 
+			// pixel (bpp) device independent bitmap (DIB) format 
+			// AND mask that is followed by another 1 bpp DIB format 
+			// XOR mask of the same size.
+			case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME:
+			{
+				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
+				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
+
+				for (int row = 0; row < height; row++) {
+					BYTE MASK = 0x80;
+					for (int col = 0; col < width; col++) {
+						// Get masks using appropriate offsets
+						BYTE AndMask = _cursor_info.buff[(col / 8) + (row  * (_cursor_info.shape.Pitch))] & MASK;
+						BYTE XorMask = _cursor_info.buff[(col / 8) + ((row + height) * (_cursor_info.shape.Pitch))] & MASK;
+						UINT AndMask32 = (AndMask) ? 0xFFFFFFFF : 0xFF000000;
+						UINT XorMask32 = (XorMask) ? 0x00FFFFFF : 0x00000000;
+
+						// Set new pixel
+						screen_32[(abs(top) + row) *_width + abs(left) + col] = (screen_32[(abs(top) + row) *_width + abs(left) + col] & AndMask32) ^ XorMask32;
+
+						// Adjust mask
+						if (MASK == 0x01)
+						{
+							MASK = 0x80;
+						}
+						else
+						{
+							MASK = MASK >> 1;
+						}
+					}
+				}
+				break;
+			}
+			// The pointer type is a masked color mouse pointer. 
+			// A masked color mouse pointer is a 32 bpp ARGB format 
+			// bitmap with the mask value in the alpha bits. The only 
+			// allowed mask values are 0 and 0xFF. When the mask value
+			// is 0, the RGB value should replace the screen pixel. 
+			// When the mask value is 0xFF, an XOR operation is performed 
+			// on the RGB value and the screen pixel; the result replaces the screen pixel.
+			case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR:
+			{
+				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
+				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
+
+				for (int row = 0; row < height; row++) {
+					for (int col = 0; col < width; col++) {
+						unsigned int cur_cursor_val = cursor_32[col + (row * (_cursor_info.shape.Pitch / sizeof(UINT)))];
+						unsigned int cur_screen_val = screen_32[(abs(top) + row) *_width + abs(left) + col];
+						unsigned int mask_val = 0xFF000000 & cur_cursor_val;
+
+						if (mask_val) {
+							//0xFF: XOR operation is performed on the RGB value and the screen pixel
+							cur_screen_val = (cur_screen_val ^ cur_cursor_val) | 0xFF000000;
+						}
+						else {
+							//0x00: the RGB value should replace the screen pixel
+							cur_screen_val = cur_cursor_val | 0xFF000000;
+						}
+					}
+				}
+				break;
+			}
+			default:
+				break;
 		}
 	}
 
@@ -561,8 +697,17 @@ namespace am {
 			if ((error = get_desktop_image(&frame_info)) == AE_TIMEOUT) continue;
 
 			if (error != AE_NO) {
-				if (_on_error) _on_error(error);
-				break;
+				while (_running)
+				{
+					Sleep(300);
+					clean_duplication();
+					if ((error = init_duplication()) != AE_NO) {
+						if (_on_error) _on_error(error);
+					}
+					else break;
+				}
+
+				continue;
 			}
 
 			if ((error = get_desktop_cursor(&frame_info)) == AE_NO)
