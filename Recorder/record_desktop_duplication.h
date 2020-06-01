@@ -8,6 +8,16 @@
 #include <dxgi1_2.h>
 
 namespace am {
+	typedef struct _PTR_INFO
+	{
+		_Field_size_bytes_(BufferSize) BYTE* buff;
+		DXGI_OUTDUPL_POINTER_SHAPE_INFO shape;
+		POINT position;
+		bool visible;
+		UINT size;
+		UINT output_index;
+		LARGE_INTEGER pre_timestamp;
+	} DUPLICATION_CURSOR_INFO;
 
 	class record_desktop_duplication:
 		public record_desktop
@@ -41,7 +51,11 @@ namespace am {
 
 		bool attatch_desktop();
 
-		int do_record();
+		int get_desktop_image(DXGI_OUTDUPL_FRAME_INFO *frame_info);
+
+		int get_desktop_cursor(const DXGI_OUTDUPL_FRAME_INFO *frame_info);
+
+		void draw_cursor();
 
 		void do_sleep(int64_t dur, int64_t pre, int64_t now);
 
@@ -64,8 +78,9 @@ namespace am {
 		IDXGIOutputDuplication *_duplication;
 		ID3D11Texture2D *_image;
 		DXGI_OUTPUT_DESC _output_des;
+		
 		int _output_index;
-
+		DUPLICATION_CURSOR_INFO _cursor_info;
 	};
 
 }

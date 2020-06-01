@@ -29,6 +29,8 @@ namespace am {
 		_image = nullptr;
 		_output_des = { 0 };
 		_output_index = 0;
+
+		ZeroMemory(&_cursor_info, sizeof(_cursor_info));
 	}
 
 
@@ -125,6 +127,13 @@ namespace am {
 
 		if (_buffer)
 			delete[] _buffer;
+
+		if (_cursor_info.buff) {
+			delete[] _cursor_info.buff;
+			_cursor_info.buff = nullptr;
+		}
+
+		ZeroMemory(&_cursor_info, sizeof(_cursor_info));
 
 		//clean up duplication interfaces
 		clean_duplication();
@@ -367,18 +376,19 @@ namespace am {
 		return true;
 	}
 
-	int record_desktop_duplication::do_record()
+	int record_desktop_duplication::get_desktop_image(DXGI_OUTDUPL_FRAME_INFO *frame_info)
 	{
 		IDXGIResource* dxgi_res = nullptr;
-		DXGI_OUTDUPL_FRAME_INFO FrameInfo;
 
-		// Get new frame
-		HRESULT hr = _duplication->AcquireNextFrame(500, &FrameInfo, &dxgi_res);
+		// get new frame
+		HRESULT hr = _duplication->AcquireNextFrame(500, frame_info, &dxgi_res);
+
+		// timeout will return when desktop has no chane
 		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
 		if (FAILED(hr)) return AE_DUP_ACQUIRE_FRAME_FAILED;
 
-		// If still holding old frame, destroy it
+		// if still holding old frame, destroy it
 		if (_image)
 		{
 			_image->Release();
@@ -391,15 +401,11 @@ namespace am {
 		dxgi_res = nullptr;
 		if (FAILED(hr)) return AE_DUP_QI_FRAME_FAILED;
 
-		//
 		// copy old description
-		//
 		D3D11_TEXTURE2D_DESC frame_desc;
 		_image->GetDesc(&frame_desc);
 
-		//
 		// create a new staging buffer for fill frame image
-		//
 		ID3D11Texture2D *new_image = NULL;
 		frame_desc.Usage = D3D11_USAGE_STAGING;
 		frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
@@ -409,42 +415,111 @@ namespace am {
 		frame_desc.ArraySize = 1;
 		frame_desc.SampleDesc.Count = 1;
 		hr = _d3d_device->CreateTexture2D(&frame_desc, NULL, &new_image);
-		if (FAILED(hr))
-		{
-			free_duplicated_frame();
-			return FALSE;
-		}
+		if (FAILED(hr)) return AE_DUP_CREATE_TEXTURE_FAILED;
 
-		//
+
 		// copy next staging buffer to new staging buffer
-		//
 		_d3d_ctx->CopyResource(new_image, _image);
+		
 
-		free_duplicated_frame();
-
-		//
 		// create staging buffer for map bits
-		//
 		IDXGISurface *dxgi_surface = NULL;
 		hr = new_image->QueryInterface(__uuidof(IDXGISurface), (void **)(&dxgi_surface));
 		new_image->Release();
-		if (FAILED(hr))
-		{
-			return FALSE;
-		}
+		if (FAILED(hr)) return AE_DUP_QI_DXGI_FAILED;
 
+		// map buff to mapped rect structure
 		DXGI_MAPPED_RECT mapped_rect;
 		hr = dxgi_surface->Map(&mapped_rect, DXGI_MAP_READ);
-		if (SUCCEEDED(hr))
-		{
-			memcpy(_buffer, mapped_rect.pBits, _buffer_size);
-			dxgi_surface->Unmap();
-		}
+		if (FAILED(hr)) return AE_DUP_MAP_FAILED;
+
+		memcpy(_buffer, mapped_rect.pBits, _buffer_size);
+		dxgi_surface->Unmap();
 
 		dxgi_surface->Release();
 		dxgi_surface = nullptr;
 
 		return AE_NO;
+	}
+
+	int record_desktop_duplication::get_desktop_cursor(const DXGI_OUTDUPL_FRAME_INFO *frame_info)
+	{
+		// A non-zero mouse update timestamp indicates that there is a mouse position update and optionally a shape change
+		if (frame_info->LastMouseUpdateTime.QuadPart == 0)
+		{
+			return AE_NO;
+		}
+
+		bool UpdatePosition = true;
+
+		// Make sure we don't update pointer position wrongly
+		// If pointer is invisible, make sure we did not get an update from another output that the last time that said pointer
+		// was visible, if so, don't set it to invisible or update.
+		if (!frame_info->PointerPosition.Visible && (_cursor_info.output_index != _output_index))
+		{
+			UpdatePosition = false;
+		}
+
+		// If two outputs both say they have a visible, only update if new update has newer timestamp
+		if (frame_info->PointerPosition.Visible && _cursor_info.visible && (_cursor_info.output_index != _output_index) && (_cursor_info.pre_timestamp.QuadPart > frame_info->LastMouseUpdateTime.QuadPart))
+		{
+			UpdatePosition = false;
+		}
+
+		// Update position
+		if (UpdatePosition)
+		{
+			_cursor_info.position.x = frame_info->PointerPosition.Position.x + _output_des.DesktopCoordinates.left;
+			_cursor_info.position.y = frame_info->PointerPosition.Position.y + _output_des.DesktopCoordinates.top;
+			_cursor_info.output_index = _output_index;
+			_cursor_info.pre_timestamp = frame_info->LastMouseUpdateTime;
+			_cursor_info.visible = frame_info->PointerPosition.Visible != 0;
+		}
+
+		// No new shape
+		if (frame_info->PointerShapeBufferSize == 0)
+		{
+			return AE_NO;
+		}
+
+		// Old buffer too small
+		if (frame_info->PointerShapeBufferSize > _cursor_info.size)
+		{
+			if (_cursor_info.buff)
+			{
+				delete[] _cursor_info.buff;
+				_cursor_info.buff = nullptr;
+			}
+			_cursor_info.buff = new (std::nothrow) BYTE[frame_info->PointerShapeBufferSize];
+			if (!_cursor_info.buff)
+			{
+				_cursor_info.size = 0;
+				return AE_ALLOCATE_FAILED;
+			}
+
+			// Update buffer size
+			_cursor_info.size = frame_info->PointerShapeBufferSize;
+		}
+
+		// Get shape
+		UINT BufferSizeRequired;
+		HRESULT hr = _duplication->GetFramePointerShape(frame_info->PointerShapeBufferSize, reinterpret_cast<VOID*>(_cursor_info.buff), &BufferSizeRequired, &(_cursor_info.shape));
+		if (FAILED(hr))
+		{
+			delete[] _cursor_info.buff;
+			_cursor_info.buff = nullptr;
+			_cursor_info.size = 0;
+			return AE_DUP_GET_CURSORSHAPE_FAILED;
+		}
+
+		return AE_NO;
+	}
+
+	void record_desktop_duplication::draw_cursor()
+	{
+		for (int h = 0; h < _cursor_info.shape.Height; h++) {
+			memcpy(_buffer + (_cursor_info.position.y + h) *_width * 4 + _cursor_info.position.x * 4, _cursor_info.buff + _cursor_info.shape.Width *h * 4, _cursor_info.shape.Width * 4);
+		}
 	}
 
 	void record_desktop_duplication::do_sleep(int64_t dur, int64_t pre, int64_t now)
@@ -479,20 +554,21 @@ namespace am {
 			return;
 		}
 
-		
+		DXGI_OUTDUPL_FRAME_INFO frame_info;
 		while (_running)
 		{
-			error = do_record();
 			//timeout is no new picture,no need to update
-			if (error == AE_TIMEOUT) {
-				//al_debug("timeout");
-				continue;
-			}
+			if ((error = get_desktop_image(&frame_info)) == AE_TIMEOUT) continue;
 
 			if (error != AE_NO) {
 				if (_on_error) _on_error(error);
 				break;
 			}
+
+			if ((error = get_desktop_cursor(&frame_info)) == AE_NO)
+				draw_cursor();
+
+			free_duplicated_frame();
 
 			frame->pts = av_gettime_relative();
 			frame->pkt_dts = frame->pts;

@@ -9,6 +9,7 @@ enum AM_ERROR{
 	AE_INVALID_CONTEXT,
 	AE_NEED_INIT,
 	AE_TIMEOUT,
+	AE_ALLOCATE_FAILED,
 
 	//AE_CO_
 	AE_CO_INITED_FAILED,
@@ -90,6 +91,10 @@ enum AM_ERROR{
 	AE_DUP_RELEASE_FRAME_FAILED,
 	AE_DUP_ACQUIRE_FRAME_FAILED,
 	AE_DUP_QI_FRAME_FAILED,
+	AE_DUP_CREATE_TEXTURE_FAILED,
+	AE_DUP_QI_DXGI_FAILED,
+	AE_DUP_MAP_FAILED,
+	AE_DUP_GET_CURSORSHAPE_FAILED,
 };
 
 static const char *ERRORS_STR[] = {
@@ -99,6 +104,7 @@ static const char *ERRORS_STR[] = {
 	"invalid context",                  //AE_INVALID_CONTEXT
 	"need init first",                  //AE_NEED_INIT
 	"operation timeout",                //AE_TIMEOUT
+	"allocate memory failed",           //AE_ALLOCATE_FAILED,
 
 	"com init failed",                  //AE_CO_INITED_FAILED
 	"com create instance failed",       //AE_CO_CREATE_FAILED
@@ -175,6 +181,10 @@ static const char *ERRORS_STR[] = {
 	"duplication release frame failed",   //AE_DUP_RELEASE_FRAME_FAILED
 	"duplication acquire frame failed",   //AE_DUP_ACQUIRE_FRAME_FAILED
 	"duplication qi frame failed",        //AE_DUP_QI_FRAME_FAILED
+	"duplication create texture failed",  //AE_DUP_CREATE_TEXTURE_FAILED
+	"duplication dxgi qi failed",         //AE_DUP_QI_DXGI_FAILED
+	"duplication map rects failed",       //AE_DUP_MAP_FAILED
+	"duplication get cursor shape failed",//AE_DUP_GET_CURSORSHAPE_FAILED
 };
 
 #define err2str(e) ERRORS_STR[e]
