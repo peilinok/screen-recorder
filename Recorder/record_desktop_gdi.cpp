@@ -124,9 +124,13 @@ namespace am {
 		if (!icon)
 			return;
 
+		int dstx = 0, dsty = 0;
+		dstx = abs(_ci.ptScreenPos.x - _rect.left);
+		dsty = abs(_ci.ptScreenPos.y - _rect.top);
+
 		if (GetIconInfo(icon, &ii)) {
 			POINT pos;
-			DrawIconEx(hdc, _ci.ptScreenPos.x, _ci.ptScreenPos.y, icon, 0, 0, 0, NULL, DI_NORMAL);
+			DrawIconEx(hdc, dstx, dsty, icon, 0, 0, 0, NULL, DI_NORMAL);
 
 			DeleteObject(ii.hbmColor);
 			DeleteObject(ii.hbmMask);
