@@ -10,8 +10,6 @@
 
 namespace am {
 
-#define BPP 4
-
 	record_desktop_duplication::record_desktop_duplication()
 	{
 		_data_type = RECORD_DESKTOP_DATA_TYPES::AT_DESKTOP_BGRA;
@@ -24,6 +22,7 @@ namespace am {
 		_d3d_device = nullptr;
 		_d3d_ctx = nullptr;
 		_d3d_vshader = nullptr;
+		_d3d_pshader = nullptr;
 		_d3d_inlayout = nullptr;
 		_d3d_samplerlinear = nullptr;
 
@@ -137,10 +136,10 @@ namespace am {
 
 		ZeroMemory(&_cursor_info, sizeof(_cursor_info));
 
-		//clean up duplication interfaces
+		//Clean up duplication interfaces
 		clean_duplication();
 
-		//clean up d3d11 interfaces
+		//Clean up d3d11 interfaces
 		clean_d3d11();
 
 		//finally free d3d11 & dxgi library
@@ -153,10 +152,8 @@ namespace am {
 		int error = AE_NO;
 
 		do {
-			PFN_D3D11_CREATE_DEVICE create_device;
-
-			create_device = (PFN_D3D11_CREATE_DEVICE)GetProcAddress(
-				_d3d11, "D3D11CreateDevice");
+			PFN_D3D11_CREATE_DEVICE create_device = 
+				(PFN_D3D11_CREATE_DEVICE)GetProcAddress(_d3d11, "D3D11CreateDevice");
 			if (!create_device) {
 				error = AE_D3D_GET_PROC_FAILED;
 				break;
@@ -190,18 +187,17 @@ namespace am {
 			{
 				hr = create_device(nullptr, driver_types[driver_index], nullptr, 0, feature_levels, n_feature_levels,
 					D3D11_SDK_VERSION, &_d3d_device, &feature_level, &_d3d_ctx);
-				if (SUCCEEDED(hr))
-				{
-					// Device creation success, no need to loop anymore
-					break;
-				}
+				if (SUCCEEDED(hr)) break;
 			}
+
 			if (FAILED(hr))
 			{
 				error = AE_D3D_CREATE_DEVICE_FAILED;
 				break;
 			}
 
+			//No need for grab full screen,but in move & dirty rects copy
+#if 0
 			// VERTEX shader
 			UINT Size = ARRAYSIZE(g_VS);
 			hr = _d3d_device->CreateVertexShader(g_VS, Size, nullptr, &_d3d_vshader);
@@ -251,6 +247,7 @@ namespace am {
 				error = AE_D3D_CREATE_SAMPLERSTATE_FAILED;
 				break;
 			}
+#endif
 		} while (0);
 
 		return error;
@@ -385,10 +382,10 @@ namespace am {
 	{
 		IDXGIResource* dxgi_res = nullptr;
 
-		// get new frame
+		// Get new frame
 		HRESULT hr = _duplication->AcquireNextFrame(500, frame_info, &dxgi_res);
 
-		// timeout will return when desktop has no chane
+		// Timeout will return when desktop has no chane
 		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
 		if (FAILED(hr)) 
@@ -407,11 +404,11 @@ namespace am {
 		dxgi_res = nullptr;
 		if (FAILED(hr)) return AE_DUP_QI_FRAME_FAILED;
 
-		// copy old description
+		// Copy old description
 		D3D11_TEXTURE2D_DESC frame_desc;
 		_image->GetDesc(&frame_desc);
 
-		// create a new staging buffer for fill frame image
+		// Create a new staging buffer for fill frame image
 		ID3D11Texture2D *new_image = NULL;
 		frame_desc.Usage = D3D11_USAGE_STAGING;
 		frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
@@ -424,17 +421,17 @@ namespace am {
 		if (FAILED(hr)) return AE_DUP_CREATE_TEXTURE_FAILED;
 
 
-		// copy next staging buffer to new staging buffer
+		// Copy next staging buffer to new staging buffer
 		_d3d_ctx->CopyResource(new_image, _image);
 		
 
-		// create staging buffer for map bits
+		// Create staging buffer for map bits
 		IDXGISurface *dxgi_surface = NULL;
 		hr = new_image->QueryInterface(__uuidof(IDXGISurface), (void **)(&dxgi_surface));
 		new_image->Release();
 		if (FAILED(hr)) return AE_DUP_QI_DXGI_FAILED;
 
-		// map buff to mapped rect structure
+		// Map buff to mapped rect structure
 		DXGI_MAPPED_RECT mapped_rect;
 		hr = dxgi_surface->Map(&mapped_rect, DXGI_MAP_READ);
 		if (FAILED(hr)) return AE_DUP_MAP_FAILED;
@@ -452,28 +449,22 @@ namespace am {
 	{
 		// A non-zero mouse update timestamp indicates that there is a mouse position update and optionally a shape change
 		if (frame_info->LastMouseUpdateTime.QuadPart == 0)
-		{
 			return AE_NO;
-		}
 
-		bool UpdatePosition = true;
+		bool b_updated = true;
 
 		// Make sure we don't update pointer position wrongly
 		// If pointer is invisible, make sure we did not get an update from another output that the last time that said pointer
 		// was visible, if so, don't set it to invisible or update.
 		if (!frame_info->PointerPosition.Visible && (_cursor_info.output_index != _output_index))
-		{
-			UpdatePosition = false;
-		}
+			b_updated = false;
 
 		// If two outputs both say they have a visible, only update if new update has newer timestamp
 		if (frame_info->PointerPosition.Visible && _cursor_info.visible && (_cursor_info.output_index != _output_index) && (_cursor_info.pre_timestamp.QuadPart > frame_info->LastMouseUpdateTime.QuadPart))
-		{
-			UpdatePosition = false;
-		}
+			b_updated = false;
 
 		// Update position
-		if (UpdatePosition)
+		if (b_updated)
 		{
 			_cursor_info.position.x = frame_info->PointerPosition.Position.x + _output_des.DesktopCoordinates.left;
 			_cursor_info.position.y = frame_info->PointerPosition.Position.y + _output_des.DesktopCoordinates.top;
@@ -482,7 +473,7 @@ namespace am {
 			_cursor_info.visible = frame_info->PointerPosition.Visible != 0;
 		}
 
-		// No new shape
+		// No new shape only update cursor positions & visible state
 		if (frame_info->PointerShapeBufferSize == 0)
 		{
 			return AE_NO;
@@ -547,12 +538,12 @@ namespace am {
 		left = _cursor_info.position.x;
 		top = _cursor_info.position.y;
 
-		//skip invisible pixel
+		//Skip invisible pixel
 		left = min(max(_rect.left, left), _rect.right);
 		top = min(max(_rect.top, top), _rect.bottom);
 		width = min(left + width, _rect.right) - left;
 
-		//notice here
+		//Notice here
 		if (_cursor_info.shape.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME)
 			height = height / 2;
 
@@ -577,11 +568,11 @@ namespace am {
 					for (int col = 0; col < width; col++) {
 						unsigned int cur_cursor_val = cursor_32[col + (row * (_cursor_info.shape.Pitch / sizeof(UINT)))];
 						
-						//skip black or empty value
+						//Skip black or empty value
 						if (cur_cursor_val == 0x00000000)
 							continue;
 						else
-							screen_32[(abs(top) + row) *_width + abs(left) + col] = (cur_cursor_val);
+							screen_32[(abs(top) + row) *_width + abs(left) + col] = cur_cursor_val;//bit_reverse(cur_cursor_val);
 					}
 				}
 				break;
@@ -676,13 +667,15 @@ namespace am {
 
 		int error = AE_NO;
 
+#if 0
 		if (attatch_desktop() != true) {
 			al_fatal("duplication attach desktop failed :%lu",GetLastError());
 			if (_on_error) _on_error(AE_DUP_ATTATCH_FAILED);
 			return;
 		}
+#endif
 
-		//should init after desktop attatched
+		//Should init after desktop attatched
 		error = init_duplication();
 		if (error != AE_NO) {
 			al_fatal("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
@@ -693,7 +686,7 @@ namespace am {
 		DXGI_OUTDUPL_FRAME_INFO frame_info;
 		while (_running)
 		{
-			//timeout is no new picture,no need to update
+			//Timeout is no new picture,no need to update
 			if ((error = get_desktop_image(&frame_info)) == AE_TIMEOUT) continue;
 
 			if (error != AE_NO) {

@@ -43,7 +43,7 @@ int main()
 	}
 #endif
 
-#if 0 //record mic
+#if 1 //record mic
 	for (int i = 0; i < nmic; i++) {
 		if (mics[i].is_default == 1)
 			memcpy(&setting.a_mic, &mics[i], sizeof(AMRECORDER_DEVICE));
