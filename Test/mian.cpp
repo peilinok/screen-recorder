@@ -26,7 +26,7 @@ int main()
 	
 	int nmic = recorder_get_mics(&mics);
 
-	setting.v_left = 0;
+	setting.v_left = -1920;
 	setting.v_top = 0;
 	setting.v_width = 1920;
 	setting.v_height = 1080;

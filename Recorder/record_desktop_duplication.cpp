@@ -4,6 +4,8 @@
 #include "d3d_pixelshader.h"
 #include "d3d_vertexshader.h"
 
+#include "utils_string.h"
+
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -147,12 +149,93 @@ namespace am {
 		if (_dxgi) free_system_library(_dxgi);
 	}
 
-	int record_desktop_duplication::init_d3d11()
+	int record_desktop_duplication::get_dst_adapter(IDXGIAdapter ** adapter)
 	{
 		int error = AE_NO;
-
 		do {
-			PFN_D3D11_CREATE_DEVICE create_device = 
+			ID3D11Device *d3d_device = nullptr;
+			error = create_d3d_device(nullptr, &d3d_device);
+			if (error != AE_NO)
+				break;
+
+			//Find correctly adaptor
+			IDXGIDevice *dxgi_device = nullptr;
+			HRESULT hr = d3d_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgi_device));
+			d3d_device->Release();
+			if (FAILED(hr)) {
+				error = AE_D3D_CREATE_DEVICE_FAILED;
+				break;
+			}
+
+			IDXGIAdapter * dxgi_adapter = nullptr;
+			hr = dxgi_device->GetAdapter(&dxgi_adapter);
+			dxgi_device->Release();
+			if (FAILED(hr)) {
+				error = AE_DXGI_GET_ADAPTER_FAILED;
+				break;
+			}
+
+			IDXGIFactory * dxgi_factory = nullptr;
+			hr = dxgi_adapter->GetParent(__uuidof(IDXGIFactory), reinterpret_cast<void**>(&dxgi_factory));
+			dxgi_adapter->Release();
+			if (FAILED(hr)) {
+				error = AE_DXGI_GET_FACTORY_FAILED;
+				break;
+			}
+
+			error = AE_DXGI_FOUND_ADAPTER_FAILED;
+
+			unsigned int i = 0;
+			IDXGIAdapter * adapter_tmp;
+			IDXGIOutput *adapter_output = nullptr;
+			DXGI_ADAPTER_DESC adapter_desc = { 0 };
+			DXGI_OUTPUT_DESC adapter_output_desc = { 0 };
+			while (dxgi_factory->EnumAdapters(i, &adapter_tmp) != DXGI_ERROR_NOT_FOUND)
+			{
+				adapter_tmp->GetDesc(&adapter_desc);
+				al_debug("adaptor:%s", utils_string::unicode_ascii(adapter_desc.Description).c_str());
+
+				unsigned int n = 0;
+				RECT output_rect;
+				while (adapter_tmp->EnumOutputs(n, &adapter_output) != DXGI_ERROR_NOT_FOUND)
+				{
+					hr = adapter_output->GetDesc(&adapter_output_desc);
+					if (FAILED(hr)) continue;
+
+					output_rect = adapter_output_desc.DesktopCoordinates;
+
+					al_debug("  output:%s left:%d top:%d right:%d bottom:%d",
+						utils_string::unicode_ascii(adapter_output_desc.DeviceName).c_str(),
+						output_rect.left, output_rect.top, output_rect.right, output_rect.bottom);
+
+					if (output_rect.left <= _rect.left && output_rect.top <= _rect.top && output_rect.right >= _rect.right && output_rect.bottom >= _rect.bottom) {
+						error = AE_NO;
+						break;
+					}
+
+					++n;
+				}
+
+				if (error != AE_DXGI_FOUND_ADAPTER_FAILED) {
+					*adapter = adapter_tmp;
+					break;
+				}
+				++i;
+			}
+
+			dxgi_factory->Release();
+
+		} while (0);
+
+
+		return error;
+	}
+
+	int record_desktop_duplication::create_d3d_device(IDXGIAdapter *adapter, ID3D11Device ** device)
+	{
+		int error = AE_NO;
+		do {
+			PFN_D3D11_CREATE_DEVICE create_device =
 				(PFN_D3D11_CREATE_DEVICE)GetProcAddress(_d3d11, "D3D11CreateDevice");
 			if (!create_device) {
 				error = AE_D3D_GET_PROC_FAILED;
@@ -185,8 +268,8 @@ namespace am {
 			// Create device
 			for (UINT driver_index = 0; driver_index < n_driver_types; ++driver_index)
 			{
-				hr = create_device(nullptr, driver_types[driver_index], nullptr, 0, feature_levels, n_feature_levels,
-					D3D11_SDK_VERSION, &_d3d_device, &feature_level, &_d3d_ctx);
+				hr = create_device(adapter, driver_types[driver_index], nullptr, 0, feature_levels, n_feature_levels,
+					D3D11_SDK_VERSION, device, &feature_level, &_d3d_ctx);
 				if (SUCCEEDED(hr)) break;
 			}
 
@@ -196,6 +279,24 @@ namespace am {
 				break;
 			}
 
+		} while (0);
+
+		return error;
+	}
+
+	int record_desktop_duplication::init_d3d11()
+	{
+		int error = AE_NO;
+
+		do {
+			IDXGIAdapter *adapter = nullptr;
+			error = get_dst_adapter(&adapter);
+			if (error != AE_NO ) 
+				break;
+			
+			error = create_d3d_device(adapter, &_d3d_device);
+			if (error != AE_NO)
+				break;
 			//No need for grab full screen,but in move & dirty rects copy
 #if 0
 			// VERTEX shader
@@ -272,7 +373,7 @@ namespace am {
 			HRESULT hr = _d3d_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgi_device));
 			if (FAILED(hr))
 			{
-				error = AE_DUP_QI_FAILED;
+				error = AE_D3D_QUERYINTERFACE_FAILED;
 				break;
 			}
 

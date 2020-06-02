@@ -76,10 +76,16 @@ enum AM_ERROR{
 	AE_D3D_LOAD_FAILED,
 	AE_D3D_GET_PROC_FAILED,
 	AE_D3D_CREATE_DEVICE_FAILED,
+	AE_D3D_QUERYINTERFACE_FAILED,
 	AE_D3D_CREATE_VERTEX_SHADER_FAILED,
 	AE_D3D_CREATE_INLAYOUT_FAILED,
 	AE_D3D_CREATE_PIXEL_SHADER_FAILED,
 	AE_D3D_CREATE_SAMPLERSTATE_FAILED,
+
+	//AE_DXGI_
+	AE_DXGI_GET_ADAPTER_FAILED,
+	AE_DXGI_GET_FACTORY_FAILED,
+	AE_DXGI_FOUND_ADAPTER_FAILED,
 
 	//AE_DUP_
 	AE_DUP_ATTATCH_FAILED,
@@ -167,10 +173,15 @@ static const char *ERRORS_STR[] = {
 	"d3d11 library load failed",        //AE_D3D_LOAD_FAILED
 	"d3d11 proc get failed",            //AE_D3D_GET_PROC_FAILED
 	"d3d11 create device failed",       //AE_D3D_CREATE_DEVICE_FAILED
+	"d3d11 query interface failed",     //AE_D3D_QUERYINTERFACE_FAILED
 	"d3d11 create vertex shader failed",//AE_D3D_CREATE_VERTEX_SHADER_FAILED
 	"d3d11 create input layout failed", //AE_D3D_CREATE_INLAYOUT_FAILED
 	"d3d11 create pixel shader failed", //AE_D3D_CREATE_PIXEL_SHADER_FAILED
 	"d3d11 create sampler state failed",//AE_D3D_CREATE_SAMPLERSTATE_FAILED
+
+	"dxgi get adapter failed",          //AE_DXGI_GET_ADAPTER_FAILED
+	"dxgi get factory failed",          //AE_DXGI_GET_FACTORY_FAILED
+	"dxgi specified adapter not found", //AE_DXGI_FOUND_ADAPTER_FAILED
 
 	"duplication attatch desktop failed", //AE_DUP_ATTATCH_FAILED
 	"duplication query interface failed", //AE_DUP_QI_FAILED

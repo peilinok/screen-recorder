@@ -39,6 +39,10 @@ namespace am {
 		virtual void clean_up();
 
 	private:
+		int get_dst_adapter(IDXGIAdapter **adapter);
+
+		int create_d3d_device(IDXGIAdapter *adapter,ID3D11Device **device);
+
 		int init_d3d11();
 
 		void clean_d3d11();
