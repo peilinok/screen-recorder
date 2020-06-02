@@ -186,18 +186,17 @@ namespace am {
 			error = AE_DXGI_FOUND_ADAPTER_FAILED;
 
 			unsigned int i = 0;
-			IDXGIAdapter * adapter_tmp;
 			IDXGIOutput *adapter_output = nullptr;
 			DXGI_ADAPTER_DESC adapter_desc = { 0 };
 			DXGI_OUTPUT_DESC adapter_output_desc = { 0 };
-			while (dxgi_factory->EnumAdapters(i, &adapter_tmp) != DXGI_ERROR_NOT_FOUND)
+			while (dxgi_factory->EnumAdapters(i, adapter) != DXGI_ERROR_NOT_FOUND)
 			{
-				adapter_tmp->GetDesc(&adapter_desc);
+				(*adapter)->GetDesc(&adapter_desc);
 				al_debug("adaptor:%s", utils_string::unicode_ascii(adapter_desc.Description).c_str());
 
 				unsigned int n = 0;
 				RECT output_rect;
-				while (adapter_tmp->EnumOutputs(n, &adapter_output) != DXGI_ERROR_NOT_FOUND)
+				while ((*adapter)->EnumOutputs(n, &adapter_output) != DXGI_ERROR_NOT_FOUND)
 				{
 					hr = adapter_output->GetDesc(&adapter_output_desc);
 					if (FAILED(hr)) continue;
@@ -217,7 +216,6 @@ namespace am {
 				}
 
 				if (error != AE_DXGI_FOUND_ADAPTER_FAILED) {
-					*adapter = adapter_tmp;
 					break;
 				}
 				++i;
@@ -227,6 +225,7 @@ namespace am {
 
 		} while (0);
 
+		clean_d3d11();
 
 		return error;
 	}
@@ -245,8 +244,11 @@ namespace am {
 			HRESULT hr = S_OK;
 
 			// Driver types supported
+			// If you set the pAdapter parameter to a non - NULL value, 
+			// you must also set the DriverType parameter to the D3D_DRIVER_TYPE_UNKNOWN value.
 			D3D_DRIVER_TYPE driver_types[] =
 			{
+				D3D_DRIVER_TYPE_UNKNOWN,
 				D3D_DRIVER_TYPE_HARDWARE,
 				D3D_DRIVER_TYPE_WARP,
 				D3D_DRIVER_TYPE_REFERENCE,
@@ -291,7 +293,7 @@ namespace am {
 		do {
 			IDXGIAdapter *adapter = nullptr;
 			error = get_dst_adapter(&adapter);
-			if (error != AE_NO ) 
+			if (error != AE_NO )
 				break;
 			
 			error = create_d3d_device(adapter, &_d3d_device);
