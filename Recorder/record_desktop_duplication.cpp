@@ -634,6 +634,7 @@ namespace am {
 	void record_desktop_duplication::draw_cursor()
 	{
 		if (_cursor_info.visible == false) return;
+
 		int cursor_width = 0, cursor_height = 0, left = 0, top = 0;
 
 		cursor_width = _cursor_info.shape.Width;
