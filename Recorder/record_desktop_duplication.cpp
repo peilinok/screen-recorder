@@ -634,25 +634,24 @@ namespace am {
 	void record_desktop_duplication::draw_cursor()
 	{
 		if (_cursor_info.visible == false) return;
-		int width = 0, height = 0, left = 0, top = 0;
+		int cursor_width = 0, cursor_height = 0, left = 0, top = 0;
 
-		width = _cursor_info.shape.Width;
-		height = _cursor_info.shape.Height;
-		left = _cursor_info.position.x;
-		top = _cursor_info.position.y;
+		cursor_width = _cursor_info.shape.Width;
+		cursor_height = _cursor_info.shape.Height;
+
+		// In case that,the value of position is negative value
+		left = abs(_cursor_info.position.x - _rect.left);
+		top = abs(_cursor_info.position.y - _rect.top);
+
+		// Notice here
+		if (_cursor_info.shape.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME)
+			cursor_height = cursor_height / 2;
 
 		//Skip invisible pixel
-		left = min(max(_rect.left, left), _rect.right);
-		top = min(max(_rect.top, top), _rect.bottom);
-		width = min(left + width, _rect.right) - left;
+		cursor_width = min(_width - (left + cursor_width), cursor_width);
+		cursor_height = min(_height - (top + cursor_height), cursor_height);
 
-		//Notice here
-		if (_cursor_info.shape.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME)
-			height = height / 2;
-
-		height = min(top + height, _rect.bottom) - top;
-
-		//al_debug("left:%d top:%d width:%d height:%d type:%d", left, top, width, height, _cursor_info.shape.Type);
+		//al_debug("left:%d top:%d width:%d height:%d type:%d", left, top, cursor_width, height, _cursor_info.shape.Type);
 
 		switch (_cursor_info.shape.Type)
 		{
@@ -667,8 +666,8 @@ namespace am {
 				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
 				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
 
-				for (int row = 0; row < height; row++) {
-					for (int col = 0; col < width; col++) {
+				for (int row = 0; row < cursor_height; row++) {
+					for (int col = 0; col < cursor_width; col++) {
 						unsigned int cur_cursor_val = cursor_32[col + (row * (_cursor_info.shape.Pitch / sizeof(UINT)))];
 						
 						//Skip black or empty value
@@ -692,12 +691,12 @@ namespace am {
 				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
 				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
 
-				for (int row = 0; row < height; row++) {
+				for (int row = 0; row < cursor_height; row++) {
 					BYTE MASK = 0x80;
-					for (int col = 0; col < width; col++) {
+					for (int col = 0; col < cursor_width; col++) {
 						// Get masks using appropriate offsets
 						BYTE AndMask = _cursor_info.buff[(col / 8) + (row  * (_cursor_info.shape.Pitch))] & MASK;
-						BYTE XorMask = _cursor_info.buff[(col / 8) + ((row + height) * (_cursor_info.shape.Pitch))] & MASK;
+						BYTE XorMask = _cursor_info.buff[(col / 8) + ((row + cursor_height) * (_cursor_info.shape.Pitch))] & MASK;
 						UINT AndMask32 = (AndMask) ? 0xFFFFFFFF : 0xFF000000;
 						UINT XorMask32 = (XorMask) ? 0x00FFFFFF : 0x00000000;
 
@@ -729,8 +728,8 @@ namespace am {
 				unsigned int *cursor_32 = reinterpret_cast<unsigned int*>(_cursor_info.buff);
 				unsigned int *screen_32 = reinterpret_cast<unsigned int*>(_buffer);
 
-				for (int row = 0; row < height; row++) {
-					for (int col = 0; col < width; col++) {
+				for (int row = 0; row < cursor_height; row++) {
+					for (int col = 0; col < cursor_width; col++) {
 						unsigned int cur_cursor_val = cursor_32[col + (row * (_cursor_info.shape.Pitch / sizeof(UINT)))];
 						unsigned int cur_screen_val = screen_32[(abs(top) + row) *_width + abs(left) + col];
 						unsigned int mask_val = 0xFF000000 & cur_cursor_val;
