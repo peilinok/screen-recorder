@@ -149,35 +149,22 @@ namespace am {
 		if (_dxgi) free_system_library(_dxgi);
 	}
 
+	typedef HRESULT(WINAPI *DXGI_FUNC_CREATEFACTORY)(REFIID, IDXGIFactory1 **);
+
 	int record_desktop_duplication::get_dst_adapter(IDXGIAdapter ** adapter)
 	{
 		int error = AE_NO;
 		do {
-			ID3D11Device *d3d_device = nullptr;
-			error = create_d3d_device(nullptr, &d3d_device);
-			if (error != AE_NO)
-				break;
+			DXGI_FUNC_CREATEFACTORY create_factory = nullptr;
+			create_factory = (DXGI_FUNC_CREATEFACTORY)GetProcAddress(_dxgi, "CreateDXGIFactory1");
 
-			//Find correctly adaptor
-			IDXGIDevice *dxgi_device = nullptr;
-			HRESULT hr = d3d_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgi_device));
-			d3d_device->Release();
-			if (FAILED(hr)) {
-				error = AE_D3D_CREATE_DEVICE_FAILED;
+			if (create_factory == nullptr) {
+				error = AE_DXGI_GET_PROC_FAILED;
 				break;
 			}
 
-			IDXGIAdapter * dxgi_adapter = nullptr;
-			hr = dxgi_device->GetAdapter(&dxgi_adapter);
-			dxgi_device->Release();
-			if (FAILED(hr)) {
-				error = AE_DXGI_GET_ADAPTER_FAILED;
-				break;
-			}
-
-			IDXGIFactory * dxgi_factory = nullptr;
-			hr = dxgi_adapter->GetParent(__uuidof(IDXGIFactory), reinterpret_cast<void**>(&dxgi_factory));
-			dxgi_adapter->Release();
+			IDXGIFactory1 * dxgi_factory = nullptr;
+			HRESULT hr = create_factory(__uuidof(IDXGIFactory1), &dxgi_factory);
 			if (FAILED(hr)) {
 				error = AE_DXGI_GET_FACTORY_FAILED;
 				break;
@@ -207,7 +194,10 @@ namespace am {
 						utils_string::unicode_ascii(adapter_output_desc.DeviceName).c_str(),
 						output_rect.left, output_rect.top, output_rect.right, output_rect.bottom);
 
-					if (output_rect.left <= _rect.left && output_rect.top <= _rect.top && output_rect.right >= _rect.right && output_rect.bottom >= _rect.bottom) {
+					if (output_rect.left <= _rect.left && 
+						output_rect.top <= _rect.top &&
+						output_rect.right >= _rect.right && 
+						output_rect.bottom >= _rect.bottom) {
 						error = AE_NO;
 						break;
 					}
