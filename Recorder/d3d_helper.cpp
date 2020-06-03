@@ -8,7 +8,7 @@
 namespace am {
 	typedef HRESULT(WINAPI *DXGI_FUNC_CREATEFACTORY)(REFIID, IDXGIFactory1 **);
 
-	std::list<IDXGIAdapter*> d3d_helper::get_adapters(int *error)
+	std::list<IDXGIAdapter*> d3d_helper::get_adapters(int * error, bool free_lib)
 	{
 		std::list<IDXGIAdapter*> adapters;
 
@@ -50,7 +50,7 @@ namespace am {
 
 		} while (0);
 
-		if (hdxgi) free_system_library(hdxgi);
+		if (free_lib && hdxgi) free_system_library(hdxgi);
 
 		return adapters;
 	}

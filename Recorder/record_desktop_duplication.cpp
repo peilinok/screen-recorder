@@ -154,7 +154,7 @@ namespace am {
 	{
 		int error = AE_NO;
 		do {
-			auto adapters = d3d_helper::get_adapters(&error);
+			auto adapters = d3d_helper::get_adapters(&error, true);
 			if (error != AE_NO || adapters.size() == 0)
 				break;
 

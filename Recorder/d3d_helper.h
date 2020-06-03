@@ -12,7 +12,7 @@ namespace am {
 		d3d_helper() {}
 
 	public:
-		static std::list<IDXGIAdapter*> get_adapters(int *error);
+		static std::list<IDXGIAdapter*> get_adapters(int *error, bool free_lib = false);
 	};
 }
 #endif
