@@ -83,6 +83,7 @@ enum AM_ERROR{
 	AE_D3D_CREATE_SAMPLERSTATE_FAILED,
 
 	//AE_DXGI_
+	AE_DXGI_GET_PROC_FAILED,
 	AE_DXGI_GET_ADAPTER_FAILED,
 	AE_DXGI_GET_FACTORY_FAILED,
 	AE_DXGI_FOUND_ADAPTER_FAILED,
@@ -179,6 +180,7 @@ static const char *ERRORS_STR[] = {
 	"d3d11 create pixel shader failed", //AE_D3D_CREATE_PIXEL_SHADER_FAILED
 	"d3d11 create sampler state failed",//AE_D3D_CREATE_SAMPLERSTATE_FAILED
 
+	"dxgi get proc address failed",     //AE_DXGI_GET_PROC_FAILED
 	"dxgi get adapter failed",          //AE_DXGI_GET_ADAPTER_FAILED
 	"dxgi get factory failed",          //AE_DXGI_GET_FACTORY_FAILED
 	"dxgi specified adapter not found", //AE_DXGI_FOUND_ADAPTER_FAILED

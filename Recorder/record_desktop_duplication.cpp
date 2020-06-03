@@ -1,6 +1,7 @@
 #include "record_desktop_duplication.h"
 
 #include "system_lib.h"
+#include "d3d_helper.h"
 #include "d3d_pixelshader.h"
 #include "d3d_vertexshader.h"
 
@@ -149,43 +150,26 @@ namespace am {
 		if (_dxgi) free_system_library(_dxgi);
 	}
 
-	typedef HRESULT(WINAPI *DXGI_FUNC_CREATEFACTORY)(REFIID, IDXGIFactory1 **);
-
 	int record_desktop_duplication::get_dst_adapter(IDXGIAdapter ** adapter)
 	{
 		int error = AE_NO;
 		do {
-			DXGI_FUNC_CREATEFACTORY create_factory = nullptr;
-			create_factory = (DXGI_FUNC_CREATEFACTORY)GetProcAddress(_dxgi, "CreateDXGIFactory1");
-
-			if (create_factory == nullptr) {
-				error = AE_DXGI_GET_PROC_FAILED;
+			auto adapters = d3d_helper::get_adapters(&error);
+			if (error != AE_NO || adapters.size() == 0)
 				break;
-			}
 
-			IDXGIFactory1 * dxgi_factory = nullptr;
-			HRESULT hr = create_factory(__uuidof(IDXGIFactory1), &dxgi_factory);
-			if (FAILED(hr)) {
-				error = AE_DXGI_GET_FACTORY_FAILED;
-				break;
-			}
-
-			error = AE_DXGI_FOUND_ADAPTER_FAILED;
-
-			unsigned int i = 0;
-			IDXGIOutput *adapter_output = nullptr;
-			DXGI_ADAPTER_DESC adapter_desc = { 0 };
-			DXGI_OUTPUT_DESC adapter_output_desc = { 0 };
-			while (dxgi_factory->EnumAdapters(i, adapter) != DXGI_ERROR_NOT_FOUND)
-			{
-				(*adapter)->GetDesc(&adapter_desc);
+			for (std::list<IDXGIAdapter *>::iterator itr = adapters.begin(); itr != adapters.end(); itr++) {
+				IDXGIOutput *adapter_output = nullptr;
+				DXGI_ADAPTER_DESC adapter_desc = { 0 };
+				DXGI_OUTPUT_DESC adapter_output_desc = { 0 };
+				(*itr)->GetDesc(&adapter_desc);
 				al_debug("adaptor:%s", utils_string::unicode_ascii(adapter_desc.Description).c_str());
 
 				unsigned int n = 0;
 				RECT output_rect;
-				while ((*adapter)->EnumOutputs(n, &adapter_output) != DXGI_ERROR_NOT_FOUND)
+				while ((*itr)->EnumOutputs(n, &adapter_output) != DXGI_ERROR_NOT_FOUND)
 				{
-					hr = adapter_output->GetDesc(&adapter_output_desc);
+					HRESULT hr = adapter_output->GetDesc(&adapter_output_desc);
 					if (FAILED(hr)) continue;
 
 					output_rect = adapter_output_desc.DesktopCoordinates;
@@ -194,9 +178,9 @@ namespace am {
 						utils_string::unicode_ascii(adapter_output_desc.DeviceName).c_str(),
 						output_rect.left, output_rect.top, output_rect.right, output_rect.bottom);
 
-					if (output_rect.left <= _rect.left && 
+					if (output_rect.left <= _rect.left &&
 						output_rect.top <= _rect.top &&
-						output_rect.right >= _rect.right && 
+						output_rect.right >= _rect.right &&
 						output_rect.bottom >= _rect.bottom) {
 						error = AE_NO;
 						break;
@@ -206,16 +190,12 @@ namespace am {
 				}
 
 				if (error != AE_DXGI_FOUND_ADAPTER_FAILED) {
+					*adapter = *itr;
 					break;
 				}
-				++i;
 			}
 
-			dxgi_factory->Release();
-
 		} while (0);
-
-		clean_d3d11();
 
 		return error;
 	}
