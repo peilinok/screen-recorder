@@ -619,8 +619,8 @@ namespace am {
 			cursor_height = cursor_height / 2;
 
 		//Skip invisible pixel
-		cursor_width = min(_width - (left + cursor_width), cursor_width);
-		cursor_height = min(_height - (top + cursor_height), cursor_height);
+		cursor_width = min(_width - left, cursor_width);
+		cursor_height = min(_height - top, cursor_height);
 
 		//al_debug("left:%d top:%d width:%d height:%d type:%d", left, top, cursor_width, height, _cursor_info.shape.Type);
 
