@@ -61,6 +61,18 @@
     <Filter Include="Source Files\helpers\win">
       <UniqueIdentifier>{86ee3356-e233-46ea-a2cf-9250808ac3f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\encoder\video">
+      <UniqueIdentifier>{8f473355-4af0-422e-8cea-ea39e4b0b3a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\encoder\audio">
+      <UniqueIdentifier>{7313da4d-6f7a-4e00-a606-53824bb73a04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\encoder\video">
+      <UniqueIdentifier>{c9701cf2-d3f0-4418-9ca5-b5fe4a9001d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\encoder\audio">
+      <UniqueIdentifier>{b0ab0abf-99fb-4f8a-9710-f41a58665216}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export.h">
@@ -72,17 +84,8 @@
     <ClInclude Include="muxer_file.h">
       <Filter>Header Files\muxer</Filter>
     </ClInclude>
-    <ClInclude Include="muxer_libmp4v2.h">
-      <Filter>Header Files\muxer</Filter>
-    </ClInclude>
     <ClInclude Include="muxer_mp4.h">
       <Filter>Header Files\muxer</Filter>
-    </ClInclude>
-    <ClInclude Include="encoder_264.h">
-      <Filter>Header Files\encoder</Filter>
-    </ClInclude>
-    <ClInclude Include="encoder_aac.h">
-      <Filter>Header Files\encoder</Filter>
     </ClInclude>
     <ClInclude Include="record_audio.h">
       <Filter>Header Files\record</Filter>
@@ -165,14 +168,29 @@
     <ClInclude Include="system_version.h">
       <Filter>Header Files\helpers\win</Filter>
     </ClInclude>
-    <ClInclude Include="encoder_ffmpeg_nvenc.h">
-      <Filter>Header Files\encoder</Filter>
-    </ClInclude>
     <ClInclude Include="hardware_acceleration.h">
       <Filter>Header Files\helpers</Filter>
     </ClInclude>
     <ClInclude Include="d3d_helper.h">
       <Filter>Header Files\helpers\win</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_video_define.h">
+      <Filter>Header Files\encoder\video</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_video.h">
+      <Filter>Header Files\encoder\video</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_ffmpeg_nvenc.h">
+      <Filter>Header Files\encoder\video</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_aac.h">
+      <Filter>Header Files\encoder\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_video_factory.h">
+      <Filter>Header Files\encoder\video</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_video_x264.h">
+      <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -185,17 +203,8 @@
     <ClCompile Include="muxer_file.cpp">
       <Filter>Source Files\muxer</Filter>
     </ClCompile>
-    <ClCompile Include="muxer_libmp4v2.cpp">
-      <Filter>Source Files\muxer</Filter>
-    </ClCompile>
     <ClCompile Include="muxer_mp4.cpp">
       <Filter>Source Files\muxer</Filter>
-    </ClCompile>
-    <ClCompile Include="encoder_264.cpp">
-      <Filter>Source Files\encoder</Filter>
-    </ClCompile>
-    <ClCompile Include="encoder_aac.cpp">
-      <Filter>Source Files\encoder</Filter>
     </ClCompile>
     <ClCompile Include="record_audio.cpp">
       <Filter>Source Files\record</Filter>
@@ -260,14 +269,26 @@
     <ClCompile Include="system_version.cpp">
       <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
-    <ClCompile Include="encoder_ffmpeg_nvenc.cpp">
-      <Filter>Source Files\encoder</Filter>
-    </ClCompile>
     <ClCompile Include="hardware_acceleration.cpp">
       <Filter>Source Files\helpers</Filter>
     </ClCompile>
     <ClCompile Include="d3d_helper.cpp">
       <Filter>Source Files\helpers\win</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_ffmpeg_nvenc.cpp">
+      <Filter>Source Files\encoder\video</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_video.cpp">
+      <Filter>Source Files\encoder\video</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_aac.cpp">
+      <Filter>Source Files\encoder\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_video_factory.cpp">
+      <Filter>Source Files\encoder\video</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_video_x264.cpp">
+      <Filter>Source Files\encoder\video</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

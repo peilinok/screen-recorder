@@ -1,18 +1,13 @@
-#include "encoder_264.h"
-
-#include "ring_buffer.h"
+#include "encoder_video_x264.h"
 
 #include "log_helper.h"
 #include "error_define.h"
 
 namespace am {
 
-	encoder_264::encoder_264()
+	encoder_video_x264::encoder_video_x264()
 	{
 		av_register_all();
-
-		_inited = false;
-		_running = false;
 
 		_encoder = NULL;
 		_encoder_ctx = NULL;
@@ -20,22 +15,16 @@ namespace am {
 		_buff = NULL;
 		_buff_size = 0;
 		_y_size = 0;
-
-		_cond_notify = false;
-
-		_ring_buffer = new ring_buffer<AVFrame>();
 	}
 
-	encoder_264::~encoder_264()
+	encoder_video_x264::~encoder_video_x264()
 	{
 		stop();
 
 		cleanup();
-
-		delete _ring_buffer;
 	}
 
-	int encoder_264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int qb, int gop_size)
+	int encoder_video_x264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int qb, int gop_size)
 	{
 		if (_inited == true)
 			return AE_NO;
@@ -104,6 +93,8 @@ namespace am {
 			_frame->height = _encoder_ctx->height;
 
 			_y_size = _encoder_ctx->width * _encoder_ctx->height;
+
+			_time_base = _encoder_ctx->time_base;
 			
 			_inited = true;
 		} while (0);
@@ -119,66 +110,17 @@ namespace am {
 		return err;
 	}
 
-	int encoder_264::get_extradata_size()
+	int encoder_video_x264::get_extradata_size()
 	{
 		return _encoder_ctx->extradata_size;
 	}
 
-	const uint8_t * encoder_264::get_extradata()
+	const uint8_t * encoder_video_x264::get_extradata()
 	{
 		return (const uint8_t*)_encoder_ctx->extradata;
 	}
 
-	const AVRational & encoder_264::get_time_base()
-	{
-		return _encoder_ctx->time_base;
-	}
-
-	int encoder_264::start()
-	{
-		int error = AE_NO;
-
-		if (_running == true) {
-			return error;
-		}
-
-		if (_inited == false) {
-			return AE_NEED_INIT;
-		}
-
-		_running = true;
-		_thread = std::thread(std::bind(&encoder_264::encode_loop, this));
-
-		return error;
-	}
-
-	void encoder_264::stop()
-	{
-		_running = false;
-
-		_cond_notify = true;
-		_cond_var.notify_all();
-
-		if (_thread.joinable())
-			_thread.join();
-
-	}
-
-	int encoder_264::put(const uint8_t * data, int data_len, AVFrame *frame)
-	{
-		std::unique_lock<std::mutex> lock(_mutex);
-
-		AVFrame frame_cp;
-		memcpy(&frame_cp, frame, sizeof(AVFrame));
-
-		_ring_buffer->put(data, data_len, frame_cp);
-
-		_cond_notify = true;
-		_cond_var.notify_all();
-		return 0;
-	}
-
-	void encoder_264::cleanup()
+	void encoder_video_x264::cleanup()
 	{
 		if (_frame)
 			av_free(_frame);
@@ -200,7 +142,7 @@ namespace am {
 		_encoder_ctx = NULL;
 	}
 
-	int encoder_264::encode(AVFrame * frame, AVPacket * packet)
+	int encoder_video_x264::encode(AVFrame * frame, AVPacket * packet)
 	{
 		int ret = avcodec_send_frame(_encoder_ctx, frame);
 		if (ret < 0) {
@@ -229,7 +171,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	void encoder_264::encode_loop()
+	void encoder_video_x264::encode_loop()
 	{
 		AVPacket *packet = av_packet_alloc();
 		AVFrame yuv_frame;

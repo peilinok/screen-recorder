@@ -7,7 +7,7 @@ namespace am {
 		int sample_in;
 	}AUDIO_SAMPLE;
 
-	class encoder_264;
+	class encoder_video_x264;
 	class record_desktop;
 	class sws_helper;
 
@@ -39,7 +39,7 @@ namespace am {
 		MUX_SETTING setting;        // output setting
 
 		//video
-		encoder_264 *v_enc;         // video encoder
+		encoder_video_x264 *v_enc;         // video encoder
 		record_desktop *v_src;      // video source
 		sws_helper *v_sws;          // video sws
 

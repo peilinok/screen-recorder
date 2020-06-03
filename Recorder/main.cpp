@@ -14,6 +14,7 @@
 #include "system_version.h"
 #include "error_define.h"
 #include "log_helper.h"
+#include "hardware_acceleration.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -400,13 +401,16 @@ int main(int argc, char **argv)
 	al_info("win version: %d.%d.%d.%d", ver.major, ver.minor, ver.build, ver.revis);
 	al_info("is win8 or above: %s", is_win8_or_above ? "true" : "false");
 
-	show_devices();
+	//show_devices();
 
 	//test_audio();
 
 	test_recorder();
 
+	auto hw_encoders = am::hardware_acceleration::get_supported_video_encoders();
+
 	//save_aac();
+
 
 	al_info("press any key to exit...");
 	system("pause");

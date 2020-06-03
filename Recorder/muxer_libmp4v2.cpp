@@ -3,7 +3,7 @@
 
 #include "record_audio.h"
 #include "record_desktop.h"
-#include "encoder_264.h"
+#include "encoder_video_x264.h"
 #include "encoder_aac.h"
 #include "resample_pcm.h"
 #include "filter_amix.h"
@@ -257,7 +257,7 @@ namespace am {
 		int height = _v_stream->v_src->get_rect().bottom - _v_stream->v_src->get_rect().top;
 
 		do {
-			_v_stream->v_enc = new encoder_264();
+			_v_stream->v_enc = new encoder_video_x264();
 
 			error = _v_stream->v_enc->init(width, height, setting.v_frame_rate, setting.v_bit_rate, NULL);
 			if (error != AE_NO)
