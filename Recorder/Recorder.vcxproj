@@ -265,13 +265,16 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="d3d_helper.h" />
     <ClInclude Include="device_videos.h" />
     <ClInclude Include="encoder_264.h" />
     <ClInclude Include="encoder_aac.h" />
+    <ClInclude Include="encoder_ffmpeg_nvenc.h" />
     <ClInclude Include="error_define.h" />
     <ClInclude Include="filter.h" />
     <ClInclude Include="filter_aresample.h" />
     <ClInclude Include="filter_amix.h" />
+    <ClInclude Include="hardware_acceleration.h" />
     <ClInclude Include="headers_ffmpeg.h" />
     <ClInclude Include="log_helper.h" />
     <ClInclude Include="headers_mmdevice.h" />
@@ -301,12 +304,15 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="system_version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="d3d_helper.cpp" />
     <ClCompile Include="device_videos.cpp" />
     <ClCompile Include="encoder_264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
+    <ClCompile Include="encoder_ffmpeg_nvenc.cpp" />
     <ClCompile Include="filter.cpp" />
     <ClCompile Include="filter_aresample.cpp" />
     <ClCompile Include="filter_amix.cpp" />
+    <ClCompile Include="hardware_acceleration.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="headers_mmdevice.cpp" />
     <ClCompile Include="muxer_file.cpp" />

@@ -165,6 +165,15 @@
     <ClInclude Include="system_version.h">
       <Filter>Header Files\helpers\win</Filter>
     </ClInclude>
+    <ClInclude Include="encoder_ffmpeg_nvenc.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="hardware_acceleration.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d_helper.h">
+      <Filter>Header Files\helpers\win</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -249,6 +258,15 @@
       <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
     <ClCompile Include="system_version.cpp">
+      <Filter>Source Files\helpers\win</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_ffmpeg_nvenc.cpp">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="hardware_acceleration.cpp">
+      <Filter>Source Files\helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d_helper.cpp">
       <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
   </ItemGroup>
