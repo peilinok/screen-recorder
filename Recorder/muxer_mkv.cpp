@@ -69,11 +69,13 @@ namespace am {
 					break;
 			}
 
+			/*
 			if (_fmt->audio_codec != AV_CODEC_ID_NONE && source_audios_nb) {
 				error = add_audio_stream(setting, source_audios, source_audios_nb);
 				if (error != AE_NO)
 					break;
 			}
+			*/
 
 			error = open_output(output_file, setting);
 			if (error != AE_NO)
@@ -226,31 +228,6 @@ namespace am {
 	void muxer_mkv::on_desktop_error(int error)
 	{
 		al_fatal("on desktop capture error:%d", error);
-	}
-
-	int getPcmDB(const unsigned char *pcmdata, size_t size) {
-
-		int db = 0;
-		float value = 0;
-		double sum = 0;
-		double average = 0;
-		int bit_per_sample = 32;
-		int byte_per_sample = bit_per_sample / 8;
-		int channel_num = 2;
-
-		for (int i = 0; i < size; i += channel_num * byte_per_sample)
-		{
-			memcpy(&value, pcmdata + i, byte_per_sample);
-			sum += abs(value);
-		}
-		average = sum / (double)(size / byte_per_sample / channel_num);
-		if (average > 0)
-		{
-			db = (int)(20 * log10f(average));
-		}
-
-		al_debug("%d   %f     %f", db, average, sum);
-		return db;
 	}
 
 	void muxer_mkv::on_audio_data(AVFrame *frame, int index)
@@ -519,7 +496,7 @@ namespace am {
 			_v_stream->st = st;
 
 			_v_stream->setting = setting;
-			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
+			//_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
 		} while (0);
 
 		return error;
@@ -689,13 +666,8 @@ namespace am {
 				}
 			}
 
-			AVDictionary* opt = NULL;
-			av_dict_set_int(&opt, "video_track_timescale", _v_stream->setting.v_frame_rate, 0);
-
-			//ret = avformat_write_header(_fmt_ctx, &opt);//no need to set this
 			ret = avformat_write_header(_fmt_ctx, NULL);
 
-			av_dict_free(&opt);
 
 			if (ret < 0) {
 				error = AE_FFMPEG_WRITE_HEADER_FAILED;
