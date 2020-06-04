@@ -26,6 +26,7 @@ typedef struct {
 	int v_qb;
 	int v_bit_rate;
 	int v_frame_rate;
+	int v_enc_id;
 
 	char output[260];
 

@@ -209,6 +209,7 @@ namespace am {
 		mux_setting.v_width = setting.v_width;
 		mux_setting.v_height = setting.v_height;
 		mux_setting.v_qb = setting.v_qb;
+		mux_setting.v_encoder_id = (am::ENCODER_VIDEO_ID)setting.v_enc_id;
 
 		mux_setting.a_nb_channel = 2;
 		mux_setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
