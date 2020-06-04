@@ -23,7 +23,7 @@
 
 #define USE_WASAPI 1
 
-#define V_FRAME_RATE 25
+#define V_FRAME_RATE 30
 #define V_BIT_RATE 64000
 #define V_WIDTH 1920
 #define V_HEIGHT 1080

@@ -186,8 +186,7 @@ int main(int argc, char **argv)
     encode(c, NULL, pkt, f);
 
     /* add sequence end code to have a real MPEG file */
-    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
-        fwrite(endcode, 1, sizeof(endcode), f);
+    fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
 
     avcodec_free_context(&c);

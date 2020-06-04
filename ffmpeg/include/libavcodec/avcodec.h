@@ -409,7 +409,6 @@ enum AVCodecID {
     AV_CODEC_ID_DXV,
     AV_CODEC_ID_SCREENPRESSO,
     AV_CODEC_ID_RSCC,
-    AV_CODEC_ID_AVS2,
 
     AV_CODEC_ID_Y41P = 0x8000,
     AV_CODEC_ID_AVRP,
@@ -447,19 +446,6 @@ enum AVCodecID {
     AV_CODEC_ID_SVG,
     AV_CODEC_ID_GDV,
     AV_CODEC_ID_FITS,
-    AV_CODEC_ID_IMM4,
-    AV_CODEC_ID_PROSUMER,
-    AV_CODEC_ID_MWSC,
-    AV_CODEC_ID_WCMV,
-    AV_CODEC_ID_RASC,
-    AV_CODEC_ID_HYMT,
-    AV_CODEC_ID_ARBC,
-    AV_CODEC_ID_AGM,
-    AV_CODEC_ID_LSCR,
-    AV_CODEC_ID_VP4,
-    AV_CODEC_ID_IMM5,
-    AV_CODEC_ID_MVDV,
-    AV_CODEC_ID_MVHA,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -499,7 +485,6 @@ enum AVCodecID {
     AV_CODEC_ID_PCM_S64BE,
     AV_CODEC_ID_PCM_F16LE,
     AV_CODEC_ID_PCM_F24LE,
-    AV_CODEC_ID_PCM_VIDC,
 
     /* various ADPCM codecs */
     AV_CODEC_ID_ADPCM_IMA_QT = 0x11000,
@@ -544,7 +529,6 @@ enum AVCodecID {
     AV_CODEC_ID_ADPCM_AICA,
     AV_CODEC_ID_ADPCM_IMA_DAT4,
     AV_CODEC_ID_ADPCM_MTAF,
-    AV_CODEC_ID_ADPCM_AGM,
 
     /* AMR */
     AV_CODEC_ID_AMR_NB = 0x12000,
@@ -653,9 +637,6 @@ enum AVCodecID {
     AV_CODEC_ID_APTX,
     AV_CODEC_ID_APTX_HD,
     AV_CODEC_ID_SBC,
-    AV_CODEC_ID_ATRAC9,
-    AV_CODEC_ID_HCOM,
-    AV_CODEC_ID_ACELP_KELVIN,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
@@ -684,15 +665,12 @@ enum AVCodecID {
     AV_CODEC_ID_PJS,
     AV_CODEC_ID_ASS,
     AV_CODEC_ID_HDMV_TEXT_SUBTITLE,
-    AV_CODEC_ID_TTML,
-    AV_CODEC_ID_ARIB_CAPTION,
 
     /* other specific kind of codecs (generally used for attachments) */
     AV_CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
     AV_CODEC_ID_TTF = 0x18000,
 
     AV_CODEC_ID_SCTE_35, ///< Contain timestamp estimated through PCR of program stream.
-    AV_CODEC_ID_EPG,
     AV_CODEC_ID_BINTEXT    = 0x18800,
     AV_CODEC_ID_XBIN,
     AV_CODEC_ID_IDF,
@@ -865,11 +843,6 @@ typedef struct RcOverride{
  * Use qpel MC.
  */
 #define AV_CODEC_FLAG_QPEL            (1 <<  4)
-/**
- * Don't output frames whose parameters differ from first
- * decoded frame in stream.
- */
-#define AV_CODEC_FLAG_DROPCHANGED     (1 <<  5)
 /**
  * Use internal 2pass ratecontrol in first pass mode.
  */
@@ -1090,13 +1063,6 @@ typedef struct RcOverride{
 #define AV_CODEC_CAP_HYBRID              (1 << 19)
 
 /**
- * This codec takes the reordered_opaque field from input AVFrames
- * and returns it in the corresponding field in AVCodecContext after
- * encoding.
- */
-#define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
-
-/**
  * Pan Scan area.
  * This specifies the area which should be displayed.
  * Note there may be multiple such areas for one frame.
@@ -1135,29 +1101,17 @@ typedef struct AVCPBProperties {
      * Maximum bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
     int max_bitrate;
-#else
-    int64_t max_bitrate;
-#endif
     /**
      * Minimum bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
     int min_bitrate;
-#else
-    int64_t min_bitrate;
-#endif
     /**
      * Average bitrate of the stream, in bits per second.
      * Zero if unknown or unspecified.
      */
-#if FF_API_UNSANITIZED_BITRATES
     int avg_bitrate;
-#else
-    int64_t avg_bitrate;
-#endif
 
     /**
      * The size of the buffer to which the ratecontrol is applied, in bits.
@@ -1358,7 +1312,7 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_METADATA_UPDATE,
 
     /**
-     * MPEGTS stream ID as uint8_t, this is required to pass the stream ID
+     * MPEGTS stream ID, this is required to pass the stream ID
      * information from the demuxer to the corresponding muxer.
      */
     AV_PKT_DATA_MPEGTS_STREAM_ID,
@@ -1402,12 +1356,6 @@ enum AVPacketSideDataType {
      * The format is not part of ABI, use av_encryption_info_* methods to access.
      */
     AV_PKT_DATA_ENCRYPTION_INFO,
-
-    /**
-     * Active Format Description data consisting of a single byte as specified
-     * in ETSI TS 101 154 using AVActiveFormatDescription enum.
-     */
-    AV_PKT_DATA_AFD,
 
     /**
      * The number of side data types.
@@ -1664,7 +1612,6 @@ typedef struct AVCodecContext {
      * The allocated memory should be AV_INPUT_BUFFER_PADDING_SIZE bytes larger
      * than extradata_size to avoid problems if it is read with the bitstream reader.
      * The bytewise contents of extradata must not depend on the architecture or CPU endianness.
-     * Must be allocated with the av_malloc() family of functions.
      * - encoding: Set/allocated/freed by libavcodec.
      * - decoding: Set/allocated/freed by user.
      */
@@ -2062,19 +2009,15 @@ typedef struct AVCodecContext {
 
     /**
      * custom intra quantization matrix
-     * Must be allocated with the av_malloc() family of functions, and will be freed in
-     * avcodec_free_context().
-     * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
-     * - decoding: Set/allocated/freed by libavcodec.
+     * - encoding: Set by user, can be NULL.
+     * - decoding: Set by libavcodec.
      */
     uint16_t *intra_matrix;
 
     /**
      * custom inter quantization matrix
-     * Must be allocated with the av_malloc() family of functions, and will be freed in
-     * avcodec_free_context().
-     * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
-     * - decoding: Set/allocated/freed by libavcodec.
+     * - encoding: Set by user, can be NULL.
+     * - decoding: Set by libavcodec.
      */
     uint16_t *inter_matrix;
 
@@ -2718,10 +2661,7 @@ typedef struct AVCodecContext {
     /**
      * opaque 64-bit number (generally a PTS) that will be reordered and
      * output in AVFrame.reordered_opaque
-     * - encoding: Set by libavcodec to the reordered_opaque of the input
-     *             frame corresponding to the last returned packet. Only
-     *             supported by encoders with the
-     *             AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE capability.
+     * - encoding: unused
      * - decoding: Set by user.
      */
     int64_t reordered_opaque;
@@ -3004,16 +2944,6 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_MJPEG_JPEG_LS                         0xf7
 
 #define FF_PROFILE_SBC_MSBC                         1
-
-#define FF_PROFILE_PRORES_PROXY     0
-#define FF_PROFILE_PRORES_LT        1
-#define FF_PROFILE_PRORES_STANDARD  2
-#define FF_PROFILE_PRORES_HQ        3
-#define FF_PROFILE_PRORES_4444      4
-#define FF_PROFILE_PRORES_XQ        5
-
-#define FF_PROFILE_ARIB_PROFILE_A 0
-#define FF_PROFILE_ARIB_PROFILE_C 1
 
     /**
      * level
@@ -3367,22 +3297,6 @@ typedef struct AVCodecContext {
      * used as reference pictures).
      */
     int extra_hw_frames;
-
-    /**
-     * The percentage of damaged samples to discard a frame.
-     *
-     * - decoding: set by user
-     * - encoding: unused
-     */
-    int discard_damaged_percentage;
-
-    /**
-     * The number of samples per frame to maximally accept.
-     *
-     * - decoding: set by user
-     * - encoding: set by user
-     */
-    int64_t max_samples;
 } AVCodecContext;
 
 #if FF_API_CODEC_GET_SET
@@ -4435,7 +4349,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by);
  * Initialize a reference-counted packet from av_malloc()ed data.
  *
  * @param pkt packet to be initialized. This function will set the data, size,
- *        and buf fields, all others are left untouched.
+ *        buf and destruct fields, all others are left untouched.
  * @param data Data allocated by av_malloc() to be used as packet data. If this
  *        function returns successfully, the data is owned by the underlying AVBuffer.
  *        The caller may not access the data through other means.
@@ -4941,9 +4855,6 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *      AVERROR_EOF:       the decoder has been fully flushed, and there will be
  *                         no more output frames
  *      AVERROR(EINVAL):   codec not opened, or it is an encoder
- *      AVERROR_INPUT_CHANGED:   current decoded frame has changed parameters
- *                               with respect to first decoded frame. Applicable
- *                               when flag AV_CODEC_FLAG_DROPCHANGED is set.
  *      other negative values: legitimate decoding errors
  */
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
@@ -5855,7 +5766,6 @@ typedef struct AVBitStreamFilter {
     int (*init)(AVBSFContext *ctx);
     int (*filter)(AVBSFContext *ctx, AVPacket *pkt);
     void (*close)(AVBSFContext *ctx);
-    void (*flush)(AVBSFContext *ctx);
 } AVBitStreamFilter;
 
 #if FF_API_OLD_BSF
@@ -5948,13 +5858,11 @@ int av_bsf_init(AVBSFContext *ctx);
  *
  * @param pkt the packet to filter. The bitstream filter will take ownership of
  * the packet and reset the contents of pkt. pkt is not touched if an error occurs.
- * If pkt is empty (i.e. NULL, or pkt->data is NULL and pkt->side_data_elems zero),
- * it signals the end of the stream (i.e. no more non-empty packets will be sent;
- * sending more empty packets does nothing) and will cause the filter to output
- * any packets it may have buffered internally.
+ * This parameter may be NULL, which signals the end of the stream (i.e. no more
+ * packets will be sent). That will cause the filter to output any packets it
+ * may have buffered internally.
  *
- * @return 0 on success, a negative AVERROR on error. This function never fails if
- * pkt is empty.
+ * @return 0 on success, a negative AVERROR on error.
  */
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
 
@@ -5983,11 +5891,6 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
  * AVERROR(EAGAIN) immediately after a successful av_bsf_send_packet() call.
  */
 int av_bsf_receive_packet(AVBSFContext *ctx, AVPacket *pkt);
-
-/**
- * Reset the internal bitstream filter state / flush internal buffers.
- */
-void av_bsf_flush(AVBSFContext *ctx);
 
 /**
  * Free a bitstream filter context and everything associated with it; write NULL
