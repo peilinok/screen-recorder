@@ -49,6 +49,8 @@ namespace am {
 
 		const AVRational &get_time_base();
 
+		AVCodecID get_codec_id();
+
 	private:
 		int encode(AVFrame *frame, AVPacket *packet);
 

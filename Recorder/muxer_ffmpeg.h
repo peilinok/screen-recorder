@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MUXER_FFMPEG
+#define MUXER_FFMPEG
 
 #include <atomic>
 #include <thread>
@@ -12,11 +13,12 @@
 #include "headers_ffmpeg.h"
 
 namespace am {
-	class muxer_mkv :public muxer_file
+
+	class muxer_ffmpeg : public muxer_file
 	{
 	public:
-		muxer_mkv();
-		~muxer_mkv();
+		muxer_ffmpeg();
+		~muxer_ffmpeg();
 
 		int init(
 			const char *output_file,
@@ -45,7 +47,7 @@ namespace am {
 
 		void on_filter_amix_error(int error, int index);
 
-		void on_filter_aresample_data(AVFrame * frame, int index);
+		void on_filter_aresample_data(AVFrame * frame,int index);
 
 		void on_filter_aresample_error(int error, int index);
 
@@ -100,5 +102,8 @@ namespace am {
 		std::mutex _mutex;
 		std::mutex _time_mutex;
 	};
-
 }
+
+
+
+#endif

@@ -16,6 +16,8 @@ namespace am {
 		int get_extradata_size();
 		const uint8_t* get_extradata();
 
+		AVCodecID get_codec_id();
+
 	protected:
 		void cleanup();
 		void encode_loop();

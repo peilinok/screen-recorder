@@ -139,6 +139,13 @@ namespace am {
 		return (const uint8_t*)_encoder_ctx->extradata;
 	}
 
+	AVCodecID encoder_video_nvenc::get_codec_id()
+	{
+		if (_inited == false) return AV_CODEC_ID_NONE;
+
+		return _encoder->id;
+	}
+
 	void encoder_video_nvenc::cleanup()
 	{
 		if (_frame)

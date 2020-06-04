@@ -84,9 +84,6 @@
     <ClInclude Include="muxer_file.h">
       <Filter>Header Files\muxer</Filter>
     </ClInclude>
-    <ClInclude Include="muxer_mp4.h">
-      <Filter>Header Files\muxer</Filter>
-    </ClInclude>
     <ClInclude Include="record_audio.h">
       <Filter>Header Files\record</Filter>
     </ClInclude>
@@ -192,7 +189,7 @@
     <ClInclude Include="encoder_video_nvenc.h">
       <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
-    <ClInclude Include="muxer_mkv.h">
+    <ClInclude Include="muxer_ffmpeg.h">
       <Filter>Header Files\muxer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -204,9 +201,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="muxer_file.cpp">
-      <Filter>Source Files\muxer</Filter>
-    </ClCompile>
-    <ClCompile Include="muxer_mp4.cpp">
       <Filter>Source Files\muxer</Filter>
     </ClCompile>
     <ClCompile Include="record_audio.cpp">
@@ -293,7 +287,7 @@
     <ClCompile Include="encoder_video_nvenc.cpp">
       <Filter>Source Files\encoder\video</Filter>
     </ClCompile>
-    <ClCompile Include="muxer_mkv.cpp">
+    <ClCompile Include="muxer_ffmpeg.cpp">
       <Filter>Source Files\muxer</Filter>
     </ClCompile>
   </ItemGroup>

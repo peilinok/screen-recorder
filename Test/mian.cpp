@@ -35,6 +35,7 @@ int main()
 	setting.v_frame_rate = 30;
 
 	sprintf(setting.output, "..\\..\\save.mp4");
+	//sprintf(setting.output, "..\\..\\save.mkv");
 
 #if 1 //record speaker mic
 	for (int i = 0; i < nspeaker; i++) {

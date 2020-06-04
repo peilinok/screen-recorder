@@ -6,9 +6,7 @@
 #include "record_desktop_factory.h"
 
 #include "muxer_define.h"
-#include "muxer_file.h"
-#include "muxer_mp4.h"
-#include "muxer_mkv.h"
+#include "muxer_ffmpeg.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -218,11 +216,8 @@ namespace am {
 		mux_setting.a_bit_rate = 128000;
 
 
-#if 0
-		_muxer = new muxer_mkv();
-#else
-		_muxer = new muxer_mp4();
-#endif 
+
+		_muxer = new muxer_ffmpeg();
 
 		_muxer->registe_yuv_data(std::bind(
 			&recorder::on_preview_yuv,

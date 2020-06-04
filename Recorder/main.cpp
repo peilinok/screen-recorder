@@ -8,7 +8,7 @@
 #include "filter_aresample.h"
 
 #include "muxer_define.h"
-#include "muxer_mp4.h"
+#include "muxer_ffmpeg.h"
 
 #include "utils_string.h"
 #include "system_version.h"
@@ -38,7 +38,7 @@
 static am::record_audio *_recorder_speaker = nullptr;
 static am::record_audio *_recorder_microphone = nullptr;
 static am::record_desktop *_recorder_desktop = nullptr;
-static am::muxer_mp4 *_muxer;
+static am::muxer_file *_muxer;
 static am::record_audio *audios[2];
 
 //for test audio record
@@ -98,7 +98,7 @@ int start_muxer() {
 	audios[0] = _recorder_microphone;
 	audios[1] = _recorder_speaker;
 
-	_muxer = new am::muxer_mp4();
+	_muxer = new am::muxer_ffmpeg();
 
 
 	am::MUX_SETTING setting;
@@ -114,7 +114,7 @@ int start_muxer() {
 	setting.a_sample_rate = A_SAMPLE_RATE;
 	setting.a_bit_rate = A_BIT_RATE;
 
-	int error = _muxer->init(am::utils_string::ascii_utf8("..\\..\\save.mp4").c_str(), _recorder_desktop, audios, 2, setting);
+	int error = _muxer->init(am::utils_string::ascii_utf8("..\\..\\save.mkv").c_str(), _recorder_desktop, audios, 2, setting);
 	if (error != AE_NO) {
 		return error;
 	}

@@ -51,6 +51,8 @@ namespace am {
 
 		virtual int put(const uint8_t *data, int data_len, AVFrame *frame);
 
+		virtual AVCodecID get_codec_id() = 0;
+
 	protected:
 		virtual void cleanup() = 0;
 		virtual void encode_loop() = 0;

@@ -206,6 +206,13 @@ namespace am {
 		return _encoder_ctx->time_base;
 	}
 
+	AVCodecID encoder_aac::get_codec_id()
+	{
+		if (_inited == false) return AV_CODEC_ID_NONE;
+
+		return _encoder->id;
+	}
+
 	int encoder_aac::encode(AVFrame * frame, AVPacket * packet)
 	{
 		int ret = avcodec_send_frame(_encoder_ctx, frame);

@@ -1,4 +1,4 @@
-#include "muxer_mp4.h"
+#include "muxer_ffmpeg.h"
 #include "muxer_define.h"
 
 #include "record_desktop.h"
@@ -19,7 +19,7 @@
 
 namespace am {
 
-	muxer_mp4::muxer_mp4()
+	muxer_ffmpeg::muxer_ffmpeg()
 	{
 		av_register_all();
 
@@ -41,13 +41,13 @@ namespace am {
 		_base_time = -1;
 	}
 
-	muxer_mp4::~muxer_mp4()
+	muxer_ffmpeg::~muxer_ffmpeg()
 	{
 		stop();
 		cleanup();
 	}
 
-	int muxer_mp4::init(
+	int muxer_ffmpeg::init(
 		const char * output_file,
 		record_desktop * source_desktop,
 		record_audio ** source_audios,
@@ -87,13 +87,13 @@ namespace am {
 
 		if (error != AE_NO) {
 			cleanup();
-			al_debug("muxer mp4 initialize failed:%s %d", err2str(error), ret);
+			al_debug("muxer ffmpeg initialize failed:%s %d", err2str(error), ret);
 		}
 
 		return error;
 	}
 
-	int muxer_mp4::start()
+	int muxer_ffmpeg::start()
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
@@ -139,7 +139,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::stop()
+	int muxer_ffmpeg::stop()
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 
@@ -183,29 +183,29 @@ namespace am {
 				_a_stream->a_enc->stop();
 		}
 
-		al_debug("write mp4 trailer...");
+		al_debug("write file trailer...");
 		if (_fmt_ctx)
-			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise mp4 can not play
+			av_write_trailer(_fmt_ctx);//must write trailer ,otherwise file can not play
 
 		al_debug("muxer stopped...");
 
 		return AE_NO;
 	}
 
-	int muxer_mp4::pause()
+	int muxer_ffmpeg::pause()
 	{
 		_paused = true;
 
 		return 0;
 	}
 
-	int muxer_mp4::resume()
+	int muxer_ffmpeg::resume()
 	{
 		_paused = false;
 		return 0;
 	}
 
-	void muxer_mp4::on_desktop_data(AVFrame *frame)
+	void muxer_ffmpeg::on_desktop_data(AVFrame *frame)
 	{
 		if (_running == false || !_v_stream || !_v_stream->v_enc || !_v_stream->v_sws) {
 			return;
@@ -223,7 +223,7 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_desktop_error(int error)
+	void muxer_ffmpeg::on_desktop_error(int error)
 	{
 		al_fatal("on desktop capture error:%d", error);
 	}
@@ -253,7 +253,7 @@ namespace am {
 		return db;
 	}
 
-	void muxer_mp4::on_audio_data(AVFrame *frame, int index)
+	void muxer_ffmpeg::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false)
 			return;
@@ -267,12 +267,12 @@ namespace am {
 		return;
 	}
 
-	void muxer_mp4::on_audio_error(int error, int index)
+	void muxer_ffmpeg::on_audio_error(int error, int index)
 	{
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mp4::on_filter_amix_data(AVFrame * frame, int)
+	void muxer_ffmpeg::on_filter_amix_data(AVFrame * frame, int)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -324,12 +324,12 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_filter_amix_error(int error, int)
+	void muxer_ffmpeg::on_filter_amix_error(int error, int)
 	{
 		al_fatal("on filter amix audio error:%d", error);
 	}
 
-	void muxer_mp4::on_filter_aresample_data(AVFrame * frame, int index)
+	void muxer_ffmpeg::on_filter_aresample_data(AVFrame * frame, int index)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -383,36 +383,36 @@ namespace am {
 		}
 	}
 
-	void muxer_mp4::on_filter_aresample_error(int error, int index)
+	void muxer_ffmpeg::on_filter_aresample_error(int error, int index)
 	{
 		al_fatal("on filter aresample[%d] audio error:%d", index, error);
 	}
 
-	void muxer_mp4::on_enc_264_data(AVPacket *packet)
+	void muxer_ffmpeg::on_enc_264_data(AVPacket *packet)
 	{
 		if (_running && _v_stream) {
 			write_video(packet);
 		}
 	}
 
-	void muxer_mp4::on_enc_264_error(int error)
+	void muxer_ffmpeg::on_enc_264_error(int error)
 	{
 		al_fatal("on desktop encode error:%d", error);
 	}
 
-	void muxer_mp4::on_enc_aac_data(AVPacket *packet)
+	void muxer_ffmpeg::on_enc_aac_data(AVPacket *packet)
 	{
 		if (_running && _a_stream) {
 			write_audio(packet);
 		}
 	}
 
-	void muxer_mp4::on_enc_aac_error(int error)
+	void muxer_ffmpeg::on_enc_aac_error(int error)
 	{
 		al_fatal("on audio encode error:%d", error);
 	}
 
-	int muxer_mp4::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
+	int muxer_ffmpeg::alloc_oc(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		_output_file = std::string(output_file);
 
@@ -432,7 +432,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
+	int muxer_ffmpeg::add_video_stream(const MUX_SETTING_T & setting, record_desktop * source_desktop)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -445,8 +445,8 @@ namespace am {
 		_v_stream->pre_pts = -1;
 		
 		_v_stream->v_src->registe_cb(
-			std::bind(&muxer_mp4::on_desktop_data, this, std::placeholders::_1),
-			std::bind(&muxer_mp4::on_desktop_error, this, std::placeholders::_1)
+			std::bind(&muxer_ffmpeg::on_desktop_data, this, std::placeholders::_1),
+			std::bind(&muxer_ffmpeg::on_desktop_error, this, std::placeholders::_1)
 		);
 
 		RECORD_DESKTOP_RECT v_rect = _v_stream->v_src->get_rect();
@@ -466,8 +466,8 @@ namespace am {
 				break;
 
 			_v_stream->v_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_264_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_enc_264_error, this, std::placeholders::_1)
+				std::bind(&muxer_ffmpeg::on_enc_264_data, this, std::placeholders::_1),
+				std::bind(&muxer_ffmpeg::on_enc_264_error, this, std::placeholders::_1)
 			);
 
 			_v_stream->v_sws = new sws_helper();
@@ -482,11 +482,14 @@ namespace am {
 			if (error != AE_NO)
 				break;
 
-			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
+
+			AVCodec *codec = avcodec_find_encoder(_v_stream->v_enc->get_codec_id());
 			if (!codec) {
 				error = AE_FFMPEG_FIND_ENCODER_FAILED;
 				break;
 			}
+
+			_fmt->video_codec = codec->id;
 
 			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
 			if (!st) {
@@ -519,13 +522,13 @@ namespace am {
 			_v_stream->st = st;
 
 			_v_stream->setting = setting;
-			_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
+			//_v_stream->filter = av_bitstream_filter_init("h264_mp4toannexb");
 		} while (0);
 
 		return error;
 	}
 
-	int muxer_mp4::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
+	int muxer_ffmpeg::add_audio_stream(const MUX_SETTING_T & setting, record_audio ** source_audios, const int source_audios_nb)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -553,16 +556,16 @@ namespace am {
 				break;
 
 			_a_stream->a_enc->registe_cb(
-				std::bind(&muxer_mp4::on_enc_aac_data, this, std::placeholders::_1),
-				std::bind(&muxer_mp4::on_enc_aac_error, this, std::placeholders::_1)
+				std::bind(&muxer_ffmpeg::on_enc_aac_data, this, std::placeholders::_1),
+				std::bind(&muxer_ffmpeg::on_enc_aac_error, this, std::placeholders::_1)
 			);
 
 			for (int i = 0; i < _a_stream->a_nb; i++) {
 
 				_a_stream->a_src[i] = source_audios[i];
 				_a_stream->a_src[i]->registe_cb(
-					std::bind(&muxer_mp4::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
-					std::bind(&muxer_mp4::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_ffmpeg::on_audio_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_ffmpeg::on_audio_error, this, std::placeholders::_1, std::placeholders::_2),
 					i
 				);
 
@@ -586,8 +589,8 @@ namespace am {
 				_a_stream->a_filter_aresample[i]->init(ctx_in, ctx_out, i);
 
 				_a_stream->a_filter_aresample[i]->registe_cb(
-					std::bind(&muxer_mp4::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
-					std::bind(&muxer_mp4::on_filter_aresample_error, this, std::placeholders::_1, std::placeholders::_2));
+					std::bind(&muxer_ffmpeg::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_ffmpeg::on_filter_aresample_error, this, std::placeholders::_1, std::placeholders::_2));
 
 				_a_stream->a_resamples[i]->size = av_samples_get_buffer_size(
 					NULL, setting.a_nb_channel, _a_stream->a_enc->get_nb_samples(), setting.a_sample_fmt, 1);
@@ -632,22 +635,26 @@ namespace am {
 				}
 
 				_a_stream->a_filter_amix->registe_cb(
-					std::bind(&muxer_mp4::on_filter_amix_data, this, std::placeholders::_1, std::placeholders::_2),
-					std::bind(&muxer_mp4::on_filter_amix_error, this, std::placeholders::_1, std::placeholders::_2)
+					std::bind(&muxer_ffmpeg::on_filter_amix_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_ffmpeg::on_filter_amix_error, this, std::placeholders::_1, std::placeholders::_2)
 				);
 			}
 
-			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
+			AVCodec *codec = avcodec_find_encoder(_a_stream->a_enc->get_codec_id());
 			if (!codec) {
 				error = AE_FFMPEG_FIND_ENCODER_FAILED;
 				break;
 			}
+
+			_fmt->audio_codec = _a_stream->a_enc->get_codec_id();
 
 			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
 			if (!st) {
 				error = AE_FFMPEG_NEW_STREAM_FAILED;
 				break;
 			}
+
+			av_dict_set(&st->metadata, "title", "Track1", 0);
 
 			st->time_base = { 1,setting.a_sample_rate };
 
@@ -675,7 +682,7 @@ namespace am {
 		return error;
 	}
 
-	int muxer_mp4::open_output(const char * output_file, const MUX_SETTING_T & setting)
+	int muxer_ffmpeg::open_output(const char * output_file, const MUX_SETTING_T & setting)
 	{
 		int error = AE_NO;
 		int ret = 0;
@@ -706,7 +713,7 @@ namespace am {
 		return error;
 	}
 
-	void muxer_mp4::cleanup_video()
+	void muxer_ffmpeg::cleanup_video()
 	{
 		if (!_v_stream)
 			return;
@@ -722,7 +729,7 @@ namespace am {
 		_v_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup_audio()
+	void muxer_ffmpeg::cleanup_audio()
 	{
 		if (!_a_stream)
 			return;
@@ -764,7 +771,7 @@ namespace am {
 		_a_stream = nullptr;
 	}
 
-	void muxer_mp4::cleanup()
+	void muxer_ffmpeg::cleanup()
 	{
 		cleanup_video();
 		cleanup_audio();
@@ -782,14 +789,14 @@ namespace am {
 		_inited = false;
 	}
 
-	uint64_t muxer_mp4::get_current_time()
+	uint64_t muxer_ffmpeg::get_current_time()
 	{
 		std::lock_guard<std::mutex> lock(_time_mutex);
 
 		return av_gettime_relative();
 	}
 
-	int muxer_mp4::write_video(AVPacket *packet)
+	int muxer_ffmpeg::write_video(AVPacket *packet)
 	{
 		//must lock here,coz av_interleaved_write_frame will push packet into a queue,and is not thread safe
 		std::lock_guard<std::mutex> lock(_mutex);
@@ -822,7 +829,7 @@ namespace am {
 		return ret;
 	}
 
-	int muxer_mp4::write_audio(AVPacket *packet)
+	int muxer_ffmpeg::write_audio(AVPacket *packet)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (_paused) return AE_NO;

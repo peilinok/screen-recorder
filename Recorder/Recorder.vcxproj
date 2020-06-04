@@ -283,8 +283,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="headers_mmdevice.h" />
     <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_file.h" />
-    <ClInclude Include="muxer_mkv.h" />
-    <ClInclude Include="muxer_mp4.h" />
+    <ClInclude Include="muxer_ffmpeg.h" />
     <ClInclude Include="record_audio.h" />
     <ClInclude Include="record_audio_define.h" />
     <ClInclude Include="record_audio_factory.h" />
@@ -321,8 +320,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="main.cpp" />
     <ClCompile Include="headers_mmdevice.cpp" />
     <ClCompile Include="muxer_file.cpp" />
-    <ClCompile Include="muxer_mkv.cpp" />
-    <ClCompile Include="muxer_mp4.cpp" />
+    <ClCompile Include="muxer_ffmpeg.cpp" />
     <ClCompile Include="record_audio.cpp" />
     <ClCompile Include="record_audio_factory.cpp" />
     <ClCompile Include="record_audio_dshow.cpp" />
