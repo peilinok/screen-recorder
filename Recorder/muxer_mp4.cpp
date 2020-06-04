@@ -456,7 +456,12 @@ namespace am {
 			if (error != AE_NO)
 				break;
 
-			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, setting.v_qb);
+			error = _v_stream->v_enc->init(setting.v_width, 
+				setting.v_height, 
+				setting.v_frame_rate,
+				setting.v_bit_rate, 
+				setting.v_qb
+			);
 			if (error != AE_NO)
 				break;
 

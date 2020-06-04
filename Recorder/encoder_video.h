@@ -29,7 +29,7 @@ namespace am {
 			int frame_rate,
 			int bit_rate, 
 			int qb, 
-			int gop_size = 40) = 0;
+			int key_pic_sec = 2) = 0;
 
 		virtual int get_extradata_size() = 0;
 		virtual const uint8_t* get_extradata() = 0;

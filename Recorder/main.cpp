@@ -24,10 +24,10 @@
 #define USE_WASAPI 1
 
 #define V_FRAME_RATE 30
-#define V_BIT_RATE 64000
+#define V_BIT_RATE 1280*1000
 #define V_WIDTH 1920
 #define V_HEIGHT 1080
-#define V_QUALITY 100
+#define V_QUALITY 60
 
 #define A_SAMPLE_CHANNEL 2
 #define A_SAMPLE_RATE 44100

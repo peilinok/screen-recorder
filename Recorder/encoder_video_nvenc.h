@@ -12,7 +12,13 @@ namespace am {
 		encoder_video_nvenc();
 		~encoder_video_nvenc();
 
-		int init(int pic_width, int pic_height, int frame_rate, int bit_rate, int qb, int gop_size = 40);
+		int init(int pic_width, 
+			int pic_height, 
+			int frame_rate, 
+			int bit_rate, 
+			int qb, 
+			int key_pic_sec = 2
+		);
 
 		int get_extradata_size();
 		const uint8_t* get_extradata();

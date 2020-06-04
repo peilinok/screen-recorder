@@ -22,7 +22,7 @@ namespace am {
 		cleanup();
 	}
 
-	int encoder_video_nvenc::init(int pic_width, int pic_height, int frame_rate, int bit_rate, int qb, int gop_size)
+	int encoder_video_nvenc::init(int pic_width, int pic_height, int frame_rate, int bit_rate, int qb, int key_pic_sec)
 	{
 		if (_inited == true)
 			return AE_NO;
@@ -49,10 +49,27 @@ namespace am {
 
 			const char *rate_control = "cbr"; // cbr | cqp | vbr | lossless
 			const char *profile = "baseline"; // baseline | main | high |high444p
-			const char *preset = "fast";      // default | slow | medium | fast | 
+			const char *preset = "default";      // default | slow | medium | fast | 
 											  // hp | hq | bd | 11 | 11hq | 11hp | lossless | losslesshp
 
-			av_opt_set_int(_encoder_ctx->priv_data, "cbr", false, 0);
+#if 0//USE_CBR
+			av_opt_set_int(_encoder_ctx->priv_data, "cbr", true, 0);
+			_encoder_ctx->bit_rate = bit_rate - bit_rate * (100 - qb) / 100;
+			_encoder_ctx->rc_buffer_size = _encoder_ctx->bit_rate;
+			_encoder_ctx->rc_max_rate = _encoder_ctx->bit_rate;
+			_encoder_ctx->rc_min_rate = _encoder_ctx->bit_rate;
+#else
+			_encoder_ctx->bit_rate = bit_rate;
+			
+			//qb is 0 ~ 100
+			qb = max(min(qb, 100), 0);
+
+			//for qmax more larger,quality is more less, max qmax is qmin + 30*(100 - 0)/100 = qmin + 30
+			_encoder_ctx->qmin = 30;
+			_encoder_ctx->qmax = _encoder_ctx->qmin + 15 * (100 - qb) / 100;
+			
+#endif
+
 			av_opt_set(_encoder_ctx->priv_data, "profile", profile, 0);
 			av_opt_set(_encoder_ctx->priv_data, "preset", preset, 0);
 
@@ -60,31 +77,18 @@ namespace am {
 			av_opt_set_int(_encoder_ctx->priv_data, "2pass", false, 0);
 			av_opt_set_int(_encoder_ctx->priv_data, "gpu", 0, 0);
 
-			_encoder_ctx->bit_rate = bit_rate;
-			_encoder_ctx->rc_buffer_size = bit_rate;
+			
 			_encoder_ctx->width = pic_width;
 			_encoder_ctx->height = pic_height;
 			_encoder_ctx->time_base.num = 1;
 			_encoder_ctx->time_base.den = frame_rate;
 			_encoder_ctx->framerate = { frame_rate,1 };
-			_encoder_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-
-
-
-			_encoder_ctx->codec_id = AV_CODEC_ID_H264;
-			_encoder_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
+			_encoder_ctx->pix_fmt = AV_PIX_FMT_YUV420P;		
 			
-			
-			
-			
-			_encoder_ctx->gop_size = gop_size;
-
-			//qb is 0 ~ 100
-			qb = max(min(qb, 100), 0);
-
-			//for qmax more larger,quality is more less, max qmax is qmin + 30*(100 - 0)/100 = qmin + 30
-			_encoder_ctx->qmin = 20;
-			_encoder_ctx->qmax = _encoder_ctx->qmin + 30 * (100 - qb) / 100;
+			if (key_pic_sec == 0)
+				_encoder_ctx->gop_size = 250;
+			else
+				_encoder_ctx->gop_size = key_pic_sec * _encoder_ctx->time_base.den / _encoder_ctx->time_base.num;
 
 			_encoder_ctx->max_b_frames = 0;//NO B Frame
 			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

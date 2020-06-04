@@ -24,7 +24,7 @@ namespace am {
 		cleanup();
 	}
 
-	int encoder_video_x264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int qb, int gop_size)
+	int encoder_video_x264::init(int pic_width, int pic_height, int frame_rate, int bit_rate ,int qb, int key_pic_sec)
 	{
 		if (_inited == true)
 			return AE_NO;
@@ -59,14 +59,18 @@ namespace am {
 			_encoder_ctx->time_base.den = frame_rate;
 			_encoder_ctx->framerate = { frame_rate,1 };
 			_encoder_ctx->bit_rate = bit_rate;
-			_encoder_ctx->gop_size = gop_size;
+			
+			if (key_pic_sec == 0)
+				_encoder_ctx->gop_size = 250;
+			else
+				_encoder_ctx->gop_size = key_pic_sec * _encoder_ctx->time_base.den / _encoder_ctx->time_base.num;
 			
 			//qb is 0 ~ 100
 			qb = max(min(qb, 100), 0);
 
 			//for qmax more larger,quality is more less, max qmax is qmin + 30*(100 - 0)/100 = qmin + 30
-			_encoder_ctx->qmin = 20;
-			_encoder_ctx->qmax = _encoder_ctx->qmin + 30 * (100 - qb) / 100;
+			_encoder_ctx->qmin = 30;
+			_encoder_ctx->qmax = _encoder_ctx->qmin + 15 * (100 - qb) / 100;
 
 			_encoder_ctx->max_b_frames = 0;//NO B Frame
 			_encoder_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
