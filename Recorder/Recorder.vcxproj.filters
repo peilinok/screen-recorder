@@ -180,9 +180,6 @@
     <ClInclude Include="encoder_video.h">
       <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
-    <ClInclude Include="encoder_ffmpeg_nvenc.h">
-      <Filter>Header Files\encoder\video</Filter>
-    </ClInclude>
     <ClInclude Include="encoder_aac.h">
       <Filter>Header Files\encoder\audio</Filter>
     </ClInclude>
@@ -190,6 +187,9 @@
       <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
     <ClInclude Include="encoder_video_x264.h">
+      <Filter>Header Files\encoder\video</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder_video_nvenc.h">
       <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
   </ItemGroup>
@@ -275,9 +275,6 @@
     <ClCompile Include="d3d_helper.cpp">
       <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
-    <ClCompile Include="encoder_ffmpeg_nvenc.cpp">
-      <Filter>Source Files\encoder\video</Filter>
-    </ClCompile>
     <ClCompile Include="encoder_video.cpp">
       <Filter>Source Files\encoder\video</Filter>
     </ClCompile>
@@ -288,6 +285,9 @@
       <Filter>Source Files\encoder\video</Filter>
     </ClCompile>
     <ClCompile Include="encoder_video_x264.cpp">
+      <Filter>Source Files\encoder\video</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder_video_nvenc.cpp">
       <Filter>Source Files\encoder\video</Filter>
     </ClCompile>
   </ItemGroup>

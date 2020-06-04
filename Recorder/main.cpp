@@ -107,6 +107,7 @@ int start_muxer() {
 	setting.v_width = V_WIDTH;
 	setting.v_height = V_HEIGHT;
 	setting.v_qb = V_QUALITY;
+	setting.v_encoder_id = am::EID_VIDEO_NVENC;
 
 	setting.a_nb_channel = A_SAMPLE_CHANNEL;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;

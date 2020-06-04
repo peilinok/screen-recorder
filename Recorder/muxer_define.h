@@ -1,4 +1,7 @@
-#pragma once
+#ifndef MUXER_DEFINE
+#define MUXER_DEFINE
+
+#include "encoder_video_define.h"
 
 namespace am {
 	typedef struct {
@@ -7,7 +10,7 @@ namespace am {
 		int sample_in;
 	}AUDIO_SAMPLE;
 
-	class encoder_video_x264;
+	class encoder_video;
 	class record_desktop;
 	class sws_helper;
 
@@ -22,6 +25,7 @@ namespace am {
 		int v_width;
 		int v_height;
 		int v_qb;
+		ENCODER_VIDEO_ID v_encoder_id;
 
 		int a_nb_channel;
 		int a_sample_rate;
@@ -39,7 +43,7 @@ namespace am {
 		MUX_SETTING setting;        // output setting
 
 		//video
-		encoder_video_x264 *v_enc;         // video encoder
+		encoder_video *v_enc;         // video encoder
 		record_desktop *v_src;      // video source
 		sws_helper *v_sws;          // video sws
 
@@ -53,3 +57,5 @@ namespace am {
 		AUDIO_SAMPLE **a_resamples;			    // audio resampled data
 	}MUX_STREAM;
 }
+
+#endif

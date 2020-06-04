@@ -269,7 +269,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="device_videos.h" />
     <ClInclude Include="encoder_video_x264.h" />
     <ClInclude Include="encoder_aac.h" />
-    <ClInclude Include="encoder_ffmpeg_nvenc.h" />
+    <ClInclude Include="encoder_video_nvenc.h" />
     <ClInclude Include="encoder_video.h" />
     <ClInclude Include="encoder_video_define.h" />
     <ClInclude Include="encoder_video_factory.h" />
@@ -310,7 +310,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="device_videos.cpp" />
     <ClCompile Include="encoder_video_x264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
-    <ClCompile Include="encoder_ffmpeg_nvenc.cpp" />
+    <ClCompile Include="encoder_video_nvenc.cpp" />
     <ClCompile Include="encoder_video.cpp" />
     <ClCompile Include="encoder_video_factory.cpp" />
     <ClCompile Include="filter.cpp" />

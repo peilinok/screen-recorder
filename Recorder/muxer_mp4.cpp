@@ -2,7 +2,8 @@
 #include "muxer_define.h"
 
 #include "record_desktop.h"
-#include "encoder_video_x264.h"
+#include "encoder_video.h"
+#include "encoder_video_factory.h"
 #include "sws_helper.h"
 
 #include "record_audio.h"
@@ -451,7 +452,10 @@ namespace am {
 		RECORD_DESKTOP_RECT v_rect = _v_stream->v_src->get_rect();
 
 		do {
-			_v_stream->v_enc = new encoder_video_x264();
+			error = encoder_video_new(setting.v_encoder_id, &_v_stream->v_enc);
+			if (error != AE_NO)
+				break;
+
 			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate,setting.v_bit_rate, setting.v_qb);
 			if (error != AE_NO)
 				break;
