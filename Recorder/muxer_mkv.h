@@ -41,9 +41,13 @@ namespace am {
 
 		void on_audio_error(int error, int index);
 
-		void on_filter_amix_data(AVFrame *frame);
+		void on_filter_amix_data(AVFrame *frame, int index);
 
-		void on_filter_amix_error(int error);
+		void on_filter_amix_error(int error, int index);
+
+		void on_filter_aresample_data(AVFrame * frame, int index);
+
+		void on_filter_aresample_error(int error, int index);
 
 
 

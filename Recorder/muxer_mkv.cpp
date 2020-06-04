@@ -1,15 +1,15 @@
 #include "muxer_mkv.h"
-
 #include "muxer_define.h"
 
 #include "record_desktop.h"
-#include "encoder_264.h"
+#include "encoder_video.h"
+#include "encoder_video_factory.h"
 #include "sws_helper.h"
 
 #include "record_audio.h"
 #include "encoder_aac.h"
-#include "resample_pcm.h"
 #include "filter_amix.h"
+#include "filter_aresample.h"
 
 #include "ring_buffer.h"
 
@@ -69,7 +69,7 @@ namespace am {
 					break;
 			}
 
-			if (_fmt->audio_codec != AV_CODEC_ID_NONE) {
+			if (_fmt->audio_codec != AV_CODEC_ID_NONE && source_audios_nb) {
 				error = add_audio_stream(setting, source_audios, source_audios_nb);
 				if (error != AE_NO)
 					break;
@@ -115,8 +115,14 @@ namespace am {
 		if (_a_stream && _a_stream->a_enc)
 			_a_stream->a_enc->start();
 
-		if (_a_stream && _a_stream->a_filter_amix)
+		if (_a_stream && _a_stream->a_nb >= 2 && _a_stream->a_filter_amix)
 			_a_stream->a_filter_amix->start();
+
+		if (_a_stream && _a_stream->a_nb < 2 && _a_stream->a_filter_aresample) {
+			for (int i = 0; i < _a_stream->a_nb; i++) {
+				_a_stream->a_filter_aresample[i]->start();
+			}
+		}
 
 		if (_a_stream && _a_stream->a_src) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
@@ -155,9 +161,16 @@ namespace am {
 		if (_v_stream && _v_stream->v_src)
 			_v_stream->v_src->stop();
 
-		al_debug("stop audio filter...");
+		al_debug("stop audio amix filter...");
 		if (_a_stream && _a_stream->a_filter_amix)
 			_a_stream->a_filter_amix->stop();
+
+		al_debug("stop audio aresampler filter...");
+		if (_a_stream && _a_stream->a_filter_aresample) {
+			for (int i = 0; i < _a_stream->a_nb; i++) {
+				_a_stream->a_filter_aresample[i]->stop();
+			}
+		}
 
 
 		al_debug("stop video encoder...");
@@ -202,8 +215,11 @@ namespace am {
 		uint8_t *yuv_data = NULL;
 
 		ret = _v_stream->v_sws->convert(frame, &yuv_data, &len);
+
 		if (ret == AE_NO && yuv_data && len) {
 			_v_stream->v_enc->put(yuv_data, len, frame);
+
+			if (_on_yuv_data) _on_yuv_data(yuv_data, len, frame->width, frame->height, 0);
 		}
 	}
 
@@ -212,75 +228,51 @@ namespace am {
 		al_fatal("on desktop capture error:%d", error);
 	}
 
-#if 1 //with filter
+	int getPcmDB(const unsigned char *pcmdata, size_t size) {
+
+		int db = 0;
+		float value = 0;
+		double sum = 0;
+		double average = 0;
+		int bit_per_sample = 32;
+		int byte_per_sample = bit_per_sample / 8;
+		int channel_num = 2;
+
+		for (int i = 0; i < size; i += channel_num * byte_per_sample)
+		{
+			memcpy(&value, pcmdata + i, byte_per_sample);
+			sum += abs(value);
+		}
+		average = sum / (double)(size / byte_per_sample / channel_num);
+		if (average > 0)
+		{
+			db = (int)(20 * log10f(average));
+		}
+
+		al_debug("%d   %f     %f", db, average, sum);
+		return db;
+	}
+
 	void muxer_mkv::on_audio_data(AVFrame *frame, int index)
 	{
-		if (_running == false
-			|| !_a_stream
-			|| !_a_stream->a_samples
-			|| !_a_stream->a_samples[index]
-			|| !_a_stream->a_resamples
-			|| !_a_stream->a_resamples[index]
-			|| !_a_stream->a_rs
-			|| !_a_stream->a_rs[index])
+		if (_running == false)
 			return;
 
-		_a_stream->a_filter_amix->add_frame(frame, index);
+		if (_a_stream->a_filter_amix != nullptr)
+			_a_stream->a_filter_amix->add_frame(frame, index);
+		else if (_a_stream->a_filter_aresample != nullptr && _a_stream->a_filter_aresample[index] != nullptr) {
+			_a_stream->a_filter_aresample[index]->add_frame(frame);
+		}
 
 		return;
 	}
-#else
-	void muxer_mkv::on_audio_data(AVFrame *frame, int index)
-	{
-		if (_running == false
-			|| !_a_stream
-			|| !_a_stream->a_samples
-			|| !_a_stream->a_samples[index]
-			|| !_a_stream->a_resamples
-			|| !_a_stream->a_resamples[index]
-			|| !_a_stream->a_rs
-			|| !_a_stream->a_rs[index])
-			return;
-
-		AUDIO_SAMPLE *samples = _a_stream->a_samples[index];
-		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[index];
-		resample_pcm *resampler = _a_stream->a_rs[index];
-
-		int copied_len = 0;
-		int sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
-		int remain_len = sample_len;
-
-		while (remain_len > 0) {//should add is_planner codes
-								//cache pcm
-			copied_len = min(samples->size - samples->sample_in, remain_len);
-			if (copied_len) {
-				memcpy(samples->buff + samples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
-				samples->sample_in += copied_len;
-				remain_len = remain_len - copied_len;
-			}
-
-			//got enough pcm to encoder,resample and mix
-			if (samples->sample_in == samples->size) {
-				int ret = resampler->convert(samples->buff, samples->size, resamples->buff, resamples->size);
-				if (ret > 0) {
-					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
-				}
-				else {
-					al_debug("resample audio %d failed,%d", index, ret);
-				}
-
-				samples->sample_in = 0;
-			}
-		}
-	}
-#endif
 
 	void muxer_mkv::on_audio_error(int error, int index)
 	{
 		al_fatal("on audio capture error:%d with stream index:%d", error, index);
 	}
 
-	void muxer_mkv::on_filter_amix_data(AVFrame * frame)
+	void muxer_mkv::on_filter_amix_data(AVFrame * frame, int)
 	{
 		if (_running == false || !_a_stream->a_enc)
 			return;
@@ -332,9 +324,68 @@ namespace am {
 		}
 	}
 
-	void muxer_mkv::on_filter_amix_error(int error)
+	void muxer_mkv::on_filter_amix_error(int error, int)
 	{
-		al_fatal("on filter audio error:%d", error);
+		al_fatal("on filter amix audio error:%d", error);
+	}
+
+	void muxer_mkv::on_filter_aresample_data(AVFrame * frame, int index)
+	{
+		if (_running == false || !_a_stream->a_enc)
+			return;
+
+
+		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[0];
+
+		int copied_len = 0;
+		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+
+		int remain_len = sample_len;
+
+		//for data is planar,should copy data[0] data[1] to correct buff pos
+		if (av_sample_fmt_is_planar((AVSampleFormat)frame->format) == 0) {
+			while (remain_len > 0) {
+
+				//cache pcm
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in, frame->data[0] + sample_len - remain_len, copied_len);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				//got enough pcm to encoder,resample and mix
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+		else {//resample size is channels*frame->linesize[0],for 2 channels
+			while (remain_len > 0) {
+				copied_len = min(resamples->size - resamples->sample_in, remain_len);
+
+				if (copied_len) {
+					memcpy(resamples->buff + resamples->sample_in / 2, frame->data[0] + (sample_len - remain_len) / 2, copied_len / 2);
+					memcpy(resamples->buff + resamples->size / 2 + resamples->sample_in / 2, frame->data[1] + (sample_len - remain_len) / 2, copied_len / 2);
+					resamples->sample_in += copied_len;
+					remain_len = remain_len - copied_len;
+				}
+
+				if (resamples->sample_in == resamples->size) {
+					_a_stream->a_enc->put(resamples->buff, resamples->size, frame);
+
+					resamples->sample_in = 0;
+				}
+			}
+		}
+	}
+
+	void muxer_mkv::on_filter_aresample_error(int error, int index)
+	{
+		al_fatal("on filter aresample[%d] audio error:%d", index, error);
 	}
 
 	void muxer_mkv::on_enc_264_data(AVPacket *packet)
@@ -369,7 +420,7 @@ namespace am {
 		int ret = 0;
 
 		do {
-			ret = avformat_alloc_output_context2(&_fmt_ctx, av_guess_format("matroska", output_file, NULL), "mkv", output_file);
+			ret = avformat_alloc_output_context2(&_fmt_ctx, NULL, NULL, output_file);
 			if (ret < 0 || !_fmt_ctx) {
 				error = AE_FFMPEG_ALLOC_CONTEXT_FAILED;
 				break;
@@ -401,8 +452,16 @@ namespace am {
 		RECORD_DESKTOP_RECT v_rect = _v_stream->v_src->get_rect();
 
 		do {
-			_v_stream->v_enc = new encoder_264();
-			error = _v_stream->v_enc->init(setting.v_width, setting.v_height, setting.v_frame_rate, setting.v_bit_rate, setting.v_qb);
+			error = encoder_video_new(setting.v_encoder_id, &_v_stream->v_enc);
+			if (error != AE_NO)
+				break;
+
+			error = _v_stream->v_enc->init(setting.v_width,
+				setting.v_height,
+				setting.v_frame_rate,
+				setting.v_bit_rate,
+				setting.v_qb
+			);
 			if (error != AE_NO)
 				break;
 
@@ -423,45 +482,39 @@ namespace am {
 			if (error != AE_NO)
 				break;
 
-			AVStream *st = avformat_new_stream(_fmt_ctx, NULL);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
-			}
-
 			AVCodec *codec = avcodec_find_encoder(_fmt->video_codec);
 			if (!codec) {
 				error = AE_FFMPEG_FIND_ENCODER_FAILED;
 				break;
 			}
 
-			AVCodecContext * codec_ctx = avcodec_alloc_context3(codec);
-
-			codec_ctx->codec_id = AV_CODEC_ID_H264;
-			codec_ctx->bit_rate_tolerance = setting.v_bit_rate;
-			codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
-			codec_ctx->time_base.den = setting.v_frame_rate;
-			codec_ctx->time_base.num = 1;
-			codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-
-			codec_ctx->coded_width = setting.v_width;
-			codec_ctx->coded_height = setting.v_height;
-			codec_ctx->width = setting.v_width;
-			codec_ctx->height = setting.v_height;
-			codec_ctx->max_b_frames = 0;//NO B Frame
-
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play,extradata will write with avformat_write_header
-				codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-				codec_ctx->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				codec_ctx->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
+			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
+			if (!st) {
+				error = AE_FFMPEG_NEW_STREAM_FAILED;
+				break;
 			}
 
-			avcodec_open2(codec_ctx, codec, NULL);
-			avcodec_parameters_from_context(st->codecpar, codec_ctx);
+			st->codec->codec_id = AV_CODEC_ID_H264;
+			st->codec->bit_rate_tolerance = setting.v_bit_rate;
+			st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+			st->codec->time_base.den = setting.v_frame_rate;
+			st->codec->time_base.num = 1;
+			st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
 
+			st->codec->coded_width = setting.v_width;
+			st->codec->coded_height = setting.v_height;
+			st->codec->width = setting.v_width;
+			st->codec->height = setting.v_height;
+			st->codec->max_b_frames = 0;//NO B Frame
 			st->time_base = { 1,90000 };//fixed?
-			st->avg_frame_rate = av_inv_q(codec_ctx->time_base);
+			st->avg_frame_rate = av_inv_q(st->codec->time_base);
+
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play,extradata will write with avformat_write_header
+				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _v_stream->v_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_v_stream->v_enc->get_extradata(), _v_stream->v_enc->get_extradata_size());
+			}
 
 			_v_stream->st = st;
 
@@ -481,7 +534,7 @@ namespace am {
 		memset(_a_stream, 0, sizeof(MUX_STREAM));
 
 		_a_stream->a_nb = source_audios_nb;
-		_a_stream->a_rs = new resample_pcm*[_a_stream->a_nb];
+		_a_stream->a_filter_aresample = new filter_aresample*[_a_stream->a_nb];
 		_a_stream->a_resamples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_samples = new AUDIO_SAMPLE*[_a_stream->a_nb];
 		_a_stream->a_src = new record_audio*[_a_stream->a_nb];
@@ -513,72 +566,75 @@ namespace am {
 					i
 				);
 
-				SAMPLE_SETTING src_setting = {
-					_a_stream->a_enc->get_nb_samples(),
-					av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num()),
-					_a_stream->a_src[i]->get_channel_num(),
-					_a_stream->a_src[i]->get_fmt(),
-					_a_stream->a_src[i]->get_sample_rate()
-				};
-				SAMPLE_SETTING dst_setting = {
-					_a_stream->a_enc->get_nb_samples(),
-					av_get_default_channel_layout(setting.a_nb_channel),
-					setting.a_nb_channel,
-					setting.a_sample_fmt,
-					setting.a_sample_rate
-				};
-
-				_a_stream->a_rs[i] = new resample_pcm();
+				_a_stream->a_filter_aresample[i] = new filter_aresample();
 				_a_stream->a_resamples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_rs[i]->init(&src_setting, &dst_setting, &_a_stream->a_resamples[i]->size);
-				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 
+
+				FILTER_CTX ctx_in = { 0 }, ctx_out = { 0 };
+				ctx_in.time_base = _a_stream->a_src[i]->get_time_base();
+				ctx_in.channel_layout = av_get_default_channel_layout(_a_stream->a_src[i]->get_channel_num());
+				ctx_in.nb_channel = _a_stream->a_src[i]->get_channel_num();
+				ctx_in.sample_fmt = _a_stream->a_src[i]->get_fmt();
+				ctx_in.sample_rate = _a_stream->a_src[i]->get_sample_rate();
+
+				ctx_out.time_base = { 1,AV_TIME_BASE };
+				ctx_out.channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
+				ctx_out.nb_channel = setting.a_nb_channel;
+				ctx_out.sample_fmt = setting.a_sample_fmt;
+				ctx_out.sample_rate = setting.a_sample_rate;
+
+				_a_stream->a_filter_aresample[i]->init(ctx_in, ctx_out, i);
+
+				_a_stream->a_filter_aresample[i]->registe_cb(
+					std::bind(&muxer_mkv::on_filter_aresample_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mkv::on_filter_aresample_error, this, std::placeholders::_1, std::placeholders::_2));
+
+				_a_stream->a_resamples[i]->size = av_samples_get_buffer_size(
+					NULL, setting.a_nb_channel, _a_stream->a_enc->get_nb_samples(), setting.a_sample_fmt, 1);
+				_a_stream->a_resamples[i]->buff = new uint8_t[_a_stream->a_resamples[i]->size];
 				_a_stream->a_samples[i] = new AUDIO_SAMPLE({ NULL,0,0 });
-				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(NULL, src_setting.nb_channels, src_setting.nb_samples, src_setting.fmt, 1);
+				_a_stream->a_samples[i]->size = av_samples_get_buffer_size(
+					NULL, _a_stream->a_src[i]->get_channel_num(), _a_stream->a_enc->get_nb_samples(), _a_stream->a_src[i]->get_fmt(), 1);
 				_a_stream->a_samples[i]->buff = new uint8_t[_a_stream->a_samples[i]->size];
 			}
 
-			_a_stream->a_filter_amix = new am::filter_amix();
-			error = _a_stream->a_filter_amix->init(
-			{
-				NULL,NULL,
-				_a_stream->a_src[0]->get_time_base(),
-				_a_stream->a_src[0]->get_sample_rate(),
-				_a_stream->a_src[0]->get_fmt(),
-				_a_stream->a_src[0]->get_channel_num(),
-				av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
-			},
-			{
-				NULL,NULL,
-				_a_stream->a_src[1]->get_time_base(),
-				_a_stream->a_src[1]->get_sample_rate(),
-				_a_stream->a_src[1]->get_fmt(),
-				_a_stream->a_src[1]->get_channel_num(),
-				av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
-			},
-			{
-				NULL,NULL,
-				{ 1,AV_TIME_BASE },
-				setting.a_sample_rate,
-				setting.a_sample_fmt,
-				setting.a_nb_channel,
-				av_get_default_channel_layout(setting.a_nb_channel)
-			}
-			);
+			if (_a_stream->a_nb >= 2) {
+				_a_stream->a_filter_amix = new am::filter_amix();
+				error = _a_stream->a_filter_amix->init(
+				{
+					NULL,NULL,
+					_a_stream->a_src[0]->get_time_base(),
+					_a_stream->a_src[0]->get_sample_rate(),
+					_a_stream->a_src[0]->get_fmt(),
+					_a_stream->a_src[0]->get_channel_num(),
+					av_get_default_channel_layout(_a_stream->a_src[0]->get_channel_num())
+				},
+				{
+					NULL,NULL,
+					_a_stream->a_src[1]->get_time_base(),
+					_a_stream->a_src[1]->get_sample_rate(),
+					_a_stream->a_src[1]->get_fmt(),
+					_a_stream->a_src[1]->get_channel_num(),
+					av_get_default_channel_layout(_a_stream->a_src[1]->get_channel_num())
+				},
+				{
+					NULL,NULL,
+					{ 1,AV_TIME_BASE },
+					setting.a_sample_rate,
+					setting.a_sample_fmt,
+					setting.a_nb_channel,
+					av_get_default_channel_layout(setting.a_nb_channel)
+				}
+				);
 
-			if (error != AE_NO) {
-				break;
-			}
+				if (error != AE_NO) {
+					break;
+				}
 
-			_a_stream->a_filter_amix->registe_cb(
-				std::bind(&muxer_mkv::on_filter_amix_data, this, std::placeholders::_1),
-				std::bind(&muxer_mkv::on_filter_amix_error, this, std::placeholders::_1)
-			);
-
-			AVStream *st = avformat_new_stream(_fmt_ctx, NULL);
-			if (!st) {
-				error = AE_FFMPEG_NEW_STREAM_FAILED;
-				break;
+				_a_stream->a_filter_amix->registe_cb(
+					std::bind(&muxer_mkv::on_filter_amix_data, this, std::placeholders::_1, std::placeholders::_2),
+					std::bind(&muxer_mkv::on_filter_amix_error, this, std::placeholders::_1, std::placeholders::_2)
+				);
 			}
 
 			AVCodec *codec = avcodec_find_encoder(_fmt->audio_codec);
@@ -587,28 +643,27 @@ namespace am {
 				break;
 			}
 
-			AVCodecContext * codec_ctx = avcodec_alloc_context3(codec);
-
-			codec_ctx->codec_type = AVMEDIA_TYPE_AUDIO;
-			codec_ctx->codec_id = _fmt->audio_codec;
-			codec_ctx->bit_rate = setting.a_bit_rate;
-			codec_ctx->channels = setting.a_nb_channel;
-			codec_ctx->sample_rate = setting.a_sample_rate;
-			codec_ctx->sample_fmt = setting.a_sample_fmt;
-			codec_ctx->time_base = { 1,setting.a_sample_rate };
-			codec_ctx->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
-
-			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
-				codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-				codec_ctx->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
-				codec_ctx->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
+			AVStream *st = avformat_new_stream(_fmt_ctx, codec);
+			if (!st) {
+				error = AE_FFMPEG_NEW_STREAM_FAILED;
+				break;
 			}
 
-			avcodec_open2(codec_ctx, codec, NULL);
-			avcodec_parameters_from_context(st->codecpar, codec_ctx);
-
 			st->time_base = { 1,setting.a_sample_rate };
+
+			st->codec->bit_rate = setting.a_bit_rate;
+			st->codec->channels = setting.a_nb_channel;
+			st->codec->sample_rate = setting.a_sample_rate;
+			st->codec->sample_fmt = setting.a_sample_fmt;
+			st->codec->time_base = { 1,setting.a_sample_rate };
+			st->codec->channel_layout = av_get_default_channel_layout(setting.a_nb_channel);
+
+			if (_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER) {//without this,normal player can not play
+				st->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+				st->codec->extradata_size = _a_stream->a_enc->get_extradata_size();// +AV_INPUT_BUFFER_PADDING_SIZE;
+				st->codec->extradata = (uint8_t*)av_memdup(_a_stream->a_enc->get_extradata(), _a_stream->a_enc->get_extradata_size());
+			}
 
 			_a_stream->st = st;
 
@@ -626,8 +681,6 @@ namespace am {
 		int ret = 0;
 
 		do {
-			av_dump_format(_fmt_ctx, 0, output_file, 1);
-
 			if (!(_fmt->flags & AVFMT_NOFILE)) {
 				ret = avio_open(&_fmt_ctx->pb, output_file, AVIO_FLAG_WRITE);
 				if (ret < 0) {
@@ -636,8 +689,14 @@ namespace am {
 				}
 			}
 
+			AVDictionary* opt = NULL;
+			av_dict_set_int(&opt, "video_track_timescale", _v_stream->setting.v_frame_rate, 0);
 
+			//ret = avformat_write_header(_fmt_ctx, &opt);//no need to set this
 			ret = avformat_write_header(_fmt_ctx, NULL);
+
+			av_dict_free(&opt);
+
 			if (ret < 0) {
 				error = AE_FFMPEG_WRITE_HEADER_FAILED;
 				break;
@@ -676,8 +735,8 @@ namespace am {
 
 		if (_a_stream->a_nb) {
 			for (int i = 0; i < _a_stream->a_nb; i++) {
-				if (_a_stream->a_rs && _a_stream->a_rs[i])
-					delete _a_stream->a_rs[i];
+				if (_a_stream->a_filter_aresample && _a_stream->a_filter_aresample[i])
+					delete _a_stream->a_filter_aresample[i];
 
 				if (_a_stream->a_samples && _a_stream->a_samples[i]) {
 					delete[] _a_stream->a_samples[i]->buff;
@@ -690,8 +749,8 @@ namespace am {
 				}
 			}
 
-			if (_a_stream->a_rs)
-				delete[] _a_stream->a_rs;
+			if (_a_stream->a_filter_aresample)
+				delete[] _a_stream->a_filter_aresample;
 
 			if (_a_stream->a_samples)
 				delete[] _a_stream->a_samples;
@@ -737,9 +796,6 @@ namespace am {
 
 		if (_paused) return AE_NO;
 
-		//if (_a_stream->pre_pts == (uint64_t)-1)
-		//	return 0;
-
 		packet->stream_index = _v_stream->st->index;
 
 		if (_v_stream->pre_pts == (uint64_t)-1) {
@@ -747,7 +803,6 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _v_stream->pre_pts;
-		//packet->pts = av_rescale_q_rnd(packet->pts, {1,AV_TIME_BASE}, _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 
@@ -756,28 +811,19 @@ namespace am {
 
 								  //al_debug("V:%lld", packet->pts);
 
-#if 0
-		static FILE *fp = NULL;
-		if (fp == NULL) {
-			fp = fopen("..\\..\\save.264", "wb+");
-			//write sps pps
-			fwrite(_v_stream->v_enc->get_extradata(), 1, _v_stream->v_enc->get_extradata_size(), fp);
-		}
-
-		fwrite(packet->data, 1, packet->size, fp);
-
-		fflush(fp);
-#endif
-
 		av_assert0(packet->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
 
+		if (ret != 0) {
+			al_fatal("write video frame error:%d", ret);
+		}
+
+		return ret;
 	}
 
 	int muxer_mkv::write_audio(AVPacket *packet)
 	{
-		return 0;
 		std::lock_guard<std::mutex> lock(_mutex);
 		if (_paused) return AE_NO;
 
@@ -789,15 +835,24 @@ namespace am {
 		}
 
 		packet->pts = packet->pts - _a_stream->pre_pts;
-		packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
+
+		if (_a_stream->a_filter_amix != nullptr)
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
+		else
+			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_aresample[0]->get_time_base(), { 1,AV_TIME_BASE });
+
 		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
+
 								  //al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
 
 		int ret = av_interleaved_write_frame(_fmt_ctx, packet);//no need to unref packet,this will be auto unref
+		if (ret != 0) {
+			al_fatal("write audio frame error:%d", ret);
+		}
 
 		return ret;
 	}

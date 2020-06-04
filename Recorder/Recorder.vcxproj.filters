@@ -192,6 +192,9 @@
     <ClInclude Include="encoder_video_nvenc.h">
       <Filter>Header Files\encoder\video</Filter>
     </ClInclude>
+    <ClInclude Include="muxer_mkv.h">
+      <Filter>Header Files\muxer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -289,6 +292,9 @@
     </ClCompile>
     <ClCompile Include="encoder_video_nvenc.cpp">
       <Filter>Source Files\encoder\video</Filter>
+    </ClCompile>
+    <ClCompile Include="muxer_mkv.cpp">
+      <Filter>Source Files\muxer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
