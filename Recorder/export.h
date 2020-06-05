@@ -36,6 +36,13 @@ typedef struct {
 }AMRECORDER_SETTING;
 #pragma pack(pop)
 
+#pragma pack(push,1)
+typedef struct {
+	int id;
+	char name[260];
+}AMRECORDER_ENCODERS;
+#pragma pack(pop)
+
 
 typedef void( *AMRECORDER_FUNC_DURATION)(uint64_t duration);
 
@@ -82,5 +89,7 @@ AMRECORDER_API int recorder_get_speakers(AMRECORDER_DEVICE **devices);
 AMRECORDER_API int recorder_get_mics(AMRECORDER_DEVICE **devices);
 
 AMRECORDER_API int recorder_get_cameras(AMRECORDER_DEVICE **devices);
+
+AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS **encoders);
 
 #endif

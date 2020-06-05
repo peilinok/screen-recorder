@@ -271,7 +271,6 @@ namespace am {
 
 			frame->pts = av_gettime_relative();
 			frame->pkt_dts = frame->pts;
-			frame->pkt_pts = frame->pts;
 
 			frame->width = _width;
 			frame->height = _height;

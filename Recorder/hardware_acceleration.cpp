@@ -46,7 +46,7 @@ namespace am {
 
 		if (encoder_map.find(type) == encoder_map.end()) return false;
 
-		strcpy(name, encoder_map.at(type));
+		strcpy_s(name, ENCODER_NAME_LEN, utils_string::ascii_utf8(encoder_map.at(type)).c_str());
 
 		return true;
 	}

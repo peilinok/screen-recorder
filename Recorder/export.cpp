@@ -1,6 +1,7 @@
 #include "export.h"
 
 #include "device_audios.h"
+#include "encoder_video_define.h"
 
 #include "record_audio_factory.h"
 #include "record_desktop_factory.h"
@@ -45,12 +46,6 @@ namespace am {
 		int pause();
 
 		int resume();
-
-		int get_speakers(AMRECORDER_DEVICE **devices);
-
-		int get_mics(AMRECORDER_DEVICE **devices);
-
-		int get_cameras(AMRECORDER_DEVICE **devices);
 
 	private:
 		void on_preview_yuv(const uint8_t *data, int size, int width, int height, int type);
@@ -276,63 +271,6 @@ namespace am {
 		return _muxer->resume();
 	}
 
-	int recorder::get_speakers(AMRECORDER_DEVICE ** devices)
-	{
-		std::list<am::DEVICE_AUDIOS> device_list;
-
-		int error = am::device_audios::get_output_devices(device_list);
-		if (error != AE_NO) return -error;
-
-		int count = device_list.size();
-
-		*devices = new AMRECORDER_DEVICE[count];
-
-		int index = 0;
-		for each (auto device in device_list)
-		{
-			al_info("audio input name:%s id:%s", device.name.c_str(), device.id.c_str());
-
-			(*devices)[index].is_default = device.is_default;
-			sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
-			sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
-
-			index++;
-		}
-
-		return count;
-	}
-
-	int recorder::get_mics(AMRECORDER_DEVICE ** devices)
-	{
-		std::list<am::DEVICE_AUDIOS> device_list;
-
-		int error = am::device_audios::get_input_devices(device_list);
-		if (error != AE_NO) return -error;
-
-		int count = device_list.size();
-
-		*devices = new AMRECORDER_DEVICE[count];
-
-		int index = 0;
-		for each (auto device in device_list)
-		{
-			al_info("audio output name:%s id:%s", device.name.c_str(), device.id.c_str());
-			
-			(*devices)[index].is_default = device.is_default;
-			sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
-			sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
-
-			index++;
-		}
-
-		return count;
-	}
-
-	int recorder::get_cameras(AMRECORDER_DEVICE ** devices)
-	{
-		return -AE_UNSUPPORT;
-	}
-
 	void recorder::on_preview_yuv(const uint8_t * data, int size, int width, int height,int type)
 	{
 		if (_callbacks.func_preview_yuv != NULL)
@@ -372,15 +310,78 @@ AMRECORDER_API int recorder_resume()
 
 AMRECORDER_API int recorder_get_speakers(AMRECORDER_DEVICE ** devices)
 {
-	return am::recorder::instance()->get_speakers(devices);
+	std::list<am::DEVICE_AUDIOS> device_list;
+
+	int error = am::device_audios::get_output_devices(device_list);
+	if (error != AE_NO) return -error;
+
+	int count = device_list.size();
+
+	*devices = new AMRECORDER_DEVICE[count];
+
+	int index = 0;
+	for each (auto device in device_list)
+	{
+		al_info("audio input name:%s id:%s", device.name.c_str(), device.id.c_str());
+
+		(*devices)[index].is_default = device.is_default;
+		sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
+		sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
+
+		index++;
+	}
+
+	return count;
 }
 
 AMRECORDER_API int recorder_get_mics(AMRECORDER_DEVICE ** devices)
 {
-	return am::recorder::instance()->get_mics(devices);
+	std::list<am::DEVICE_AUDIOS> device_list;
+
+	int error = am::device_audios::get_input_devices(device_list);
+	if (error != AE_NO) return -error;
+
+	int count = device_list.size();
+
+	*devices = new AMRECORDER_DEVICE[count];
+
+	int index = 0;
+	for each (auto device in device_list)
+	{
+		al_info("audio output name:%s id:%s", device.name.c_str(), device.id.c_str());
+
+		(*devices)[index].is_default = device.is_default;
+		sprintf_s((*devices)[index].id, 260, "%s", device.id.c_str());
+		sprintf_s((*devices)[index].name, 260, "%s", device.name.c_str());
+
+		index++;
+	}
+
+	return count;
 }
 
 AMRECORDER_API int recorder_get_cameras(AMRECORDER_DEVICE ** devices)
 {
-	return am::recorder::instance()->get_cameras(devices);
+	return -AE_UNSUPPORT;
+}
+
+AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS ** encoders)
+{
+	auto hw_encoders = am::hardware_acceleration::get_supported_video_encoders();
+
+	int count = hw_encoders.size() + 1;
+	*encoders = new AMRECORDER_ENCODERS[count];
+
+	AMRECORDER_ENCODERS *ptr = *encoders;
+	ptr->id = am::EID_VIDEO_X264;
+	sprintf_s(ptr->name, 260, am::utils_string::ascii_utf8("Soft.X264").c_str());
+
+	for each (auto hw_encoder in hw_encoders)
+	{
+		ptr++;
+		ptr->id = hw_encoder.type;
+		sprintf_s(ptr->name, 260, "%s", hw_encoder.name);
+	}
+
+	return count;
 }

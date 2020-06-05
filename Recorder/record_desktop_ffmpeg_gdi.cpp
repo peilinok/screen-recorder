@@ -188,7 +188,6 @@ namespace am {
 				//use relative time instead of device time
 				frame->pts = av_gettime_relative();// -_start_time;
 				frame->pkt_dts = frame->pts;
-				frame->pkt_pts = frame->pts;
 				_on_data(frame);
 			}
 

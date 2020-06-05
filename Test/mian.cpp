@@ -18,13 +18,18 @@ void on_preview_image(
 int main()
 {
 	AMRECORDER_DEVICE *speakers = NULL, *mics = NULL;
+	AMRECORDER_ENCODERS *vencoders = NULL;
 
 	AMRECORDER_SETTING setting = {0};
 	AMRECORDER_CALLBACK callback = {0};
 
+
 	int nspeaker = recorder_get_speakers(&speakers);
 	
 	int nmic = recorder_get_mics(&mics);
+
+	int n_vencoders = recorder_get_vencoders(&vencoders);
+
 
 	setting.v_left = 0;
 	setting.v_top = 0;
@@ -84,6 +89,7 @@ int main()
 
 	delete[] speakers;
 	delete[] mics;
+	delete[] vencoders;
 
 	printf("press any key to exit...\r\n");
 	system("pause");
