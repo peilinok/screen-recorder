@@ -178,7 +178,7 @@ namespace am {
 		return error;
 	}
 
-	const AVRational & filter_aresample::get_time_base()
+	const AVRational filter_aresample::get_time_base()
 	{
 		return av_buffersink_get_time_base(_ctx_out.ctx);
 	}

@@ -122,7 +122,7 @@ namespace am {
 		} while (0);
 
 		if (err != AE_NO) {
-			al_debug("%s,error:%d %ld", err2str(err), ret, GetLastError());
+			al_debug("%s,error:%d %lu", err2str(err), ret, GetLastError());
 			cleanup();
 		}
 

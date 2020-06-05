@@ -100,7 +100,7 @@ namespace am {
 		} while (0);
 
 		if (error != AE_NO) {
-			al_debug("%s,error: %d %ld", err2str(error), ret, GetLastError());
+			al_debug("%s,error: %d %lu", err2str(error), ret, GetLastError());
 			clean_up();
 		}
 

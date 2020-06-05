@@ -156,7 +156,7 @@ namespace am {
 
 
 		if (ret != AE_NO)
-			al_debug("get_devices failed(%ld): %s", GetLastError(), err2str(ret));
+			al_debug("get_devices failed(%lu): %s", GetLastError(), err2str(ret));
 
 		return ret;
 	}
@@ -243,7 +243,7 @@ namespace am {
 
 
 		if (ret != AE_NO)
-			al_debug("get_devices failed(%ld): %s", GetLastError(), err2str(ret));
+			al_debug("get_devices failed(%lu): %s", GetLastError(), err2str(ret));
 
 		return ret;
 	}

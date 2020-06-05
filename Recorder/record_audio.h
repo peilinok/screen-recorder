@@ -31,7 +31,7 @@ namespace am {
 		
 		virtual int stop() = 0;
 
-		virtual const AVRational & get_time_base() = 0;
+		virtual const AVRational get_time_base() = 0;
 
 		virtual int64_t get_start_time() = 0;
 

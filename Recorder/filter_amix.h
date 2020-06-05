@@ -24,7 +24,7 @@ namespace am {
 
 		int add_frame(AVFrame *frame, int index);
 
-		const AVRational &get_time_base();
+		const AVRational get_time_base();
 
 	private:
 		void cleanup();

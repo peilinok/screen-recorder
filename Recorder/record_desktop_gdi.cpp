@@ -51,7 +51,7 @@ namespace am {
 		} while (0);
 
 		if (error != AE_NO) {
-			al_debug("%s,last error:%ld", err2str(error), GetLastError());
+			al_debug("%s,last error:%lu", err2str(error), GetLastError());
 			clean_up();
 		}
 
@@ -152,21 +152,21 @@ namespace am {
 
 			hdc_screen = GetWindowDC(NULL);
 			if (!hdc_screen) {
-				al_error("get window dc failed:%lld", GetLastError());
+				al_error("get window dc failed:%lu", GetLastError());
 				error = AE_GDI_GET_DC_FAILED;
 				break;
 			}
 
 			hdc_mem = CreateCompatibleDC(hdc_screen);
 			if (!hdc_mem) {
-				al_error("create compatible dc failed:%lld", GetLastError());
+				al_error("create compatible dc failed:%lu", GetLastError());
 				error = AE_GDI_CREATE_DC_FAILED;
 				break;
 			}
 
 			hbm_mem = CreateCompatibleBitmap(hdc_screen, _width, _height);
 			if (!hbm_mem) {
-				al_error("create compatible bitmap failed:%lld", GetLastError());
+				al_error("create compatible bitmap failed:%lu", GetLastError());
 				error = AE_GDI_CREATE_BMP_FAILED;
 				break;
 			}
@@ -175,7 +175,7 @@ namespace am {
 
 			//must have CAPTUREBLT falg,otherwise some layered window can not be captured
 			if (!BitBlt(hdc_mem, 0, 0, _width, _height, hdc_screen, _rect.left, _rect.top, SRCCOPY | CAPTUREBLT)) {
-				al_error("bitblt data failed:%lld", GetLastError());
+				al_error("bitblt data failed:%lu", GetLastError());
 				//error = AE_GDI_BITBLT_FAILED;
 				//administrator UAC will trigger invalid handle error
 				break;
@@ -204,7 +204,7 @@ namespace am {
 			//scan colors by line order
 			int ret = GetDIBits(hdc_mem, hbm_mem, 0, _height, _buffer, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
 			if (ret <= 0 || ret == ERROR_INVALID_PARAMETER) {
-				al_error("get dibits failed:%lld", GetLastError());
+				al_error("get dibits failed:%lu", GetLastError());
 				error = AE_GDI_GET_DIBITS_FAILED;
 				break;
 			}

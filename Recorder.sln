@@ -13,35 +13,25 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_DLL|x86 = Debug_DLL|x86
-		Debug_Static|x86 = Debug_Static|x86
 		Debug|x86 = Debug|x86
 		Release_DLL|x86 = Release_DLL|x86
-		Release_Static|x86 = Release_Static|x86
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug_DLL|x86.ActiveCfg = Debug_DLL|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug_DLL|x86.Build.0 = Debug_DLL|Win32
-		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug_Static|x86.ActiveCfg = Debug_Static|Win32
-		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug_Static|x86.Build.0 = Debug_Static|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug|x86.ActiveCfg = Debug|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Debug|x86.Build.0 = Debug|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release_DLL|x86.ActiveCfg = Release_DLL|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release_DLL|x86.Build.0 = Release_DLL|Win32
-		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release_Static|x86.ActiveCfg = Release_Static|Win32
-		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release_Static|x86.Build.0 = Release_Static|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release|x86.ActiveCfg = Release|Win32
 		{7A53119E-1803-42CD-BC2F-CF60B09A42E6}.Release|x86.Build.0 = Release|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug_DLL|x86.ActiveCfg = Debug_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug_DLL|x86.Build.0 = Debug_DLL|Win32
-		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug_Static|x86.ActiveCfg = Debug_DLL|Win32
-		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug_Static|x86.Build.0 = Debug_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug|x86.ActiveCfg = Debug_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Debug|x86.Build.0 = Debug_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release_DLL|x86.ActiveCfg = Release_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release_DLL|x86.Build.0 = Release_DLL|Win32
-		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release_Static|x86.ActiveCfg = Release_DLL|Win32
-		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release_Static|x86.Build.0 = Release_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release|x86.ActiveCfg = Release_DLL|Win32
 		{3CB2C5EB-D651-42DA-B254-9B5E121B98DD}.Release|x86.Build.0 = Release_DLL|Win32
 	EndGlobalSection

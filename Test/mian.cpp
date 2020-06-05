@@ -34,8 +34,11 @@ int main()
 	setting.v_bit_rate = 64000;
 	setting.v_frame_rate = 30;
 
-	sprintf(setting.output, "..\\..\\save.mp4");
-	//sprintf(setting.output, "..\\..\\save.mkv");
+	//////////////should be the truely encoder id,zero will always be soft x264
+	setting.v_enc_id = 0;
+
+	//sprintf(setting.output, "..\\..\\save.mp4");
+	sprintf(setting.output, "..\\..\\save.mkv");
 
 #if 1 //record speaker mic
 	for (int i = 0; i < nspeaker; i++) {

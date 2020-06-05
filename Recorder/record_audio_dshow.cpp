@@ -142,7 +142,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	const AVRational & record_audio_dshow::get_time_base()
+	const AVRational record_audio_dshow::get_time_base()
 	{
 		if (_inited && _fmt_ctx && _stream_index != -1) {
 			return _fmt_ctx->streams[_stream_index]->time_base;
@@ -201,8 +201,6 @@ namespace am {
 
 			if (ret < 0) {
 				if (_on_error) _on_error(AE_FFMPEG_READ_FRAME_FAILED, _cb_extra_index);
-
-				al_fatal("read frame failed:%d %ld", );
 				break;
 			}
 

@@ -22,7 +22,7 @@ namespace am {
 
 		HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if (hr != S_OK)
-			al_debug("%s,error:%ld",err2str(AE_CO_INITED_FAILED), GetLastError());
+			al_debug("%s,error:%lu",err2str(AE_CO_INITED_FAILED), GetLastError());
 
 		_co_inited = (hr == S_OK || hr == S_FALSE);//if already initialize will return S_FALSE
 
@@ -280,7 +280,7 @@ namespace am {
 		} while (0);
 
 		if (error != AE_NO) {
-			al_debug("%s,error:%ld", err2str(error), GetLastError());
+			al_debug("%s,error:%lu", err2str(error), GetLastError());
 			clean_wasapi();
 		}
 
@@ -302,14 +302,14 @@ namespace am {
 		if (!_is_input) {
 			hr = _render_client->Start();
 			if (FAILED(hr)) {
-				al_error("%s,error:%ld", err2str(AE_CO_START_FAILED), GetLastError());
+				al_error("%s,error:%lu", err2str(AE_CO_START_FAILED), GetLastError());
 				return AE_CO_START_FAILED;
 			}
 		}
 		
 		hr = _capture_client->Start();
 		if (hr != S_OK) {
-			al_error("%s,error:%ld", err2str(AE_CO_START_FAILED), GetLastError());
+			al_error("%s,error:%lu", err2str(AE_CO_START_FAILED), GetLastError());
 			return AE_CO_START_FAILED;
 		}
 
@@ -357,7 +357,7 @@ namespace am {
 		return AE_NO;
 	}
 
-	const AVRational & record_audio_wasapi::get_time_base()
+	const AVRational record_audio_wasapi::get_time_base()
 	{
 		return{ 1,AV_TIME_BASE };
 	}
