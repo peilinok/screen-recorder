@@ -16,6 +16,8 @@
 #include "log_helper.h"
 #include "hardware_acceleration.h"
 
+#include "remuxer_ffmpeg.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -387,6 +389,37 @@ void test_audio()
 	//_recorder_microphone->stop();
 }
 
+
+void on_remux_progress(const char *src, int progress, int total)
+{
+	al_debug("on remux progress:%s %d %d", src, progress, total);
+}
+
+void on_remux_state(const char *src, int state, int error) {
+	al_debug("on remux state:%s %d %d", src, state, error);
+}
+
+void test_remux() {
+#if TEST_MULTI_THREAD
+	for (int i = 0; i < 20; i++) {
+		am::REMUXER_PARAM param = { 0 };
+		sprintf_s(param.src, 260, "%d", i);
+		am::remuxer_ffmpeg::instance()->create_remux(param);
+	}
+#else
+	am::REMUXER_PARAM param = { 0 };
+
+	sprintf_s(param.src, 260, "%s", am::utils_string::ascii_utf8("..\\..\\save.mkv").c_str());
+	sprintf_s(param.dst, 260, "%s", am::utils_string::ascii_utf8("..\\..\\save.mp4").c_str());
+
+	param.cb_progress = on_remux_progress;
+
+	param.cb_state = on_remux_state;
+	
+	am::remuxer_ffmpeg::instance()->create_remux(param);
+#endif
+}
+
 int main(int argc, char **argv)
 {
 	al_info("record start...");
@@ -408,9 +441,9 @@ int main(int argc, char **argv)
 
 	//test_audio();
 
-	test_recorder();
+	//test_recorder();
 
-
+	test_remux();
 
 	//save_aac();
 

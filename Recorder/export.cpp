@@ -9,6 +9,8 @@
 #include "muxer_define.h"
 #include "muxer_ffmpeg.h"
 
+#include "remuxer_ffmpeg.h"
+
 #include "error_define.h"
 #include "log_helper.h"
 #include "utils_string.h"
@@ -278,6 +280,11 @@ namespace am {
 	}
 }
 
+AMRECORDER_API const char * recorder_err2str(int error)
+{
+	return err2str(error);
+}
+
 AMRECORDER_API int recorder_init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK & callbacks)
 {
 	return am::recorder::instance()->init(setting, callbacks);
@@ -384,4 +391,18 @@ AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS ** encoders)
 	}
 
 	return count;
+}
+
+AMRECORDER_API int recorder_remux(const char * src, const char * dst, AMRECORDER_FUNC_REMUX_PROGRESS func_progress, AMRECORDER_FUNC_REMUX_STATE func_state)
+{
+	am::REMUXER_PARAM param = {0};
+
+	sprintf_s(param.src, 260, "%s", src);
+	sprintf_s(param.dst, 260, "%s", dst);
+
+	param.cb_progress = func_progress;
+
+	param.cb_state = func_state;
+
+	return am::remuxer_ffmpeg::instance()->create_remux(param);
 }

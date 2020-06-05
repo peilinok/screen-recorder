@@ -9,6 +9,7 @@
 #define AMRECORDER_API extern "C"  __declspec(dllexport)
 #endif
 
+
 #pragma pack(push,1)
 typedef struct {
 	char id[260];
@@ -60,6 +61,22 @@ typedef void(*AMRECORDER_FUNC_PREVIEW_YUV)(
 
 typedef void( *AMRECORDER_FUNC_PREVIEW_AUDIO)();
 
+/**
+* Remux progress callback function
+* @param[in] path       source file path
+* @param[in] progress   remuxing progress in total
+* @param[in] total      always will be 100
+*/
+typedef void(*AMRECORDER_FUNC_REMUX_PROGRESS)(const char *path, int progress, int total);
+
+/**
+* Remux state callback function
+* @param[in] path    source file path
+* @param[in] state   0 for unremuxing,1 for remuxing
+* @param[in] error   0 for succed,otherwhise error code
+*/
+typedef void(*AMRECORDER_FUNC_REMUX_STATE)(const char *path, int state, int error);
+
 #pragma pack(push,1)
 typedef struct {
 	AMRECORDER_FUNC_DURATION func_duration;
@@ -70,6 +87,7 @@ typedef struct {
 }AMRECORDER_CALLBACK;
 #pragma pack(pop)
 
+AMRECORDER_API const char * recorder_err2str(int error);
 
 AMRECORDER_API int recorder_init(const AMRECORDER_SETTING &setting, const AMRECORDER_CALLBACK &callbacks);
 
@@ -91,5 +109,17 @@ AMRECORDER_API int recorder_get_mics(AMRECORDER_DEVICE **devices);
 AMRECORDER_API int recorder_get_cameras(AMRECORDER_DEVICE **devices);
 
 AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS **encoders);
+
+/**
+* Remux callback function
+* @param[in] src    source file path
+* @param[in] dst   0 for unremuxing,1 for remuxing
+* @param[in] func_progress   0 for succed,otherwhise error code
+* @param[in] func_state   0 for succed,otherwhise error code
+*/
+AMRECORDER_API int recorder_remux(
+	const char *src, const char *dst, 
+	AMRECORDER_FUNC_REMUX_PROGRESS func_progress, 
+	AMRECORDER_FUNC_REMUX_STATE func_state);
 
 #endif

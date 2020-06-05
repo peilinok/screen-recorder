@@ -52,10 +52,8 @@ enum AM_ERROR{
 	AE_FFMPEG_NEW_STREAM_FAILED,
 	AE_FFMPEG_FIND_INPUT_FMT_FAILED,
 	AE_FFMPEG_WRITE_HEADER_FAILED,
-
-	//AE_MP4V2_
-	AE_MP4V2_CREATE_FAILED,
-	AE_MP4V2_ADD_TRACK_FAILED,
+	AE_FFMPEG_WRITE_TRAILER_FAILED,
+	AE_FFMPEG_WRITE_FRAME_FAILED,
 
 	//AE_FILTER_
 	AE_FILTER_ALLOC_GRAPH_FAILED,
@@ -102,6 +100,13 @@ enum AM_ERROR{
 	AE_DUP_QI_DXGI_FAILED,
 	AE_DUP_MAP_FAILED,
 	AE_DUP_GET_CURSORSHAPE_FAILED,
+
+	//AE_REMUX_
+	AE_REMUX_RUNNING,
+	AE_REMUX_NOT_EXIST,
+	AE_REMUX_INVALID_INOUT,
+
+	AE_MAX
 };
 
 static const char *ERRORS_STR[] = {
@@ -154,9 +159,8 @@ static const char *ERRORS_STR[] = {
 	"ffmpeg new out stream failed",     //AE_FFMPEG_NEW_STREAM_FAILED
 	"ffmpeg find input format failed",  //AE_FFMPEG_FIND_INPUT_FMT_FAILED
 	"ffmpeg write file header failed",  //AE_FFMPEG_WRITE_HEADER_FAILED
-
-	"mp4v2 create new handle failed",   //AE_MP4V2_CREATE_FAILED
-	"mp4v2 create new track failed",    //AE_MP4V2_ADD_TRACK_FAILED
+	"ffmpeg write file trailer failed", //AE_FFMPEG_WRITE_TRAILER_FAILED
+	"ffmpeg write frame failed",        //AE_FFMPEG_WRITE_FRAME_FAILED
 
 	"avfilter alloc avfilter failed",   //AE_FILTER_ALLOC_GRAPH_FAILED
 	"avfilter create graph failed",     //AE_FILTER_CREATE_FILTER_FAILED
@@ -198,9 +202,13 @@ static const char *ERRORS_STR[] = {
 	"duplication dxgi qi failed",         //AE_DUP_QI_DXGI_FAILED
 	"duplication map rects failed",       //AE_DUP_MAP_FAILED
 	"duplication get cursor shape failed",//AE_DUP_GET_CURSORSHAPE_FAILED
+
+	"remux is already running",           //AE_REMUX_RUNNING
+	"remux input file do not exist",      //AE_REMUX_NOT_EXIST
+	"remux input or output file invalid", //AE_REMUX_INVALID_INOUT
 };
 
-#define err2str(e) ERRORS_STR[e]
+#define err2str(e) e < AE_MAX ? ERRORS_STR[e] : "unknown"
 
 #define AMERROR_CHECK(err) if(err != AE_NO) return err
 
