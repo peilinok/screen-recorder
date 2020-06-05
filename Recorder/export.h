@@ -111,7 +111,7 @@ AMRECORDER_API int recorder_get_cameras(AMRECORDER_DEVICE **devices);
 AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS **encoders);
 
 /**
-* Remux callback function
+* Recorder create a remux job
 * @param[in] src    source file path
 * @param[in] dst   0 for unremuxing,1 for remuxing
 * @param[in] func_progress   0 for succed,otherwhise error code

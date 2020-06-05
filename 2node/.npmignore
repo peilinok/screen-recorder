@@ -4,5 +4,6 @@ build/
 yarn.lock
 package-lock.json
 save.mp4
+save.mkv
 *.log
 platform/win32/recorder.node

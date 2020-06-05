@@ -282,7 +282,7 @@ namespace am {
 
 AMRECORDER_API const char * recorder_err2str(int error)
 {
-	return err2str(error);
+	return am::utils_string::ascii_utf8(err2str(error)).c_str();
 }
 
 AMRECORDER_API int recorder_init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK & callbacks)

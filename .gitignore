@@ -251,3 +251,4 @@
 /Test/Debug_DLL/*.log
 /Recorder/Release/Recorder.tlog/*.tlog
 /Recorder/Release/*.obj
+/2node/save.mkv

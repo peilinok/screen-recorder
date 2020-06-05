@@ -121,10 +121,11 @@ class EasyRecorder {
      * @param {string} speakerId 
      * @param {string} micName 
      * @param {string} micId 
+     * @param {number} vencoderId video encoder id
      * @returns {number} 0 succed, otherwise return error code
      */
-    Init(qb,fps,output,speakerName,speakerId,micName,micId) {
-        let ret = recorder.Init(qb,fps,output,speakerName,speakerId,micName,micId);
+    Init(qb,fps,output,speakerName,speakerId,micName,micId,vencoderId) {
+        let ret = recorder.Init(qb,fps,output,speakerName,speakerId,micName,micId,vencoderId);
         if(ret === 0){
             recorder.SetPreviewYuvCallBack(this._onYuvData);
         }
@@ -171,11 +172,39 @@ class EasyRecorder {
     }
 
     /**
-     * 
+     * wait for timestamp
      * @param {number} timestamp 
      */
     Wait(timestamp){
         return recorder.Wait(timestamp);
+    }
+
+    /**
+     * trans error code to error string
+     * @param {number} code 
+     */
+    GetErrorStr(code){
+        return recorder.GetErrorStr(code);
+    }
+
+    /**
+     * @returns {{id:number,name:string}[]}
+     */
+    GetVideoEncoders(){
+        return recorder.GetVideoEncoders();
+    }
+
+    /**
+     * remux file to specified path and format by dst
+     * @param {string} src 
+     * @param {string} dst 
+     * @param {(src:string,progress:number,total:number)=>void} cbProgress 
+     * @param {(src:string,state:number,error:number)=>void} cbState 
+     * 
+     * @returns {number} error code
+     */
+    RemuxFile(src,dst,cbProgress,cbState){
+        return recorder.RemuxFile(src,dst,cbProgress,cbState);
     }
 }
 

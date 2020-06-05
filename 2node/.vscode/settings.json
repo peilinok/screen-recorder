@@ -9,6 +9,7 @@
         "xmemory": "cpp",
         "xutility": "cpp",
         "deque": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "xtree": "cpp"
     }
 }

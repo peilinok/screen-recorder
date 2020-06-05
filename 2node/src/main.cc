@@ -10,6 +10,7 @@
 #define PTHREAD_MUTEX_RECURSIVE_NP 1
 #endif
 
+#include <map>
 #include <queue>
 #include <string>
 #include <Windows.h>
@@ -181,6 +182,24 @@ namespace recorder
 	if(!CheckParamValid(value, type)) \
 		return;
 
+#define CHECK_PARAM_TYPE8(type1, type2, type3, type4, type5, type6, type7,type8) \
+	if (type1 != NULL) \
+		CHECK_PARAM_VALID(args[0], type1); \
+	if (type2 != NULL) \
+		CHECK_PARAM_VALID(args[1], type2); \
+	if (type3 != NULL) \
+		CHECK_PARAM_VALID(args[2], type3); \
+	if (type4 != NULL) \
+		CHECK_PARAM_VALID(args[3], type4); \
+	if (type5 != NULL) \
+		CHECK_PARAM_VALID(args[4], type5); \
+	if (type6 != NULL) \
+		CHECK_PARAM_VALID(args[5], type6); \
+  if (type7 != NULL) \
+		CHECK_PARAM_VALID(args[6], type7); \
+	if (type8 != NULL) \
+		CHECK_PARAM_VALID(args[7], type8);
+
 #define CHECK_PARAM_TYPE7(type1, type2, type3, type4, type5, type6, type7) \
 	if (type1 != NULL) \
 		CHECK_PARAM_VALID(args[0], type1); \
@@ -231,7 +250,9 @@ namespace recorder
 		uvcb_type_error,
 		uvcb_type_device_change,
 		uvcb_type_preview_audio,
-		uvcb_type_preview_yuv
+		uvcb_type_preview_yuv,
+		uvcb_type_remux_progress,
+		uvcb_type_remux_state,
 	}uvCallbackType;
 
 	typedef struct {
@@ -255,6 +276,18 @@ namespace recorder
 	}uvCallBackDataPreviewYUV;
 
 	typedef struct {
+		char src[260];
+		int progress;
+		int total;
+	}uvCallBackDataRemuxProgress;
+
+	typedef struct {
+		char src[260];
+		int state;
+		int error;
+	}uvCallBackDataRemuxState;
+
+	typedef struct {
 		uvCallbackType type;
 		int *data;
 	}uvCallBackChunk;
@@ -270,11 +303,29 @@ namespace recorder
 	static uvCallBackHandler* cb_uv_error = NULL;
 	static uvCallBackHandler* cb_uv_device_change = NULL;
 	static uvCallBackHandler* cb_uv_preview_yuv = NULL;
+	static std::map<std::string, uvCallBackHandler*> map_uv_remux_progress;
+	static std::map<std::string, uvCallBackHandler*> map_uv_remux_state;
 
 	static uv_async_t s_async = { 0 };
 	static Locker locker;
 
 	static std::queue<uvCallBackChunk> cb_chunk_queue;
+
+	static void OnUvCallback(uv_async_t *handle);
+
+	void InitUvEvent() {
+		static bool isInited = false;
+		locker.Lock();
+
+		if (isInited == false) {
+			int ret = uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
+			AMLOG("uv init result:%d", ret);
+
+			isInited = true;
+		}
+
+		locker.Unlock();
+	}
 
 	void PushUvChunk(const uvCallBackChunk &chunk) {
 
@@ -354,6 +405,59 @@ namespace recorder
 
 	}
 
+	void DispatchUvRecorderRemuxProgress(uvCallBackDataRemuxProgress *data) {
+		auto itr = map_uv_remux_progress.find(data->src);
+		if (itr == map_uv_remux_progress.end()) return;
+
+		Isolate * isolate = itr->second->isolate;
+
+		HandleScope scope(isolate);
+
+		const unsigned argc = 3;
+		Local<Value> argv[argc] = {
+			utf8_v8string(isolate, data->src),
+			Uint32::New(isolate,data->progress),
+			Uint32::New(isolate,data->total),
+		};
+
+		Local<Value> recv;
+
+		itr->second->callback.Get(isolate)->Call(isolate->GetCurrentContext(), itr->second->object.Get(isolate), argc, argv);
+	}
+
+	void DispatchUvRecorderRemuxState(uvCallBackDataRemuxState *data) {
+		auto itr = map_uv_remux_state.find(data->src);
+		if (itr == map_uv_remux_state.end()) return;
+
+
+		Isolate * isolate = itr->second->isolate;
+
+		HandleScope scope(isolate);
+
+		const unsigned argc = 3;
+		Local<Value> argv[argc] = {
+			utf8_v8string(isolate, data->src),
+			Uint32::New(isolate,data->state),
+			Uint32::New(isolate,data->error),
+		};
+
+		Local<Value> recv;
+
+		itr->second->callback.Get(isolate)->Call(isolate->GetCurrentContext(), itr->second->object.Get(isolate), argc, argv);
+
+		//get state 0 should remove callback functions
+		if (data->state == 0) {
+			delete itr->second;
+			map_uv_remux_state.erase(itr);
+
+			auto itr_progress = map_uv_remux_progress.find(data->src);
+			if (itr_progress != map_uv_remux_progress.end()) {
+				delete itr_progress->second;
+				map_uv_remux_progress.erase(itr_progress);
+			}
+		}
+	}
+
 	void OnRecorderDuration(uint64_t duration) {
 		uvCallBackDataDruation *data = new uvCallBackDataDruation;
 		data->duration = duration;
@@ -389,6 +493,9 @@ namespace recorder
 	}
 
 	void OnRecorderPreviewYuv(const unsigned char *data, unsigned int size, int width, int height,int type) {
+
+		if (!cb_uv_preview_yuv) return;
+
 		char *buff = new char[sizeof(uvCallBackDataPreviewYUV) + size];
 		uvCallBackDataPreviewYUV *chunk = (uvCallBackDataPreviewYUV*)buff;
 
@@ -403,6 +510,32 @@ namespace recorder
 		uvCallBackChunk uv_cb_chunk;
 		uv_cb_chunk.type = uvcb_type_preview_yuv;
 		uv_cb_chunk.data = (int*)buff;
+
+		PushUvChunk(uv_cb_chunk);
+	}
+
+	void OnRecorderRemuxProgress(const char *src, int progress, int total) {
+		uvCallBackDataRemuxProgress *data = new uvCallBackDataRemuxProgress;
+		sprintf_s(data->src, 260, "%s", src);
+		data->progress = progress;
+		data->total = total;
+
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_remux_progress;
+		uv_cb_chunk.data = (int*)data;
+
+		PushUvChunk(uv_cb_chunk);
+	}
+
+	void OnRecorderRemuxState(const char *src, int state, int error) {
+		uvCallBackDataRemuxState *data = new uvCallBackDataRemuxState;
+		sprintf_s(data->src, 260, "%s", src);
+		data->state = state;
+		data->error = error;
+
+		uvCallBackChunk uv_cb_chunk;
+		uv_cb_chunk.type = uvcb_type_remux_state;
+		uv_cb_chunk.data = (int*)data;
 
 		PushUvChunk(uv_cb_chunk);
 	}
@@ -427,6 +560,12 @@ namespace recorder
 				break;
 			case uvcb_type_preview_yuv:
 				DispatchUvRecorderPreviewYuv((uvCallBackDataPreviewYUV*)chunk.data);
+				break;
+			case uvcb_type_remux_progress:
+				DispatchUvRecorderRemuxProgress((uvCallBackDataRemuxProgress*)chunk.data);
+				break;
+			case uvcb_type_remux_state:
+				DispatchUvRecorderRemuxState((uvCallBackDataRemuxState*)chunk.data);
 				break;
 			default:
 				break;
@@ -593,8 +732,8 @@ namespace recorder
 		Isolate* isolate = args.GetIsolate();
 
 		//v_qb v_frame_rate v_output a_speaker a_mic
-		CHECK_PARAM_COUNT(7);
-		CHECK_PARAM_TYPE7("uint32", "uint32", " string", "string", "string", "string", "string");
+		CHECK_PARAM_COUNT(8);
+		CHECK_PARAM_TYPE8("uint32", "uint32", " string", "string", "string", "string", "string", "uint32");
 
 		int error = 0;
 
@@ -610,9 +749,9 @@ namespace recorder
 		settings.v_top = 0;
 		settings.v_width = GetSystemMetrics(SM_CXSCREEN);
 		settings.v_height = GetSystemMetrics(SM_CYSCREEN);
-		settings.v_bit_rate = 64000;
+		settings.v_bit_rate = 1280 * 1000;
 
-
+		settings.v_enc_id = args[7]->Uint32Value();
 		settings.v_qb = args[0]->Uint32Value();
 		settings.v_frame_rate = args[1]->Uint32Value();
 
@@ -633,11 +772,7 @@ namespace recorder
 
 		error = recorder_init(settings, callbacks);
 
-		if (error == 0)
-		{
-			int ret = uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
-			printf("uv init result:%d\r\n", ret);
-		}
+		if (error == 0) InitUvEvent();
 
 		args.GetReturnValue().Set(Int32::New(isolate, error));
 	}
@@ -658,8 +793,6 @@ namespace recorder
 			delete[] chunk.data;
 		}
 
-
-
 		if(cb_uv_duration != NULL){
 			delete cb_uv_duration;
 			cb_uv_duration = NULL;
@@ -676,6 +809,17 @@ namespace recorder
 			delete cb_uv_preview_yuv;
 			cb_uv_preview_yuv = NULL;
 		}
+
+		for (auto itr = map_uv_remux_progress.begin(); itr != map_uv_remux_progress.end(); itr++) {
+			delete itr->second;
+			map_uv_remux_progress.erase(itr);
+		}
+
+		for (auto itr = map_uv_remux_state.begin(); itr != map_uv_remux_state.end(); itr++) {
+			delete itr->second;
+			map_uv_remux_state.erase(itr);
+		}
+
 		locker.Unlock();
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
@@ -727,6 +871,100 @@ namespace recorder
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
 
+	void GetErrorStr(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("uint32");
+
+		int error_code = args[0]->Uint32Value();
+
+		args.GetReturnValue().Set(utf8_v8string(isolate, recorder_err2str(error_code)));
+	}
+
+	void GetVideoEncoders(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+
+		AMRECORDER_ENCODERS *encoders;
+		int ret = recorder_get_vencoders(&encoders);
+		if (ret > 0) {
+
+			Local<Array> array = Array::New(isolate, ret);
+
+			for (int i = 0; i<ret; i++) {
+				Local<Object> encoder = Object::New(isolate);
+
+				encoder->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "name"), utf8_v8string(isolate, encoders[i].name));
+				encoder->Set(isolate->GetCurrentContext(), utf8_v8string(isolate, "id"), Number::New(isolate, encoders[i].id));
+
+				array->Set(isolate->GetCurrentContext(), i, encoder);
+			}
+
+			delete[] encoders;
+
+			args.GetReturnValue().Set(array);
+		}
+		else {
+			args.GetReturnValue().Set(utf8_v8string(isolate, "get video encoder list failed."));
+		}
+	}
+
+	void RemuxFile(const FunctionCallbackInfo<Value> &args) {
+		Isolate* isolate = args.GetIsolate();
+
+		CHECK_PARAM_COUNT(4);
+		CHECK_PARAM_TYPE4("string", "string", "function", "function");
+
+		//in case that user hav not call InitUvEvent before
+		InitUvEvent();
+
+		char src[260] = { 0 }, dst[260] = { 0 };
+
+		String::Utf8Value v8Src(Local<String>::Cast(args[0]));
+		sprintf_s(src, 260, "%s", *v8Src);
+
+		String::Utf8Value v8Dst(Local<String>::Cast(args[1]));
+		sprintf_s(dst, 260, "%s", *v8Dst);
+
+		locker.Lock();
+
+		auto itr_progress = map_uv_remux_progress.find(src);
+		if (itr_progress != map_uv_remux_progress.end()) {
+			map_uv_remux_progress.erase(itr_progress);
+		}
+
+		auto itr_state = map_uv_remux_state.find(src);
+		if (itr_state != map_uv_remux_state.end()) {
+			map_uv_remux_state.erase(itr_state);
+		}
+
+		
+		uvCallBackHandler *uvProgressHandler = new uvCallBackHandler;
+
+		uvProgressHandler->isolate = isolate;
+		uvProgressHandler->context.Reset(isolate, isolate->GetCurrentContext());
+		uvProgressHandler->object.Reset(isolate, args.This());
+		uvProgressHandler->callback.Reset(isolate, args[2].As<Function>());
+		map_uv_remux_progress[src] = uvProgressHandler;
+
+
+		uvCallBackHandler *uvStateHandler = new uvCallBackHandler;
+
+		uvStateHandler->isolate = isolate;
+		uvStateHandler->context.Reset(isolate, isolate->GetCurrentContext());
+		uvStateHandler->object.Reset(isolate, args.This());
+		uvStateHandler->callback.Reset(isolate, args[3].As<Function>());
+		map_uv_remux_state[src] = uvStateHandler;
+		
+
+		locker.Unlock();
+
+		int ret = recorder_remux(src, dst, OnRecorderRemuxProgress, OnRecorderRemuxState);
+
+
+		args.GetReturnValue().Set(ret);
+	}
+
 	void Initialize(Local<Object> exports)
 	{
 		NODE_SET_METHOD(exports, "GetSpeakers", GetSpeakers);
@@ -743,6 +981,9 @@ namespace recorder
 		NODE_SET_METHOD(exports, "Pause", Pause);
 		NODE_SET_METHOD(exports, "Resume", Resume);
 		NODE_SET_METHOD(exports, "Wait", Wait);
+		NODE_SET_METHOD(exports, "GetErrorStr", GetErrorStr);
+		NODE_SET_METHOD(exports, "GetVideoEncoders", GetVideoEncoders);
+		NODE_SET_METHOD(exports, "RemuxFile", RemuxFile);
 	}
 
 	NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
