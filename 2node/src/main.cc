@@ -313,15 +313,29 @@ namespace recorder
 
 	static void OnUvCallback(uv_async_t *handle);
 
+	static bool isUvInited = false;
 	void InitUvEvent() {
-		static bool isInited = false;
 		locker.Lock();
 
-		if (isInited == false) {
+		if (isUvInited == false) {
 			int ret = uv_async_init(uv_default_loop(), &s_async, OnUvCallback);
 			AMLOG("uv init result:%d", ret);
 
-			isInited = true;
+			isUvInited = true;
+		}
+
+		locker.Unlock();
+	}
+
+	void FreeUvEvent(){
+		locker.Lock();
+
+		if (isUvInited == true) {
+			uv_close((uv_handle_t*)&s_async, NULL);
+
+			AMLOG("uv freed");
+
+			isUvInited = false;
 		}
 
 		locker.Unlock();
@@ -782,7 +796,7 @@ namespace recorder
 
 		recorder_release();
 
-		uv_close((uv_handle_t*)&s_async, NULL);
+		FreeUvEvent();
 
 		locker.Lock();
 
