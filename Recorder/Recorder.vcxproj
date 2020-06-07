@@ -139,7 +139,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;dbghelp.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
@@ -179,7 +179,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;dbghelp.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
@@ -203,7 +203,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;dbghelp.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -253,7 +253,7 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)ffmpeg\lib\;$(SolutionDir)libmp4v2\lib\;$(SolutionDir)portaudio\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;swresample.lib;postproc.lib;avfilter.lib;Advapi32.lib;Ole32.lib;portaudio_x86.lib;user32.lib;gdi32.lib;dbghelp.lib</AdditionalDependencies>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
@@ -309,6 +309,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
   <ItemGroup>
     <ClCompile Include="d3d_helper.cpp" />
     <ClCompile Include="device_videos.cpp" />
+    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="encoder_video_x264.cpp" />
     <ClCompile Include="encoder_aac.cpp" />
     <ClCompile Include="encoder_video_nvenc.cpp" />
