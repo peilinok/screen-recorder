@@ -7,27 +7,35 @@ https://blog.csdn.net/leixiaohua1020/article/details/18893769#comments
 
 ## Features
 
-1.Record desktop 、microphone、speaker at the same time
+- Record desktop 、microphone、speaker at the same time
 
-2.Mux to mp4 for all players, video and audio is absolute sync
+- Mux to mp4 for all players, video and audio is absolute sync
 
-3.Nodejs addon project
+- Nodejs addon project
 
-4.Support Duplication and gdi desktop grabber in windows
+- Support Duplication and gdi desktop grabber in windows
 
-5.Use wasapi to record microphone & speaker in windows
+- Use wasapi to record microphone & speaker in windows
+
+- YUV data preview callback
+
+- Remux file from one format to another
+
+- NVIDIA encode
+
+- Auto select Duplication API or GDI to get desktop pictures on windows
 
 ## ToDo
 
-1.Review all codes,seperate encoder 、filter、muxer
+- Review all codes,seperate encoder 、filter、muxer
 
-2.Add more devices enumer for different platforms
+- Add more devices enumer for different platforms
 
-3.Add hardware use
+- Add hardware use(amf,qsv,libavi)
 
-4.Add cross-platform support
+- Add cross-platform support(for linux and mac)
 
-5.Add more filters for video and audio
+- Add more filters for video and audio
 
 
 ## How to use?
