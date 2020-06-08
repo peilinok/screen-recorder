@@ -609,7 +609,7 @@ namespace recorder
 				array->Set(isolate->GetCurrentContext(), i, device);
 			}
 
-			delete[]devices;
+			recorder_free_array(devices);
 
 			args.GetReturnValue().Set(array);
 		}
@@ -635,7 +635,7 @@ namespace recorder
 				array->Set(isolate->GetCurrentContext(), i, device);
 			}
 
-			delete[]devices;
+			recorder_free_array(devices);
 
 			args.GetReturnValue().Set(array);
 		}
@@ -914,7 +914,7 @@ namespace recorder
 				array->Set(isolate->GetCurrentContext(), i, encoder);
 			}
 
-			delete[] encoders;
+			recorder_free_array(encoders);
 
 			args.GetReturnValue().Set(array);
 		}
