@@ -87,9 +87,9 @@ int main()
 
 	recorder_release();
 
-	delete[] speakers;
-	delete[] mics;
-	delete[] vencoders;
+	recorder_free_array(speakers);
+	recorder_free_array(mics);
+	recorder_free_array(vencoders);
 
 	printf("press any key to exit...\r\n");
 	system("pause");

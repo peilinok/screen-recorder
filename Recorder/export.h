@@ -87,28 +87,79 @@ typedef struct {
 }AMRECORDER_CALLBACK;
 #pragma pack(pop)
 
+/**
+* Get error string by specified error code
+* @return error string
+*/
 AMRECORDER_API const char * recorder_err2str(int error);
 
+/**
+* Initialize recorder with specified seetings¡¢speaker¡¢mic¡¢encoder...
+* @return 0 if succeed,error code otherwise
+*/
 AMRECORDER_API int recorder_init(const AMRECORDER_SETTING &setting, const AMRECORDER_CALLBACK &callbacks);
 
+/**
+* Release all recorder resources
+*/
 AMRECORDER_API void recorder_release();
 
-
+/**
+* Start recording
+* @return 0 if succeed,error code otherwise
+*/
 AMRECORDER_API int recorder_start();
 
+/**
+* Stop recording
+*/
 AMRECORDER_API void recorder_stop();
 
+/**
+* Pause recording
+* @return 0 if succeed,error code otherwise
+*/
 AMRECORDER_API int recorder_pause();
 
+/**
+* Resume recording
+* @return 0 if succeed,error code otherwise
+*/
 AMRECORDER_API int recorder_resume();
 
+/**
+* Get valid speaker devices
+* @param[in] devices a pointer to a device array,should call recorder_free_array to free memory
+* @return count of speakers
+*/
 AMRECORDER_API int recorder_get_speakers(AMRECORDER_DEVICE **devices);
 
+/**
+* Get valid mic devices
+* @param[in] devices a pointer to a device array,should call recorder_free_array to free memory
+* @return count of mics
+*/
 AMRECORDER_API int recorder_get_mics(AMRECORDER_DEVICE **devices);
 
+/**
+* Get valid camera devices
+* @param[in] devices a pointer to a device array,should call recorder_free_array to free memory
+* @return count of cameras
+*/
 AMRECORDER_API int recorder_get_cameras(AMRECORDER_DEVICE **devices);
 
+/**
+* Get valid encoders
+* @param[in] encoders a pointer to a encoder array,should call recorder_free_array to free memory
+* @return count of encoders
+*/
 AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS **encoders);
+
+/**
+* Free memory allocate by recorder
+* @param[in] array_address the pointer of array buffer
+*/
+AMRECORDER_API void recorder_free_array(void *array_address);
 
 /**
 * Recorder create a remux job

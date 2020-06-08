@@ -435,15 +435,15 @@ int main(int argc, char **argv)
 	al_info("win version: %d.%d.%d.%d", ver.major, ver.minor, ver.build, ver.revis);
 	al_info("is win8 or above: %s", is_win8_or_above ? "true" : "false");
 
-	auto hw_encoders = am::hardware_acceleration::get_supported_video_encoders();
+	//auto hw_encoders = am::hardware_acceleration::get_supported_video_encoders();
 
 	//show_devices();
 
 	//test_audio();
 
-	//test_recorder();
+	test_recorder();
 
-	test_remux();
+	//test_remux();
 
 	//save_aac();
 

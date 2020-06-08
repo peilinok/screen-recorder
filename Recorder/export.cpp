@@ -393,6 +393,12 @@ AMRECORDER_API int recorder_get_vencoders(AMRECORDER_ENCODERS ** encoders)
 	return count;
 }
 
+AMRECORDER_API void recorder_free_array(void * array_address)
+{
+	if (array_address != nullptr)
+		delete[]array_address;
+}
+
 AMRECORDER_API int recorder_remux(const char * src, const char * dst, AMRECORDER_FUNC_REMUX_PROGRESS func_progress, AMRECORDER_FUNC_REMUX_STATE func_state)
 {
 	am::REMUXER_PARAM param = {0};
