@@ -1,7 +1,6 @@
 #ifndef MUXER_FFMPEG
 #define MUXER_FFMPEG
 
-#include <atomic>
 #include <thread>
 #include <list>
 #include <functional>
@@ -82,14 +81,6 @@ namespace am {
 		int write_audio(AVPacket *packet);
 
 	private:
-		std::atomic_bool _inited;
-		std::atomic_bool _running;
-		std::atomic_bool _paused;
-
-		bool _have_v, _have_a;
-
-		std::string _output_file;
-
 		struct MUX_STREAM_T *_v_stream, *_a_stream;
 
 		AVOutputFormat *_fmt;

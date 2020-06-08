@@ -726,6 +726,7 @@ namespace recorder
 		CHECK_PARAM_VALID(args[0], "function");
 
 		locker.Lock();
+
 		if (cb_uv_preview_yuv != NULL) {
 			delete cb_uv_preview_yuv;
 			cb_uv_preview_yuv = NULL;
@@ -738,6 +739,18 @@ namespace recorder
 		cb_uv_preview_yuv->callback.Reset(isolate, args[0].As<Function>());
 
 		locker.Unlock();
+
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
+
+	void SetPreviewYuvEnable(const FunctionCallbackInfo<Value> &args){
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("bool");
+
+		bool enabled = Local<Boolean>::Cast(args[0])->Value();
+
+		recorder_set_preview_enabled(enabled);
 
 		args.GetReturnValue().Set(Boolean::New(isolate, true));
 	}
@@ -796,7 +809,7 @@ namespace recorder
 
 		recorder_release();
 
-		FreeUvEvent();
+		//FreeUvEvent();
 
 		locker.Lock();
 
@@ -988,6 +1001,7 @@ namespace recorder
 		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
 		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
 		NODE_SET_METHOD(exports, "SetPreviewYuvCallBack", SetPreviewYuvCallBack);
+		NODE_SET_METHOD(exports, "SetPreviewYuvEnable", SetPreviewYuvEnable);
 		NODE_SET_METHOD(exports, "Init", Init);
 		NODE_SET_METHOD(exports, "Release", Release);
 		NODE_SET_METHOD(exports, "Start", Start);

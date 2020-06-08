@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <atomic>
 
 namespace am {
 
@@ -36,8 +37,21 @@ namespace am {
 			_on_yuv_data = on_yuv_data;
 		}
 
+		inline void set_preview_enabled(bool enable) {
+			_preview_enabled = enable;
+		}
+
 	protected:
 		cb_yuv_data _on_yuv_data;
+
+		std::atomic_bool _inited;
+		std::atomic_bool _running;
+		std::atomic_bool _paused;
+		std::atomic_bool _preview_enabled;
+
+		bool _have_v, _have_a;
+
+		std::string _output_file;
 	};
 
 

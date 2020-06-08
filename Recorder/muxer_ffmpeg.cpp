@@ -23,20 +23,11 @@ namespace am {
 	{
 		av_register_all();
 
-		_have_a = false;
-		_have_v = false;
-
-		_output_file = "";
-
 		_v_stream = NULL;
 		_a_stream = NULL;
 
 		_fmt = NULL;
 		_fmt_ctx = NULL;
-
-		_inited = false;
-		_running = false;
-		_paused = false;
 
 		_base_time = -1;
 	}
@@ -207,7 +198,7 @@ namespace am {
 
 	void muxer_ffmpeg::on_desktop_data(AVFrame *frame)
 	{
-		if (_running == false || !_v_stream || !_v_stream->v_enc || !_v_stream->v_sws) {
+		if (_running == false || _paused == true || !_v_stream || !_v_stream->v_enc || !_v_stream->v_sws) {
 			return;
 		}
 
@@ -219,7 +210,8 @@ namespace am {
 		if (ret == AE_NO && yuv_data && len) {
 			_v_stream->v_enc->put(yuv_data, len, frame);
 
-			if (_on_yuv_data) _on_yuv_data(yuv_data, len, frame->width, frame->height, 0);
+			if (_on_yuv_data && _preview_enabled == true)
+				_on_yuv_data(yuv_data, len, frame->width, frame->height, 0);
 		}
 	}
 
@@ -255,12 +247,12 @@ namespace am {
 
 	void muxer_ffmpeg::on_audio_data(AVFrame *frame, int index)
 	{
-		if (_running == false)
+		if (_running == false || _paused == true)
 			return;
 
 		if (_a_stream->a_filter_amix != nullptr)
 			_a_stream->a_filter_amix->add_frame(frame, index);
-		else if(_a_stream->a_filter_aresample != nullptr && _a_stream->a_filter_aresample[index] != nullptr) {
+		else if (_a_stream->a_filter_aresample != nullptr && _a_stream->a_filter_aresample[index] != nullptr) {
 			_a_stream->a_filter_aresample[index]->add_frame(frame);
 		}
 
@@ -801,8 +793,6 @@ namespace am {
 		//must lock here,coz av_interleaved_write_frame will push packet into a queue,and is not thread safe
 		std::lock_guard<std::mutex> lock(_mutex);
 
-		if (_paused) return AE_NO;
-
 		packet->stream_index = _v_stream->st->index;
 
 		if (_v_stream->pre_pts == (uint64_t)-1) {
@@ -832,8 +822,6 @@ namespace am {
 	int muxer_ffmpeg::write_audio(AVPacket *packet)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		if (_paused) return AE_NO;
-
 		
 		packet->stream_index = _a_stream->st->index;
 

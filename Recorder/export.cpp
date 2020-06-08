@@ -49,6 +49,8 @@ namespace am {
 
 		int resume();
 
+		void set_preview_enabled(bool enable);
+
 	private:
 		void on_preview_yuv(const uint8_t *data, int size, int width, int height, int type);
 
@@ -273,6 +275,15 @@ namespace am {
 		return _muxer->resume();
 	}
 
+	void recorder::set_preview_enabled(bool enable)
+	{
+		lock_guard lock(_mutex);
+		if (_inited == false)
+			return;
+
+		_muxer->set_preview_enabled(enable);
+	}
+
 	void recorder::on_preview_yuv(const uint8_t * data, int size, int width, int height,int type)
 	{
 		if (_callbacks.func_preview_yuv != NULL)
@@ -411,4 +422,9 @@ AMRECORDER_API int recorder_remux(const char * src, const char * dst, AMRECORDER
 	param.cb_state = func_state;
 
 	return am::remuxer_ffmpeg::instance()->create_remux(param);
+}
+
+AMRECORDER_API void recorder_set_preview_enabled(int enable)
+{
+	am::recorder::instance()->set_preview_enabled(enable == 1);
 }

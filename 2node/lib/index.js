@@ -104,12 +104,15 @@ class EasyRecorder {
     }
 
     /**
-     * 
+     * Enable preview
      * @param {boolean} enable 
      */
     EnablePreview(enable = false){
         this.previewEnable = enable
         this.render.Clear();
+
+        recorder.SetPreviewYuvEnable(enable);
+
     }
 
     /**
