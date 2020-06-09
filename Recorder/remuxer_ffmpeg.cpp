@@ -11,25 +11,6 @@ namespace am {
 	static remuxer_ffmpeg *_g_instance = nullptr;
 	static std::mutex _g_mutex;
 
-	remuxer_ffmpeg * remuxer_ffmpeg::instance()
-	{
-		std::lock_guard<std::mutex> lock(_g_mutex);
-
-		if (_g_instance == nullptr) _g_instance = new remuxer_ffmpeg();
-
-		return _g_instance;
-	}
-
-	void remuxer_ffmpeg::release()
-	{
-		std::lock_guard<std::mutex> lock(_g_mutex);
-
-		if (_g_instance)
-			delete _g_instance;
-
-		_g_instance = nullptr;
-	}
-
 	static void process_packet(AVPacket *pkt, AVStream *in_stream,
 		AVStream *out_stream)
 	{
@@ -69,7 +50,10 @@ namespace am {
 			ret = av_interleaved_write_frame(ctx_dst, &pkt);
 			av_packet_unref(&pkt);
 
-			if (ret < 0) {
+			// Sometimes the pts and dts will equal to last packet,
+			// don not know why,may the time base issue?
+			// So return -22 do not care for now
+			if (ret < 0 && ret != -22) {
 				error = AE_FFMPEG_WRITE_FRAME_FAILED;
 				break;
 			}
@@ -167,7 +151,7 @@ namespace am {
 				break;
 			}
 
-			error = open_dst(&ctx_dst, param->dst,ctx_src);
+			error = open_dst(&ctx_dst, param->dst, ctx_src);
 			if (error != AE_NO) {
 				break;
 			}
@@ -199,16 +183,39 @@ namespace am {
 		if (ctx_dst && !(ctx_dst->oformat->flags & AVFMT_NOFILE))
 			avio_close(ctx_dst->pb);
 
-		if(ctx_dst)
+		if (ctx_dst)
 			avformat_free_context(ctx_dst);
 
-		al_debug("remux %s to %s end with error:%s", 
+		al_debug("remux %s to %s end with error:%s",
 			param->src, param->dst, err2str(error));
 
 		//call back end
 		if (param->cb_state)
 			param->cb_state(param->src, 0, error);
+
+		remuxer_ffmpeg::instance()->remove_remux(param->src);
 	}
+
+	remuxer_ffmpeg * remuxer_ffmpeg::instance()
+	{
+		std::lock_guard<std::mutex> lock(_g_mutex);
+
+		if (_g_instance == nullptr) _g_instance = new remuxer_ffmpeg();
+
+		return _g_instance;
+	}
+
+	void remuxer_ffmpeg::release()
+	{
+		std::lock_guard<std::mutex> lock(_g_mutex);
+
+		if (_g_instance)
+			delete _g_instance;
+
+		_g_instance = nullptr;
+	}
+
+
 
 	int remuxer_ffmpeg::create_remux(const REMUXER_PARAM & param)
 	{
@@ -251,6 +258,19 @@ namespace am {
 		_handlers[param.src] = handle;
 
 		return AE_NO;
+	}
+
+	void remuxer_ffmpeg::remove_remux(std::string src)
+	{
+		std::lock_guard<std::mutex> lock(_g_mutex);
+
+		auto itr = _handlers.find(src);
+		if (itr != _handlers.end()) {
+			itr->second->fn.detach();
+
+			delete itr->second;
+			_handlers.erase(itr);
+		}
 	}
 
 	void remuxer_ffmpeg::destroy_remux()

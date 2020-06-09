@@ -40,6 +40,8 @@ namespace am {
 
 		int create_remux(const REMUXER_PARAM & param);
 
+		void remove_remux(std::string src);
+
 		void destroy_remux();
 
 	private:
