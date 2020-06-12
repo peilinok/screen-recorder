@@ -42,10 +42,10 @@ int main()
 	//////////////should be the truely encoder id,zero will always be soft x264
 	setting.v_enc_id = 0;
 
-	//sprintf(setting.output, "..\\..\\save.mp4");
-	sprintf(setting.output, "..\\..\\save.mkv");
+	sprintf(setting.output, "..\\..\\save.mp4");
+	//sprintf(setting.output, "..\\..\\save.mkv");
 
-#if 1 //record speaker mic
+#if 0 //record speaker
 	for (int i = 0; i < nspeaker; i++) {
 		if (speakers[i].is_default == 1)
 			memcpy(&setting.a_speaker, &speakers[i], sizeof(AMRECORDER_DEVICE));

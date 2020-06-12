@@ -2,6 +2,7 @@
 
 #include "record_audio_factory.h"
 #include "record_desktop_factory.h"
+#include "headers_mmdevice.h"
 
 #include "encoder_aac.h"
 #include "resample_pcm.h"
@@ -278,7 +279,7 @@ void save_aac() {
 
 	am::device_audios::get_default_ouput_device(out_id, out_name);
 
-#if 1
+#if 0
 	al_info("use default \r\noutput aduio device name:%s \r\noutput audio device id:%s ",
 		out_name.c_str(), out_id.c_str());
 
@@ -289,14 +290,13 @@ void save_aac() {
 		input_name.c_str(), input_id.c_str());
 
 	record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_audio);
-	_recorder_audio->init(input_name,input_id, true);
+	_recorder_audio->init(input_name, input_id, true);
 #endif
 
 	_recorder_audio->registe_cb(on_pcm_data, on_pcm_error, 0);
 
 	_encoder_aac = new am::encoder_aac();
 	_encoder_aac->init(A_SAMPLE_CHANNEL, A_SAMPLE_RATE, AV_SAMPLE_FMT_FLTP, A_BIT_RATE);
-	//_encoder_aac->registe_cb(on_aac_data, on_aac_error);
 
 	am::SAMPLE_SETTING src, dst = { 0 };
 	src = {

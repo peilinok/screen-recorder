@@ -829,14 +829,19 @@ namespace am {
 			_a_stream->pre_pts = packet->pts;
 		}
 
+		//unless you ensure that there will always have audio data,in fact,mostly you got silent
 		packet->pts = packet->pts - _a_stream->pre_pts;
 
-		if (_a_stream->a_filter_amix != nullptr)
-			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_amix->get_time_base(), { 1,AV_TIME_BASE });
-		else
-			packet->pts = av_rescale_q(packet->pts, _a_stream->a_filter_aresample[0]->get_time_base(), { 1,AV_TIME_BASE });
+		AVRational src_timebase = { 1,1 };
 
-		packet->pts = av_rescale_q_rnd(packet->pts, { 1,AV_TIME_BASE }, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		if (_a_stream->a_filter_amix != nullptr) {
+			src_timebase = _a_stream->a_filter_amix->get_time_base();
+		}
+		else {
+			src_timebase = _a_stream->a_filter_aresample[0]->get_time_base();
+		}
+
+		packet->pts = av_rescale_q_rnd(packet->pts, src_timebase, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 

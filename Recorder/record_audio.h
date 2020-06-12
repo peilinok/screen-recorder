@@ -45,6 +45,8 @@ namespace am {
 		inline int get_bit_per_sample() { return _bit_per_sample; }
 
 		inline int get_channel_num() { return _channel_num; }
+
+		inline int64_t av_get_channel_layout() { return _channel_layout; }
 		
 		inline AVSampleFormat get_fmt() { return _fmt; }
 
@@ -71,6 +73,8 @@ namespace am {
 		int _bit_rate;
 
 		int _channel_num;
+
+		int64_t _channel_layout;
 
 		int _bit_per_sample;
 		

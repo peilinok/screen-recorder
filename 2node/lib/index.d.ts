@@ -12,7 +12,7 @@ declare type TDevice = {
     /**
      * is system default device
      */
-    isDefault: boolean;
+    isDefault: 0 | 1;
   };
   
   declare type TEncoder = {

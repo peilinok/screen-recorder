@@ -43,6 +43,8 @@ namespace am {
 		_stop_event = NULL;
 		_render_event = NULL;
 
+		_use_device_ts = true;
+
 		_start_time = 0;
 	}
 
@@ -72,6 +74,48 @@ namespace am {
 					deviceFormatProperties->nSamplesPerSec);
 			}
 		}
+	}
+
+#define KSAUDIO_SPEAKER_2POINT1     (KSAUDIO_SPEAKER_STEREO|SPEAKER_LOW_FREQUENCY)
+
+#define OBS_KSAUDIO_SPEAKER_4POINT1 \
+	(KSAUDIO_SPEAKER_SURROUND | SPEAKER_LOW_FREQUENCY)
+
+	int64_t record_audio_wasapi::convert_layout(DWORD layout, WORD channels)
+	{
+		switch (layout) {
+		case KSAUDIO_SPEAKER_2POINT1:
+			return AV_CH_LAYOUT_SURROUND;
+		case KSAUDIO_SPEAKER_SURROUND:
+			return AV_CH_LAYOUT_4POINT0;
+		case OBS_KSAUDIO_SPEAKER_4POINT1:
+			return AV_CH_LAYOUT_4POINT1;
+		case KSAUDIO_SPEAKER_5POINT1_SURROUND:
+			return AV_CH_LAYOUT_5POINT1_BACK;
+		case KSAUDIO_SPEAKER_7POINT1_SURROUND:
+			return AV_CH_LAYOUT_7POINT1;
+		}
+
+		return av_get_default_channel_layout(channels);
+	}
+
+	void record_audio_wasapi::init_format(WAVEFORMATEX * wfex)
+	{
+		DWORD layout = 0;
+
+		if (wfex->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+			WAVEFORMATEXTENSIBLE *ext = (WAVEFORMATEXTENSIBLE *)wfex;
+			layout = ext->dwChannelMask;
+		}
+
+		_channel_layout = convert_layout(layout, wfex->nChannels);
+		_sample_rate = wfex->nSamplesPerSec;
+		_bit_rate = wfex->nAvgBytesPerSec;
+		_bit_per_sample = wfex->wBitsPerSample;
+		_channel_num = wfex->nChannels;
+
+		//wasapi is always flt
+		_fmt = AV_SAMPLE_FMT_FLT;
 	}
 
 	int record_audio_wasapi::init_render()
@@ -206,12 +250,14 @@ namespace am {
 				error = AE_CO_ACTIVE_DEVICE_FAILED;
 				break;
 			}
-
+			
 			hr = _capture_client->GetMixFormat(&_wfex);
 			if (hr != S_OK) {
 				error = AE_CO_GET_FORMAT_FAILED;
 				break;
 			}
+
+			init_format(_wfex);
 
 			DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
 			if (_is_input == false)
@@ -269,12 +315,6 @@ namespace am {
 				break;
 			}
 
-			_sample_rate = _wfex->nSamplesPerSec;
-			_bit_rate = _wfex->nAvgBytesPerSec;
-			_bit_per_sample = _wfex->wBitsPerSample;
-			_channel_num = _wfex->nChannels;
-			_fmt = AV_SAMPLE_FMT_FLT;//wasapi is always flt
-
 			_inited = true;
 
 		} while (0);
@@ -299,6 +339,7 @@ namespace am {
 
 		HRESULT hr = S_OK;
 		
+		
 		if (!_is_input) {
 			hr = _render_client->Start();
 			if (FAILED(hr)) {
@@ -306,6 +347,7 @@ namespace am {
 				return AE_CO_START_FAILED;
 			}
 		}
+		
 		
 		hr = _capture_client->Start();
 		if (hr != S_OK) {
@@ -316,9 +358,12 @@ namespace am {
 		_start_time = av_gettime_relative();
 
 		_running = true;
+
+		
 		if(!_is_input) {
 			_render_thread = std::thread(std::bind(&record_audio_wasapi::render_loop, this));
 		}
+		
 
 		_thread = std::thread(std::bind(&record_audio_wasapi::record_loop, this));
 
@@ -359,7 +404,9 @@ namespace am {
 
 	const AVRational record_audio_wasapi::get_time_base()
 	{
-		return{ 1,AV_TIME_BASE };
+		if (_use_device_ts)
+			return{ 1,NS_PER_SEC };
+		else return{ 1,AV_TIME_BASE };
 	}
 
 	int64_t record_audio_wasapi::get_start_time()
@@ -367,12 +414,16 @@ namespace am {
 		return _start_time;
 	}
 
-	void record_audio_wasapi::process_data(AVFrame *frame, uint8_t* data, uint32_t sample_count)
+	void record_audio_wasapi::process_data(AVFrame *frame, uint8_t* data, uint32_t sample_count, uint64_t device_ts)
 	{
 		int sample_size = _bit_per_sample / 8 * _channel_num;
 
-		frame->pts = av_gettime_relative();
-		frame->pts -= (int64_t)sample_count * AV_TIME_BASE / (int64_t)_sample_rate;
+		//wasapi time unit is 100ns,so time base is NS_PER_SEC
+		frame->pts = _use_device_ts ? device_ts * 100 : av_gettime_relative();
+
+		if(_use_device_ts == false)
+			frame->pts -= (int64_t)sample_count * NS_PER_SEC / (int64_t)_sample_rate;
+
 		frame->pkt_dts = frame->pts;
 		frame->nb_samples = sample_count;
 		frame->format = _fmt;
@@ -391,6 +442,7 @@ namespace am {
 		LPBYTE buffer = NULL;
 		DWORD flags = 0;
 		uint32_t sample_count = 0;
+		UINT64 pos, ts;
 		int error = AE_NO;
 
 		while (_running) {
@@ -407,7 +459,7 @@ namespace am {
 				break;
 
 			buffer = NULL;
-			res = _capture->GetBuffer(&buffer, &sample_count, &flags, NULL, NULL);
+			res = _capture->GetBuffer(&buffer, &sample_count, &flags, &pos, &ts);
 			if (FAILED(res)) {
 				if (res != AUDCLNT_E_DEVICE_INVALIDATED)
 					al_error("GetBuffer failed: %lX",res);
@@ -420,8 +472,10 @@ namespace am {
 				al_warn("on slient data %d", sample_count);
 			}
 
+
+
 			if (buffer) {
-				process_data(frame, buffer, sample_count);
+				process_data(frame, buffer, sample_count, ts);
 			}
 			else {
 				al_error("buffer invalid is");
@@ -475,10 +529,14 @@ namespace am {
 
 		HANDLE events[2] = { _stop_event,_ready_event };
 
+		// while,sys will never not signal this ready_event in windows7,
+		// and only signal when something is rendring,so we just wait 10ms for speaker
+		DWORD dur = _is_input ? INFINITE : 10;
+
 		int error = AE_NO;
 		while (_running)
 		{
-			if (WaitForMultipleObjects(2, events, FALSE, INFINITE) == WAIT_OBJECT_0)
+			if (WaitForMultipleObjects(2, events, FALSE, dur) == WAIT_OBJECT_0)
 				break;
 
 			if ((error = do_record(frame)) != AE_NO) {
@@ -538,6 +596,4 @@ namespace am {
 		_co_inited = false;
 		_inited = false;
 	}
-
-
 }

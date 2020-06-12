@@ -33,11 +33,15 @@ namespace am {
 		virtual int64_t get_start_time();
 
 	private:
+		int64_t convert_layout(DWORD layout, WORD channels);
+
+		void init_format(WAVEFORMATEX *wfex);
+
 		int init_render();
 
 		void render_loop();
 
-		void process_data(AVFrame *frame,uint8_t* data, uint32_t sample_count);
+		void process_data(AVFrame *frame, uint8_t* data, uint32_t sample_count, uint64_t device_ts);
 
 		int do_record(AVFrame *frame);
 
@@ -72,6 +76,8 @@ namespace am {
 		bool _co_inited;
 
 		bool _is_default;
+
+		bool _use_device_ts;
 
 		//define time stamps here
 		int64_t _start_time;

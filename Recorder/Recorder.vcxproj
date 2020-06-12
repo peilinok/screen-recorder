@@ -302,6 +302,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="ring_buffer.h" />
     <ClInclude Include="sws_helper.h" />
     <ClInclude Include="system_lib.h" />
+    <ClInclude Include="system_time.h" />
     <ClInclude Include="utils_string.h" />
     <ClInclude Include="system_version.h" />
   </ItemGroup>
@@ -338,6 +339,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="resample_pcm.cpp" />
     <ClCompile Include="sws_helper.cpp" />
     <ClCompile Include="system_lib.cpp" />
+    <ClCompile Include="system_time.cpp" />
     <ClCompile Include="utils_string.cpp" />
     <ClCompile Include="system_version.cpp" />
   </ItemGroup>
