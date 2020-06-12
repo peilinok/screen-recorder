@@ -1,8 +1,6 @@
 // Recorder.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
-
 #include <exception>
 #include <iostream>
 
@@ -365,7 +363,7 @@ BOOL AdjustFormatTo16Bits(WAVEFORMATEX *pwfx)
 	return bRet;
 }
 
-//#define DEF_CAPTURE_MIC
+#define DEF_CAPTURE_MIC
 
 HRESULT capture_audio()
 {
@@ -705,7 +703,7 @@ HRESULT cpature_wave()
 	EXIT_ON_ERROR(hr)
 
 #ifdef DEF_CAPTURE_MIC
-		hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
+		hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eCommunications, &pDevice);
 	//hr = pEnumerator->GetDefaultAudioEndpoint(eCapture,  eMultimedia, &pDevice);
 #else 
 		hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
@@ -994,10 +992,11 @@ static int select_channel_layout(const AVCodec *codec)
 	return best_ch_layout;
 }
 
-int main2()
+int main1()
 {
-	capture_audio();
+	//capture_audio();
 	//test_transcode();
+	cpature_wave();
 
 	system("pause");
 

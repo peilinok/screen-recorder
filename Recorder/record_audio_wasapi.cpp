@@ -469,7 +469,7 @@ namespace am {
 
 			//input mode do not have silent data flag do nothing here
 			if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-				al_warn("on slient data %d", sample_count);
+				//al_warn("on slient data %d", sample_count);
 			}
 
 

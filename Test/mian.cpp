@@ -45,7 +45,7 @@ int main()
 	sprintf(setting.output, "..\\..\\save.mp4");
 	//sprintf(setting.output, "..\\..\\save.mkv");
 
-#if 0 //record speaker
+#if 1 //record speaker
 	for (int i = 0; i < nspeaker; i++) {
 		if (speakers[i].is_default == 1)
 			memcpy(&setting.a_speaker, &speakers[i], sizeof(AMRECORDER_DEVICE));
