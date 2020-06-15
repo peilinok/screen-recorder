@@ -132,7 +132,7 @@ namespace recorder
 	Local<String> utf8_v8string(Isolate *isolate,const char *utf8) 
 	{
 #if NODE_VERSION_AT_LEAST(12,0,0)
-		return String::NewFromUtf8(isolate, utf8);
+		return String::NewFromUtf8(isolate, utf8).ToLocalChecked();
 #elif NODE_VERSION_AT_LEAST(10,0,0)
 		return String::NewFromUtf8(isolate, utf8);
 #else
