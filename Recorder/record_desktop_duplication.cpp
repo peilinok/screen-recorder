@@ -395,6 +395,8 @@ namespace am {
 				{
 					error = AE_DUP_DUPLICATE_MAX_FAILED;
 				}
+
+				al_error("duplicate output failed,%lld", hr);
 				break;
 			}
 		} while (0);
