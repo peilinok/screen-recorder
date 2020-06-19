@@ -204,6 +204,9 @@
     <ClInclude Include="system_time.h">
       <Filter>Header Files\helpers\win</Filter>
     </ClInclude>
+    <ClInclude Include="mul_db.h">
+      <Filter>Header Files\helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

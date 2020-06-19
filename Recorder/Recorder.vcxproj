@@ -280,6 +280,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="headers_ffmpeg.h" />
     <ClInclude Include="log_helper.h" />
     <ClInclude Include="headers_mmdevice.h" />
+    <ClInclude Include="mul_db.h" />
     <ClInclude Include="muxer_define.h" />
     <ClInclude Include="muxer_file.h" />
     <ClInclude Include="muxer_ffmpeg.h" />

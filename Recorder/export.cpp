@@ -28,6 +28,10 @@
 namespace am {
 	typedef std::lock_guard<std::mutex> lock_guard;
 
+	static const double scaled_vals[] = { 1.0,         1.25, (1.0 / 0.75), 1.5,
+		(1.0 / 0.6), 1.75, 2.0,          2.25,
+		2.5,         2.75, 3.0,          0.0 };
+
 	class recorder {
 	private:
 		recorder();
@@ -53,7 +57,7 @@ namespace am {
 
 	private:
 		void on_preview_yuv(const uint8_t *data, int size, int width, int height, int type);
-
+		void get_valid_out_resolution(int src_width,int src_height,int *out_width,int *out_height);
 	private:
 		AMRECORDER_SETTING _setting;
 		AMRECORDER_CALLBACK _callbacks;
@@ -210,6 +214,8 @@ namespace am {
 		mux_setting.v_qb = setting.v_qb;
 		mux_setting.v_encoder_id = (am::ENCODER_VIDEO_ID)setting.v_enc_id;
 
+		get_valid_out_resolution(setting.v_width, setting.v_height, &mux_setting.v_out_width, &mux_setting.v_out_height);
+
 		mux_setting.a_nb_channel = 2;
 		mux_setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
 		mux_setting.a_sample_rate = 44100;
@@ -288,6 +294,25 @@ namespace am {
 	{
 		if (_callbacks.func_preview_yuv != NULL)
 			_callbacks.func_preview_yuv(data, size, width, height, type);
+	}
+	void recorder::get_valid_out_resolution(int src_width, int src_height, int * out_width, int * out_height)
+	{
+		int scale_cx = src_width;
+		int scale_cy = src_height;
+
+		int i = 0;
+
+		while (((scale_cx * scale_cy) > (1920 * 1080)) && scaled_vals[i] > 0.0) {
+			double scale = scaled_vals[i++];
+			scale_cx = uint32_t(double(src_width) / scale);
+			scale_cy = uint32_t(double(src_height) / scale);
+		}
+
+
+		*out_width = scale_cx;
+		*out_height = scale_cy;
+
+		al_info("get valid output resolution from %dx%d to %dx%d,with scale:%lf", src_width, src_height, scale_cx, scale_cy, scaled_vals[i]);
 	}
 }
 

@@ -24,6 +24,8 @@ namespace am {
 		int v_bit_rate;
 		int v_width;
 		int v_height;
+		int v_out_width;
+		int v_out_height;
 		int v_qb;
 		ENCODER_VIDEO_ID v_encoder_id;
 

@@ -33,10 +33,10 @@ int main()
 
 	setting.v_left = 0;
 	setting.v_top = 0;
-	setting.v_width = 1920;
-	setting.v_height = 1080;
+	setting.v_width = GetSystemMetrics(SM_CXSCREEN);
+	setting.v_height = GetSystemMetrics(SM_CYSCREEN);
 	setting.v_qb = 100;
-	setting.v_bit_rate = 64000;
+	setting.v_bit_rate = 1280 * 1000;
 	setting.v_frame_rate = 30;
 
 	//////////////should be the truely encoder id,zero will always be soft x264

@@ -448,8 +448,8 @@ namespace am {
 			if (error != AE_NO)
 				break;
 
-			error = _v_stream->v_enc->init(setting.v_width, 
-				setting.v_height, 
+			error = _v_stream->v_enc->init(setting.v_out_width, 
+				setting.v_out_height, 
 				setting.v_frame_rate,
 				setting.v_bit_rate, 
 				setting.v_qb
@@ -468,8 +468,8 @@ namespace am {
 				v_rect.right - v_rect.left,
 				v_rect.bottom - v_rect.top,
 				AV_PIX_FMT_YUV420P,
-				setting.v_width,
-				setting.v_height
+				setting.v_out_width,
+				setting.v_out_height
 			);
 			if (error != AE_NO)
 				break;
@@ -496,10 +496,10 @@ namespace am {
 			st->codec->time_base.num = 1;
 			st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
 
-			st->codec->coded_width = setting.v_width;
-			st->codec->coded_height = setting.v_height;
-			st->codec->width = setting.v_width;
-			st->codec->height = setting.v_height;
+			st->codec->coded_width = setting.v_out_width;
+			st->codec->coded_height = setting.v_out_height;
+			st->codec->width = setting.v_out_width;
+			st->codec->height = setting.v_out_height;
 			st->codec->max_b_frames = 0;//NO B Frame
 			st->time_base = { 1,90000 };//fixed?
 			st->avg_frame_rate = av_inv_q(st->codec->time_base);
