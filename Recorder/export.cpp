@@ -414,8 +414,8 @@ AMRECORDER_API int recorder_remux(const char * src, const char * dst, AMRECORDER
 {
 	am::REMUXER_PARAM param = {0};
 
-	sprintf_s(param.src, 260, "%s", src);
-	sprintf_s(param.dst, 260, "%s", dst);
+	sprintf_s(param.src, 260, "%s", am::utils_string::utf8_ascii(src).c_str());
+	sprintf_s(param.dst, 260, "%s", am::utils_string::utf8_ascii(dst).c_str());
 
 	param.cb_progress = func_progress;
 
