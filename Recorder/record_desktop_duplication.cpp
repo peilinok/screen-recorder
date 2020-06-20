@@ -273,7 +273,7 @@ namespace am {
 #if 0
 			// VERTEX shader
 			UINT Size = ARRAYSIZE(g_VS);
-			hr = _d3d_device->CreateVertexShader(g_VS, Size, nullptr, &_d3d_vshader);
+			HRESULT hr = _d3d_device->CreateVertexShader(g_VS, Size, nullptr, &_d3d_vshader);
 			if (FAILED(hr))
 			{
 				error = AE_D3D_CREATE_VERTEX_SHADER_FAILED;
@@ -463,15 +463,8 @@ namespace am {
 		// Timeout will return when desktop has no chane
 		if (hr == DXGI_ERROR_WAIT_TIMEOUT) return AE_TIMEOUT;
 
-		if (FAILED(hr)) 
+		if (FAILED(hr))
 			return AE_DUP_ACQUIRE_FRAME_FAILED;
-
-		// if still holding old frame, destroy it
-		if (_image)
-		{
-			_image->Release();
-			_image = nullptr;
-		}
 
 		// QI for IDXGIResource
 		hr = dxgi_res->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&_image));
@@ -498,7 +491,6 @@ namespace am {
 
 		// Copy next staging buffer to new staging buffer
 		_d3d_ctx->CopyResource(new_image, _image);
-		
 
 		// Create staging buffer for map bits
 		IDXGISurface *dxgi_surface = NULL;
@@ -801,6 +793,40 @@ namespace am {
 				_height,
 				1
 			);
+
+#if 0
+			//save bmp to test
+
+			BITMAPINFOHEADER   bi;
+
+			bi.biSize = sizeof(BITMAPINFOHEADER);
+			bi.biWidth = _width;
+			bi.biHeight = _height * (-1);
+			bi.biPlanes = 1;
+			bi.biBitCount = 32;//should get from system color bits
+			bi.biCompression = BI_RGB;
+			bi.biSizeImage = 0;
+			bi.biXPelsPerMeter = 0;
+			bi.biYPelsPerMeter = 0;
+			bi.biClrUsed = 0;
+			bi.biClrImportant = 0;
+
+			BITMAPFILEHEADER bf;
+			bf.bfType = 0x4d42;
+			bf.bfReserved1 = 0;
+			bf.bfReserved2 = 0;
+			bf.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+			bf.bfSize = bf.bfOffBits + _width * _height * 4;
+
+			FILE *fp = fopen("..\\..\\save.bmp", "wb+");
+
+			fwrite(&bf, 1, sizeof(bf), fp);
+			fwrite(&bi, 1, sizeof(bi), fp);
+			fwrite(_buffer, 1, _buffer_size, fp);
+
+			fflush(fp);
+			fclose(fp);
+#endif
 
 			if (_on_data) _on_data(frame);
 
