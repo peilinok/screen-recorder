@@ -252,3 +252,4 @@
 /Recorder/Release/Recorder.tlog/*.tlog
 /Recorder/Release/*.obj
 /2node/save.mkv
+/Recorder/Debug_DLL/record_audio_wasapi.obj.enc

@@ -479,12 +479,13 @@ namespace am {
 		// Create a new staging buffer for fill frame image
 		ID3D11Texture2D *new_image = NULL;
 		frame_desc.Usage = D3D11_USAGE_STAGING;
-		frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		frame_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
 		frame_desc.BindFlags = 0;
 		frame_desc.MiscFlags = 0;
 		frame_desc.MipLevels = 1;
 		frame_desc.ArraySize = 1;
 		frame_desc.SampleDesc.Count = 1;
+		frame_desc.SampleDesc.Quality = 0;
 		hr = _d3d_device->CreateTexture2D(&frame_desc, NULL, &new_image);
 		if (FAILED(hr)) return AE_DUP_CREATE_TEXTURE_FAILED;
 
@@ -492,6 +493,8 @@ namespace am {
 		// Copy next staging buffer to new staging buffer
 		_d3d_ctx->CopyResource(new_image, _image);
 
+#if 1 
+		// Should calc the row pitch ,and compare dst row pitch with frame row pitch
 		// Create staging buffer for map bits
 		IDXGISurface *dxgi_surface = NULL;
 		hr = new_image->QueryInterface(__uuidof(IDXGISurface), (void **)(&dxgi_surface));
@@ -503,11 +506,32 @@ namespace am {
 		hr = dxgi_surface->Map(&mapped_rect, DXGI_MAP_READ);
 		if (FAILED(hr)) return AE_DUP_MAP_FAILED;
 
-		memcpy(_buffer, mapped_rect.pBits, _buffer_size);
+		int dst_rowpitch = frame_desc.Width * 4;
+		for (int h = 0; h < frame_desc.Height; h++) {
+			memcpy_s(_buffer + h*dst_rowpitch, dst_rowpitch, (BYTE*)mapped_rect.pBits + h*mapped_rect.Pitch, min(mapped_rect.Pitch, dst_rowpitch));
+		}
+
+
 		dxgi_surface->Unmap();
 
 		dxgi_surface->Release();
 		dxgi_surface = nullptr;
+
+#else
+
+		D3D11_MAPPED_SUBRESOURCE resource;
+		UINT subresource = D3D11CalcSubresource(0, 0, 0);
+
+		hr = _d3d_ctx->Map(new_image, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
+		new_image->Release();
+		if (FAILED(hr)) return AE_DUP_MAP_FAILED;
+
+		int dst_rowpitch = frame_desc.Width * 4;
+		for (int h = 0; h < frame_desc.Height; h++) {
+			memcpy_s(_buffer + h*dst_rowpitch, dst_rowpitch, (BYTE*)resource.pData + h*resource.RowPitch, min(resource.RowPitch, dst_rowpitch));
+		}
+
+#endif
 
 		return AE_NO;
 	}
@@ -734,7 +758,7 @@ namespace am {
 
 		int error = AE_NO;
 
-#if 0
+#if 1
 		if (attatch_desktop() != true) {
 			al_fatal("duplication attach desktop failed :%lu",GetLastError());
 			if (_on_error) _on_error(AE_DUP_ATTATCH_FAILED);
