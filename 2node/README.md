@@ -7,9 +7,10 @@ Only support windows(at least windows7 sp1) for now.
 
 ## Features
 
-- Save screen、speaker、miccrophone to a signle file as mp4
+- Save screen、speaker、miccrophone to a signle file as mp4 or mkv
 - yuv data callback
-
+- Remux file to another file format
+- Support hardware encode with NVIDIA cards
 
 ## Usage
 
@@ -55,6 +56,7 @@ or build node version:
 
 ## Test code
 
+##### Record  
 ```js
 
 "use strict";
@@ -65,17 +67,32 @@ const recorder = new EasyRecorder();
 
 const speakers = recorder.GetSpeakers();
 const mics = recorder.GetMics();
+const vencoders = recorder.GetVideoEncoders();
 
 console.log(speakers);
 console.log(mics);
+console.log(vencoders);
 
-let ret = recorder.Init(60,20,".\\save.mp4",speakers[0].name,speakers[0].id,mics[0].name,mics[0].id);
-console.info('recorder init ret:',ret);
+let ret = recorder.Init(
+  60,
+  20,
+  ".\\save.mkv",
+  //".\\save.mp4",
+  speakers[0].name,
+  speakers[0].id,
+  mics[0].name,
+  mics[0].id,
+  vencoders[0].id
+  );
+
+
+console.info('recorder init ret:',ret,recorder.GetErrorStr(ret));
 
 
 if(ret == 0){
 
   ret = recorder.Start();
+
   console.info('start',ret);
 
   setTimeout(()=>{
@@ -84,6 +101,37 @@ if(ret == 0){
     recorder.Release();
   },10000);
 }
+
+
+```
+
+##### Remux
+
+```js
+
+"use strict";
+const EasyRecorder = require('./lib/index')
+
+
+const recorder = new EasyRecorder();
+
+const onProgress = (src,progress,total)=>{
+    console.info('on remux progress:',src,progress,total);
+};
+
+const onState = (src,state,error) =>{
+    console.info('on remux state:',src,state,recorder.GetErrorStr(error));
+};
+
+let ret = recorder.RemuxFile(
+    ".\\save.mkv",
+    ".\\save.mp4",
+    onProgress,
+    onState
+);
+
+console.info('remux file ret:',ret,recorder.GetErrorStr(ret));
+
 
 ```
 
