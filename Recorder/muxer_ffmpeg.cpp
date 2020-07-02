@@ -245,6 +245,29 @@ namespace am {
 		return db;
 	}
 
+	static int pcm_fltp_db_count(AVFrame *frame, int channels)
+	{
+		int i = 0, ch = 0;
+		int ndb = 0;
+		float value = 0.;
+		float *ch_left = (float *)frame->data[0];
+		//float *ch_right = (float *)frame->data[1];
+		for (i = 0; i < frame->nb_samples; i++)
+		{
+			value += fabs(ch_left[i]);
+		}
+
+		value = value / frame->nb_samples;
+		if (0 != value)
+		{
+			ndb = (int)(20.0*log10((value / 1.0)));
+		}
+		else
+			ndb = -100;
+
+		return ndb;
+	}
+
 	void muxer_ffmpeg::on_audio_data(AVFrame *frame, int index)
 	{
 		if (_running == false || _paused == true)
@@ -270,11 +293,16 @@ namespace am {
 			return;
 
 
+
 		AUDIO_SAMPLE *resamples = _a_stream->a_resamples[0];
 
 		int copied_len = 0;
 		int sample_len = av_samples_get_buffer_size(frame->linesize, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
 		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
+
+#ifdef _DEBUG
+		al_debug("dg:%d", pcm_fltp_db_count(frame, frame->channels));
+#endif
 
 		int remain_len = sample_len;
 
