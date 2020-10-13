@@ -58,6 +58,15 @@ class EasyRecorder {
 
     /**
      * 
+     * @param {string} path 
+     * @returns {boolean}
+     */
+    SetLogPath(path){
+        return recorder.SetLogPath(path);
+    }
+
+    /**
+     * 
      * @param {(duration:number)=>void} cb 
      */
     SetDurationCallBack(cb){

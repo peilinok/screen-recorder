@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-recorder",
-  "version": "1.4.15",
+  "version": "1.4.16",
   "description": "desktop recorder",
   "main": "lib/index.js",
   "engines": {

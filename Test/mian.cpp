@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#pragma comment(lib,"Shcore.lib")
+#include <ShellScalingApi.h>
+
+#include <string>
+
 void on_preview_image(
 	const unsigned char *data,
 	unsigned int size,
@@ -23,6 +28,16 @@ int main()
 	AMRECORDER_SETTING setting = {0};
 	AMRECORDER_CALLBACK callback = {0};
 
+	char temp_path[MAX_PATH];
+
+	GetTempPathA(MAX_PATH, temp_path);
+
+	std::string log_path(temp_path);
+
+	log_path += "amrecorder.log";
+
+	recorder_set_logpath(log_path.c_str());
+
 
 	int nspeaker = recorder_get_speakers(&speakers);
 	
@@ -30,6 +45,7 @@ int main()
 
 	int n_vencoders = recorder_get_vencoders(&vencoders);
 
+	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 
 	setting.v_left = 0;
 	setting.v_top = 0;

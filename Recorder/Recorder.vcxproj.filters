@@ -79,6 +79,9 @@
     <Filter Include="Source Files\remuxer">
       <UniqueIdentifier>{2ddc03e3-0858-459a-ae1b-52c007f728f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\logger">
+      <UniqueIdentifier>{48ac2435-d669-43a7-839f-22bfeedc224d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export.h">
@@ -313,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="system_time.cpp">
       <Filter>Source Files\helpers\win</Filter>
+    </ClCompile>
+    <ClCompile Include="log_helper.cpp">
+      <Filter>Source Files\logger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

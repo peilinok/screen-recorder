@@ -506,9 +506,14 @@ namespace am {
 		hr = dxgi_surface->Map(&mapped_rect, DXGI_MAP_READ);
 		if (FAILED(hr)) return AE_DUP_MAP_FAILED;
 
-		int dst_rowpitch = frame_desc.Width * 4;
-		for (int h = 0; h < frame_desc.Height; h++) {
-			memcpy_s(_buffer + h*dst_rowpitch, dst_rowpitch, (BYTE*)mapped_rect.pBits + h*mapped_rect.Pitch, min(mapped_rect.Pitch, dst_rowpitch));
+		int dst_offset_x = _rect.left - _output_des.DesktopCoordinates.left;
+		int dst_offset_y = _rect.top - _output_des.DesktopCoordinates.top;
+		int dst_rowpitch = min(frame_desc.Width, _rect.right - _rect.left) * 4;
+		int dst_colpitch = min(_height, _output_des.DesktopCoordinates.bottom - _output_des.DesktopCoordinates.top - dst_offset_y);
+
+		for (int h = 0; h < dst_colpitch; h++) {
+			memcpy_s(_buffer + h*dst_rowpitch, dst_rowpitch,
+				(BYTE*)mapped_rect.pBits + (h + dst_offset_y)*mapped_rect.Pitch + dst_offset_x * 4, min(mapped_rect.Pitch, dst_rowpitch));
 		}
 
 

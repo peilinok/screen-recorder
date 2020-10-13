@@ -453,3 +453,8 @@ AMRECORDER_API void recorder_set_preview_enabled(int enable)
 {
 	am::recorder::instance()->set_preview_enabled(enable == 1);
 }
+
+AMRECORDER_API void recorder_set_logpath(const char * path)
+{
+	AMLog *log = AMLog::get(path);
+}

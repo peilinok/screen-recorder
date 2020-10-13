@@ -286,4 +286,10 @@ AMRECORDER_API int recorder_remux(
 */
 AMRECORDER_API void recorder_set_preview_enabled(int enable);
 
+
+/**
+* Set log path
+* @param[in] log file path
+*/
+AMRECORDER_API void recorder_set_logpath(const char* path);
 #endif

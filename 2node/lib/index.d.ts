@@ -68,6 +68,12 @@ declare type TDevice = {
      * @returns TEncoder[]
      */
     GetVideoEncoders(): TEncoder[];
+
+    /**
+     * Set recorder log file path
+     * @param path log file path
+     */
+    SetLogPath(path:string):boolean;
   
     /**
      * Set duration callback function

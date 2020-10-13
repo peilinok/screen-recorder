@@ -320,6 +320,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="filter_aresample.cpp" />
     <ClCompile Include="filter_amix.cpp" />
     <ClCompile Include="hardware_acceleration.cpp" />
+    <ClCompile Include="log_helper.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="headers_mmdevice.cpp" />
     <ClCompile Include="muxer_file.cpp" />

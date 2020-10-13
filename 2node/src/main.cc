@@ -654,6 +654,21 @@ namespace recorder
 		args.GetReturnValue().Set(utf8_v8string(isolate, "get camera list not support for now."));
 	}
 
+	void SetLogPath(const FunctionCallbackInfo<Value> &args){
+		Isolate* isolate = args.GetIsolate();
+		CHECK_PARAM_COUNT(1);
+		CHECK_PARAM_TYPE1("string");
+
+		char logPath[260] = { 0 };
+
+		String::Utf8Value v8Src(Local<String>::Cast(args[0]));
+		sprintf_s(logPath, 260, "%s", *v8Src);
+
+		recorder_set_logpath(logPath);
+
+		args.GetReturnValue().Set(Boolean::New(isolate, true));
+	}
+
 	void SetDurationCallBack(const FunctionCallbackInfo<Value> &args) {
 		Isolate* isolate = args.GetIsolate();
 		CHECK_PARAM_COUNT(1);
@@ -775,6 +790,8 @@ namespace recorder
 		callbacks.func_error = OnRecorderError;
 		callbacks.func_device_change = OnRecorderDeviceChange;
 		callbacks.func_preview_yuv = OnRecorderPreviewYuv;
+
+		SetProcessDPIAware();
 
 		settings.v_left = 0;
 		settings.v_top = 0;
@@ -1001,6 +1018,7 @@ namespace recorder
 		NODE_SET_METHOD(exports, "GetSpeakers", GetSpeakers);
 		NODE_SET_METHOD(exports, "GetMics", GetMics);
 		NODE_SET_METHOD(exports, "GetCameras", GetCameras);
+		NODE_SET_METHOD(exports, "SetLogPath", SetLogPath);
 		NODE_SET_METHOD(exports, "SetDurationCallBack", SetDurationCallBack);
 		NODE_SET_METHOD(exports, "SetDeviceChangeCallBack", SetDeviceChangeCallBack);
 		NODE_SET_METHOD(exports, "SetErrorCallBack", SetErrorCallBack);
