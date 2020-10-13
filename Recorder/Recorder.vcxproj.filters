@@ -73,12 +73,6 @@
     <Filter Include="Header Files\encoder\audio">
       <UniqueIdentifier>{b0ab0abf-99fb-4f8a-9710-f41a58665216}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\remuxer">
-      <UniqueIdentifier>{183097de-97d1-47b5-93fd-28802dbce121}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\remuxer">
-      <UniqueIdentifier>{2ddc03e3-0858-459a-ae1b-52c007f728f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\logger">
       <UniqueIdentifier>{48ac2435-d669-43a7-839f-22bfeedc224d}</UniqueIdentifier>
     </Filter>
