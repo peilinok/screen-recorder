@@ -33,11 +33,10 @@ enum AM_LOG_TYPE {
 static const char *AM_LOG_STR[] = { "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
 #define al_printf(type,format,datetime,ms,...)                                 \
-        printf("%lu:%s::%s,%.3d::%s::" format "\n",GetCurrentThreadId(),type,datetime,ms,__FUNCTION__,## __VA_ARGS__)
+         printf("%s-%.3d [%s] [%s(%d)] " format "\n",  datetime,ms,type, __FUNCTION__,__LINE__, ## __VA_ARGS__)
 
 #define PRINT_LINE(type, format, datetime, ms, ...)                     \
-    printf("%lu::%s::%s,%.3d::%s::" format "\n", GetCurrentThreadId(), type, datetime, ms, \
-           __FUNCTION__, ## __VA_ARGS__);
+    printf("%s-%.3d [%s] [%s(%d)] " format "\n",  datetime,ms,type, __FUNCTION__,__LINE__, ## __VA_ARGS__)
 
 #define al_log(type,format,...) do{                                            \
 	struct _timeb now;                                                           \

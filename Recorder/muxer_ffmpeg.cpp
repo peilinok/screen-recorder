@@ -50,6 +50,8 @@ namespace am {
 		int ret = 0;
 
 		do {
+			al_info("start to initialize muxer ,output:%s ", output_file);
+
 			error = alloc_oc(output_file, setting);
 			if (error != AE_NO)
 				break;

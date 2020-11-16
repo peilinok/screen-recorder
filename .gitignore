@@ -253,3 +253,5 @@
 /Recorder/Release/*.obj
 /2node/save.mkv
 /Recorder/Debug_DLL/record_audio_wasapi.obj.enc
+/vs2015/.vs/screen-recorder/v14/.suo
+/vs2015/screen-recorder.VC.db

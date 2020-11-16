@@ -121,9 +121,10 @@ namespace am {
 	int record_audio_wasapi::init_render()
 	{
 		int error = AE_NO;
+		HRESULT res = S_OK;
 
 		do {
-			HRESULT res = _device->Activate(__uuidof(IAudioClient),
+			res = _device->Activate(__uuidof(IAudioClient),
 				CLSCTX_ALL, 
 				nullptr,
 				(void **)&_render_client
@@ -195,6 +196,9 @@ namespace am {
 				break;
 			}
 		} while (0);
+
+		if (error != AE_NO)
+			al_error("init render failed(%ld), %s,lasterror:%lu", res, err2str(error), GetLastError());
 
 		return error;
 	}
