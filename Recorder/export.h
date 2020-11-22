@@ -110,7 +110,7 @@ typedef struct {
 */
 #pragma pack(push,1)
 typedef struct {
-	
+
 	/**
 	* Encoder id
 	*/
@@ -127,21 +127,21 @@ typedef struct {
 * Recording duration callback function
 * @param[in] duration time in millisecond
 */
-typedef void( *AMRECORDER_FUNC_DURATION)(uint64_t duration);
+typedef void(*AMRECORDER_FUNC_DURATION)(uint64_t duration);
 
 /**
 * Recording error callback function
-* Should call recorder_err2str to get stringify error info 
-* @param[in] error 
+* Should call recorder_err2str to get stringify error info
+* @param[in] error
 */
-typedef void( *AMRECORDER_FUNC_ERROR)(int error);
+typedef void(*AMRECORDER_FUNC_ERROR)(int error);
 
 /**
 * Device changed callback function
 * Should refresh devices
 * @param[in] type 0 for video, 1 for speaker, 2 for microphone
 */
-typedef void( *AMRECORDER_FUNC_DEVICE_CHANGE)(int type);
+typedef void(*AMRECORDER_FUNC_DEVICE_CHANGE)(int type);
 
 /**
 * YUV data callback function
@@ -163,7 +163,7 @@ typedef void(*AMRECORDER_FUNC_PREVIEW_YUV)(
 /**
 * Unused callback function
 */
-typedef void( *AMRECORDER_FUNC_PREVIEW_AUDIO)();
+typedef void(*AMRECORDER_FUNC_PREVIEW_AUDIO)();
 
 /**
 * Remux progress callback function
@@ -276,8 +276,8 @@ AMRECORDER_API void recorder_free_array(void *array_address);
 * @param[in] func_state   0 for succed,otherwhise error code
 */
 AMRECORDER_API int recorder_remux(
-	const char *src, const char *dst, 
-	AMRECORDER_FUNC_REMUX_PROGRESS func_progress, 
+	const char *src, const char *dst,
+	AMRECORDER_FUNC_REMUX_PROGRESS func_progress,
 	AMRECORDER_FUNC_REMUX_STATE func_state);
 
 /**

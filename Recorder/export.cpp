@@ -26,174 +26,158 @@
 #define USE_DSHOW 0
 
 namespace am {
-	typedef std::lock_guard<std::mutex> lock_guard;
+typedef std::lock_guard<std::mutex> lock_guard;
 
-	static const double scaled_vals[] = { 1.0,         1.25, (1.0 / 0.75), 1.5,
-		(1.0 / 0.6), 1.75, 2.0,          2.25,
-		2.5,         2.75, 3.0,          0.0 };
+static const double scaled_vals[] = { 1.0,         1.25, (1.0 / 0.75), 1.5,
+	(1.0 / 0.6), 1.75, 2.0,          2.25,
+	2.5,         2.75, 3.0,          0.0 };
 
-	class recorder {
-	private:
-		recorder();
+class recorder {
+private:
+	recorder();
 
-		~recorder();
+	~recorder();
 
-	public:
-		static recorder *instance();
+public:
+	static recorder *instance();
 
-		static void release();
+	static void release();
 
-		int init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK &callbacks);
+	int init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK &callbacks);
 
-		int start();
+	int start();
 
-		void stop();
+	void stop();
 
-		int pause();
+	int pause();
 
-		int resume();
+	int resume();
 
-		void set_preview_enabled(bool enable);
+	void set_preview_enabled(bool enable);
 
-	private:
-		void on_preview_yuv(const uint8_t *data, int size, int width, int height, int type);
-		void get_valid_out_resolution(int src_width,int src_height,int *out_width,int *out_height);
-	private:
-		AMRECORDER_SETTING _setting;
-		AMRECORDER_CALLBACK _callbacks;
+private:
+	void on_preview_yuv(const uint8_t *data, int size, int width, int height, int type);
+	void get_valid_out_resolution(int src_width, int src_height, int *out_width, int *out_height);
+private:
+	AMRECORDER_SETTING _setting;
+	AMRECORDER_CALLBACK _callbacks;
 
-		record_audio *_recorder_speaker;
-		record_audio *_recorder_mic;
-		record_desktop *_recorder_desktop;
+	record_audio *_recorder_speaker;
+	record_audio *_recorder_mic;
+	record_desktop *_recorder_desktop;
 
-		muxer_file *_muxer;
+	muxer_file *_muxer;
 
-		std::atomic_bool _inited;
-		std::mutex _mutex;
-	};
+	std::atomic_bool _inited;
+	std::mutex _mutex;
+};
 
-	static recorder *_g_instance = nullptr;
-	static std::mutex _g_mutex;
+static recorder *_g_instance = nullptr;
+static std::mutex _g_mutex;
 
-	recorder::recorder() {
-		memset(&_setting, 0, sizeof(_setting));
-		memset(&_callbacks, 0, sizeof(_callbacks));
+recorder::recorder() {
+	memset(&_setting, 0, sizeof(_setting));
+	memset(&_callbacks, 0, sizeof(_callbacks));
 
-		_recorder_speaker = nullptr;
-		_recorder_mic = nullptr;
-		_recorder_desktop = nullptr;
+	_recorder_speaker = nullptr;
+	_recorder_mic = nullptr;
+	_recorder_desktop = nullptr;
 
-		_inited = false;
-		_muxer = nullptr;
-	}
+	_inited = false;
+	_muxer = nullptr;
+}
 
-	recorder::~recorder() {
-		if (_muxer)
-			delete _muxer;
+recorder::~recorder() {
+	if (_muxer)
+		delete _muxer;
 
-		if (_recorder_desktop)
-			delete _recorder_desktop;
+	if (_recorder_desktop)
+		delete _recorder_desktop;
 
-		if (_recorder_mic)
-			delete _recorder_mic;
+	if (_recorder_mic)
+		delete _recorder_mic;
 
-		if (_recorder_speaker)
-			delete _recorder_speaker;
-	}
+	if (_recorder_speaker)
+		delete _recorder_speaker;
+}
 
-	recorder * recorder::instance() {
-		lock_guard lock(_g_mutex);
+recorder * recorder::instance() {
+	lock_guard lock(_g_mutex);
 
-		if (_g_instance == nullptr) _g_instance = new recorder();
+	if (_g_instance == nullptr) _g_instance = new recorder();
 
-		return _g_instance;
-	}
+	return _g_instance;
+}
 
-	void recorder::release()
-	{
-		lock_guard lock(_g_mutex);
+void recorder::release()
+{
+	lock_guard lock(_g_mutex);
 
-		if (_g_instance)
-			delete _g_instance;
+	if (_g_instance)
+		delete _g_instance;
 
-		_g_instance = nullptr;
-	}
+	_g_instance = nullptr;
+}
 
-	int recorder::init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK & callbacks)
-	{
-		lock_guard lock(_mutex);
-		if (_inited == true)
-			return AE_NO;
+int recorder::init(const AMRECORDER_SETTING & setting, const AMRECORDER_CALLBACK & callbacks)
+{
+	lock_guard lock(_mutex);
+	if (_inited == true)
+		return AE_NO;
 
-		int error = AE_NO;
-		int audio_num = 0;
+	int error = AE_NO;
+	int audio_num = 0;
 
-		_setting = setting;
-		_callbacks = callbacks;
+	_setting = setting;
+	_callbacks = callbacks;
 
-		am::record_audio *audios[2] = { 0 };
+	am::record_audio *audios[2] = { 0 };
 
 #if USE_DSHOW
 
-		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
-		AMERROR_CHECK(error);
+	error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_speaker);
+	AMERROR_CHECK(error);
 
-		error = _recorder_speaker->init("audio=virtual-audio-capturer", "audio=virtual-audio-capturer", false);
-		AMERROR_CHECK(error);
+	error = _recorder_speaker->init("audio=virtual-audio-capturer", "audio=virtual-audio-capturer", false);
+	AMERROR_CHECK(error);
 
-		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_mic);
-		AMERROR_CHECK(error);
+	error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_DSHOW, &_recorder_mic);
+	AMERROR_CHECK(error);
 
-		error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name), std::string("audio=") + std::string(setting.a_mic.name), true);
-		AMERROR_CHECK(error);
+	error = _recorder_mic->init(std::string("audio=") + std::string(setting.a_mic.name), std::string("audio=") + std::string(setting.a_mic.name), true);
+	AMERROR_CHECK(error);
 
-		audios = { _recorder_speaker,_recorder_mic };
+	audios = { _recorder_speaker,_recorder_mic };
 #else
-		if (utils_string::utf8_ascii(setting.a_speaker.name).length() && utils_string::utf8_ascii(setting.a_speaker.id).length()) {
-			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
-			AMERROR_CHECK(error);
+	if (utils_string::utf8_ascii(setting.a_speaker.name).length() && utils_string::utf8_ascii(setting.a_speaker.id).length()) {
+		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_speaker);
+		AMERROR_CHECK(error);
 
-			error = _recorder_speaker->init(setting.a_speaker.name, setting.a_speaker.id, false);
-			AMERROR_CHECK(error);
+		error = _recorder_speaker->init(setting.a_speaker.name, setting.a_speaker.id, false);
+		AMERROR_CHECK(error);
 
-			audios[audio_num] = _recorder_speaker;
-			audio_num++;
-		}
+		audios[audio_num] = _recorder_speaker;
+		audio_num++;
+	}
 
-		
 
-		if (utils_string::utf8_ascii(setting.a_mic.name).length() && utils_string::utf8_ascii(setting.a_mic.id).length()) {
-			error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
-			AMERROR_CHECK(error);
 
-			error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
-			AMERROR_CHECK(error);
+	if (utils_string::utf8_ascii(setting.a_mic.name).length() && utils_string::utf8_ascii(setting.a_mic.id).length()) {
+		error = record_audio_new(RECORD_AUDIO_TYPES::AT_AUDIO_WAS, &_recorder_mic);
+		AMERROR_CHECK(error);
 
-			audios[audio_num] = _recorder_mic;
-			audio_num++;
-		}
+		error = _recorder_mic->init(setting.a_mic.name, setting.a_mic.id, true);
+		AMERROR_CHECK(error);
+
+		audios[audio_num] = _recorder_mic;
+		audio_num++;
+	}
 #endif 
 
 #ifdef _WIN32
-		if (system_version::is_win8_or_above()) {
-			error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_DUPLICATION, &_recorder_desktop);
-			if (error == AE_NO) {
-
-				error = _recorder_desktop->init(
-				{
-					setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top
-				},
-					setting.v_frame_rate
-				);
-
-				if (error != AE_NO)
-					record_desktop_destroy(&_recorder_desktop);
-			}
-		}
-
-		if(_recorder_desktop == nullptr){
-			error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
-			AMERROR_CHECK(error);
+	if (system_version::is_win8_or_above()) {
+		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_DUPLICATION, &_recorder_desktop);
+		if (error == AE_NO) {
 
 			error = _recorder_desktop->init(
 			{
@@ -202,118 +186,134 @@ namespace am {
 				setting.v_frame_rate
 			);
 
-			AMERROR_CHECK(error);
+			if (error != AE_NO)
+				record_desktop_destroy(&_recorder_desktop);
 		}
-#endif // _WIN32
+	}
 
-		am::MUX_SETTING mux_setting;
-		mux_setting.v_frame_rate = setting.v_frame_rate;
-		mux_setting.v_bit_rate = setting.v_bit_rate;
-		mux_setting.v_width = setting.v_width;
-		mux_setting.v_height = setting.v_height;
-		mux_setting.v_qb = setting.v_qb;
-		mux_setting.v_encoder_id = (am::ENCODER_VIDEO_ID)setting.v_enc_id;
-
-		get_valid_out_resolution(setting.v_width, setting.v_height, &mux_setting.v_out_width, &mux_setting.v_out_height);
-
-		mux_setting.a_nb_channel = 2;
-		mux_setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
-		mux_setting.a_sample_rate = 44100;
-		mux_setting.a_bit_rate = 128000;
-
-
-
-		_muxer = new muxer_ffmpeg();
-
-		_muxer->registe_yuv_data(std::bind(
-			&recorder::on_preview_yuv,
-			this,
-			std::placeholders::_1,
-			std::placeholders::_2,
-			std::placeholders::_3,
-			std::placeholders::_4,
-			std::placeholders::_5
-		));
-
-		error = _muxer->init(setting.output, _recorder_desktop, audios, audio_num, mux_setting);
+	if (_recorder_desktop == nullptr) {
+		error = record_desktop_new(RECORD_DESKTOP_TYPES::DT_DESKTOP_WIN_GDI, &_recorder_desktop);
 		AMERROR_CHECK(error);
 
-		_inited = true;
+		error = _recorder_desktop->init(
+		{
+			setting.v_left,setting.v_top,setting.v_width + setting.v_left,setting.v_height + setting.v_top
+		},
+			setting.v_frame_rate
+		);
 
-		return error;
+		AMERROR_CHECK(error);
+	}
+#endif // _WIN32
+
+	am::MUX_SETTING mux_setting;
+	mux_setting.v_frame_rate = setting.v_frame_rate;
+	mux_setting.v_bit_rate = setting.v_bit_rate;
+	mux_setting.v_width = setting.v_width;
+	mux_setting.v_height = setting.v_height;
+	mux_setting.v_qb = setting.v_qb;
+	mux_setting.v_encoder_id = (am::ENCODER_VIDEO_ID)setting.v_enc_id;
+
+	get_valid_out_resolution(setting.v_width, setting.v_height, &mux_setting.v_out_width, &mux_setting.v_out_height);
+
+	mux_setting.a_nb_channel = 2;
+	mux_setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
+	mux_setting.a_sample_rate = 44100;
+	mux_setting.a_bit_rate = 128000;
+
+
+
+	_muxer = new muxer_ffmpeg();
+
+	_muxer->registe_yuv_data(std::bind(
+		&recorder::on_preview_yuv,
+		this,
+		std::placeholders::_1,
+		std::placeholders::_2,
+		std::placeholders::_3,
+		std::placeholders::_4,
+		std::placeholders::_5
+	));
+
+	error = _muxer->init(setting.output, _recorder_desktop, audios, audio_num, mux_setting);
+	AMERROR_CHECK(error);
+
+	_inited = true;
+
+	return error;
+}
+
+int recorder::start()
+{
+	lock_guard lock(_mutex);
+	if (_inited == false)
+		return AE_NEED_INIT;
+
+	int error = _muxer->start();
+
+	return error;
+}
+
+void recorder::stop()
+{
+	lock_guard lock(_mutex);
+	if (_inited == false)
+		return;
+
+	_muxer->stop();
+}
+
+int recorder::pause()
+{
+	lock_guard lock(_mutex);
+	if (_inited == false)
+		return AE_NEED_INIT;
+
+	return _muxer->pause();
+}
+
+int recorder::resume()
+{
+	lock_guard lock(_mutex);
+	if (_inited == false)
+		return AE_NEED_INIT;
+
+	return _muxer->resume();
+}
+
+void recorder::set_preview_enabled(bool enable)
+{
+	lock_guard lock(_mutex);
+	if (_inited == false)
+		return;
+
+	_muxer->set_preview_enabled(enable);
+}
+
+void recorder::on_preview_yuv(const uint8_t * data, int size, int width, int height, int type)
+{
+	if (_callbacks.func_preview_yuv != NULL)
+		_callbacks.func_preview_yuv(data, size, width, height, type);
+}
+void recorder::get_valid_out_resolution(int src_width, int src_height, int * out_width, int * out_height)
+{
+	int scale_cx = src_width;
+	int scale_cy = src_height;
+
+	int i = 0;
+
+	while (((scale_cx * scale_cy) > (1920 * 1080)) && scaled_vals[i] > 0.0) {
+		double scale = scaled_vals[i++];
+		scale_cx = uint32_t(double(src_width) / scale);
+		scale_cy = uint32_t(double(src_height) / scale);
 	}
 
-	int recorder::start()
-	{
-		lock_guard lock(_mutex);
-		if (_inited == false)
-			return AE_NEED_INIT;
 
-		int error = _muxer->start();
+	*out_width = scale_cx;
+	*out_height = scale_cy;
 
-		return error;
-	}
-
-	void recorder::stop()
-	{
-		lock_guard lock(_mutex);
-		if (_inited == false)
-			return;
-
-		_muxer->stop();
-	}
-
-	int recorder::pause()
-	{
-		lock_guard lock(_mutex);
-		if (_inited == false)
-			return AE_NEED_INIT;
-
-		return _muxer->pause();
-	}
-
-	int recorder::resume()
-	{
-		lock_guard lock(_mutex);
-		if (_inited == false)
-			return AE_NEED_INIT;
-
-		return _muxer->resume();
-	}
-
-	void recorder::set_preview_enabled(bool enable)
-	{
-		lock_guard lock(_mutex);
-		if (_inited == false)
-			return;
-
-		_muxer->set_preview_enabled(enable);
-	}
-
-	void recorder::on_preview_yuv(const uint8_t * data, int size, int width, int height,int type)
-	{
-		if (_callbacks.func_preview_yuv != NULL)
-			_callbacks.func_preview_yuv(data, size, width, height, type);
-	}
-	void recorder::get_valid_out_resolution(int src_width, int src_height, int * out_width, int * out_height)
-	{
-		int scale_cx = src_width;
-		int scale_cy = src_height;
-
-		int i = 0;
-
-		while (((scale_cx * scale_cy) > (1920 * 1080)) && scaled_vals[i] > 0.0) {
-			double scale = scaled_vals[i++];
-			scale_cx = uint32_t(double(src_width) / scale);
-			scale_cy = uint32_t(double(src_height) / scale);
-		}
-
-
-		*out_width = scale_cx;
-		*out_height = scale_cy;
-
-		al_info("get valid output resolution from %dx%d to %dx%d,with scale:%lf", src_width, src_height, scale_cx, scale_cy, scaled_vals[i]);
-	}
+	al_info("get valid output resolution from %dx%d to %dx%d,with scale:%lf", src_width, src_height, scale_cx, scale_cy, scaled_vals[i]);
+}
 }
 
 AMRECORDER_API const char * recorder_err2str(int error)
@@ -437,7 +437,7 @@ AMRECORDER_API void recorder_free_array(void * array_address)
 
 AMRECORDER_API int recorder_remux(const char * src, const char * dst, AMRECORDER_FUNC_REMUX_PROGRESS func_progress, AMRECORDER_FUNC_REMUX_STATE func_state)
 {
-	am::REMUXER_PARAM param = {0};
+	am::REMUXER_PARAM param = { 0 };
 
 	sprintf_s(param.src, 260, "%s", am::utils_string::utf8_ascii(src).c_str());
 	sprintf_s(param.dst, 260, "%s", am::utils_string::utf8_ascii(dst).c_str());

@@ -76,6 +76,12 @@ namespace am {
 			_time_base = { 1,AV_TIME_BASE };
 			_pixel_fmt = AV_PIX_FMT_BGRA;
 
+			error = init_duplication();
+			if (error != AE_NO) {
+				al_error("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
+				break;
+			}
+
 			_inited = true;
 		} while (0);
 
@@ -763,7 +769,7 @@ namespace am {
 
 		int error = AE_NO;
 
-#if 1
+#if 0
 		if (attatch_desktop() != true) {
 			al_fatal("duplication attach desktop failed :%lu",GetLastError());
 			if (_on_error) _on_error(AE_DUP_ATTATCH_FAILED);
@@ -772,12 +778,12 @@ namespace am {
 #endif
 
 		//Should init after desktop attatched
-		error = init_duplication();
-		if (error != AE_NO) {
-			al_fatal("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
-			if (_on_error) _on_error(error);
-			return;
-		}
+		//error = init_duplication();
+		//if (error != AE_NO) {
+		//	al_fatal("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
+		//	if (_on_error) _on_error(error);
+		//	return;
+		//}
 
 		DXGI_OUTDUPL_FRAME_INFO frame_info;
 		while (_running)
