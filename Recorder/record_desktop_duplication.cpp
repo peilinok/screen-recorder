@@ -7,6 +7,7 @@
 
 #include "utils_string.h"
 
+#include "system_error.h"
 #include "error_define.h"
 #include "log_helper.h"
 
@@ -78,7 +79,6 @@ namespace am {
 
 			error = init_duplication();
 			if (error != AE_NO) {
-				al_error("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
 				break;
 			}
 
@@ -86,8 +86,7 @@ namespace am {
 		} while (0);
 
 		if (error != AE_NO) {
-			al_debug("%s,last error:%lu", err2str(error), GetLastError());
-			clean_up();
+			al_debug("%s,last error:%s", err2str(error), system_error::error2str(GetLastError()).c_str());
 		}
 
 		return error;
@@ -138,6 +137,8 @@ namespace am {
 		if (_buffer)
 			delete[] _buffer;
 
+		_buffer = nullptr;
+
 		if (_cursor_info.buff) {
 			delete[] _cursor_info.buff;
 			_cursor_info.buff = nullptr;
@@ -153,7 +154,10 @@ namespace am {
 
 		//finally free d3d11 & dxgi library
 		if (_d3d11) free_system_library(_d3d11);
+		_d3d11 = nullptr;
+
 		if (_dxgi) free_system_library(_dxgi);
+		_dxgi = nullptr;
 	}
 
 	int record_desktop_duplication::get_dst_adapter(IDXGIAdapter ** adapter)
@@ -335,11 +339,22 @@ namespace am {
 	void record_desktop_duplication::clean_d3d11()
 	{
 		if (_d3d_device) _d3d_device->Release();
+		_d3d_device = nullptr;
+
 		if (_d3d_ctx) _d3d_ctx->Release();
+		_d3d_ctx = nullptr;
+
 		if (_d3d_vshader) _d3d_vshader->Release();
+		_d3d_vshader = nullptr;
+
 		if (_d3d_pshader) _d3d_pshader->Release();
+		_d3d_pshader = nullptr;
+
 		if (_d3d_inlayout) _d3d_inlayout->Release();
+		_d3d_inlayout = nullptr;
+
 		if (_d3d_samplerlinear) _d3d_samplerlinear->Release();
+		_d3d_samplerlinear = nullptr;
 	}
 
 	int record_desktop_duplication::init_duplication()
@@ -771,7 +786,8 @@ namespace am {
 
 #if 0
 		if (attatch_desktop() != true) {
-			al_fatal("duplication attach desktop failed :%lu",GetLastError());
+			al_fatal("duplication attach desktop failed :%s",
+				system_error::error2str(GetLastError()).c_str());
 			if (_on_error) _on_error(AE_DUP_ATTATCH_FAILED);
 			return;
 		}
@@ -780,7 +796,8 @@ namespace am {
 		//Should init after desktop attatched
 		//error = init_duplication();
 		//if (error != AE_NO) {
-		//	al_fatal("duplication initialize failed %s,last error :%lu", err2str(error), GetLastError());
+		//	al_fatal("duplication initialize failed %s,last error :%s", err2str(error), 
+		// system_error::error2str(GetLastError()).c_str());
 		//	if (_on_error) _on_error(error);
 		//	return;
 		//}

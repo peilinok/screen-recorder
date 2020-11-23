@@ -3,8 +3,10 @@
 #include <string>
 
 #include "error_define.h"
-#include "log_helper.h"
+#include "system_error.h"
 #include "utils_string.h"
+
+#include "log_helper.h"
 
 #ifdef _WIN32
 
@@ -21,8 +23,9 @@ namespace am {
 		_co_inited = false;
 
 		HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-		if (hr != S_OK)
-			al_debug("%s,error:%lu",err2str(AE_CO_INITED_FAILED), GetLastError());
+		DWORD err = GetLastError();
+		if (hr != S_OK && err != S_OK)
+			al_error("%s,error:%s",err2str(AE_CO_INITED_FAILED), system_error::error2str(err).c_str());
 
 		_co_inited = (hr == S_OK || hr == S_FALSE);//if already initialize will return S_FALSE
 
@@ -206,6 +209,11 @@ namespace am {
 	int record_audio_wasapi::init(const std::string & device_name, const std::string &device_id, bool is_input)
 	{
 		int error = AE_NO;
+		HRESULT hr = S_OK;
+
+		al_info("wasapi start to initialize in %s mode with: %s",
+			is_input ? "input" : "output", 
+			device_name.c_str());
 
 		if (_co_inited == false) {
 			return AE_CO_INITED_FAILED;
@@ -221,7 +229,7 @@ namespace am {
 		_is_default = (utils_string::ascii_utf8(DEFAULT_AUDIO_INOUTPUT_ID).compare(_device_id) == 0);
 
 		do {
-			HRESULT hr = CoCreateInstance(
+			hr = CoCreateInstance(
 				__uuidof(MMDeviceEnumerator),
 				NULL,
 				CLSCTX_ALL,
@@ -324,7 +332,8 @@ namespace am {
 		} while (0);
 
 		if (error != AE_NO) {
-			al_debug("%s,error:%lu", err2str(error), GetLastError());
+			al_error("wasapi initialize failed,%s,error:%lu,hr:%lld",
+				err2str(error), GetLastError(), hr);
 			clean_wasapi();
 		}
 

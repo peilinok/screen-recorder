@@ -302,6 +302,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClInclude Include="resample_pcm.h" />
     <ClInclude Include="ring_buffer.h" />
     <ClInclude Include="sws_helper.h" />
+    <ClInclude Include="system_error.h" />
     <ClInclude Include="system_lib.h" />
     <ClInclude Include="system_time.h" />
     <ClInclude Include="utils_string.h" />
@@ -340,6 +341,7 @@ xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(T
     <ClCompile Include="remuxer_ffmpeg.cpp" />
     <ClCompile Include="resample_pcm.cpp" />
     <ClCompile Include="sws_helper.cpp" />
+    <ClCompile Include="system_error.cpp" />
     <ClCompile Include="system_lib.cpp" />
     <ClCompile Include="system_time.cpp" />
     <ClCompile Include="utils_string.cpp" />

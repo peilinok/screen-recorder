@@ -50,10 +50,7 @@ namespace am {
 			_inited = true;
 		} while (0);
 
-		if (error != AE_NO) {
-			al_debug("%s,last error:%lu", err2str(error), GetLastError());
-			clean_up();
-		}
+		al_info("init gdi finished,error: %s %ld", err2str(error), GetLastError());
 
 		return error;
 	}
@@ -102,6 +99,8 @@ namespace am {
 
 		if (_buffer)
 			delete[] _buffer;
+
+		_buffer = nullptr;
 	}
 
 	void record_desktop_gdi::draw_cursor(HDC hdc)

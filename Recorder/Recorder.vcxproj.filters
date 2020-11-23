@@ -204,6 +204,9 @@
     <ClInclude Include="mul_db.h">
       <Filter>Header Files\helpers</Filter>
     </ClInclude>
+    <ClInclude Include="system_error.h">
+      <Filter>Header Files\helpers\win</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -313,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="log_helper.cpp">
       <Filter>Source Files\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="system_error.cpp">
+      <Filter>Source Files\helpers\win</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
