@@ -420,6 +420,45 @@ void test_remux() {
 #endif
 }
 
+void test_scale() {
+	static const double scaled_vals[] = { 1.0,         1.25, (1.0 / 0.75), 1.5,
+		(1.0 / 0.6), 1.75, 2.0,          2.25,
+		2.5,         2.75, 3.0,          0.0 };
+
+	auto get_valid_out_resolution = [](int src_width, int src_height, int * out_width, int * out_height)
+	{
+		int scale_cx = src_width;
+		int scale_cy = src_height;
+
+		int i = 0;
+
+		while (((scale_cx * scale_cy) > (1920 * 1080)) && scaled_vals[i] > 0.0) {
+			double scale = scaled_vals[i++];
+			scale_cx = uint32_t(double(src_width) / scale);
+			scale_cy = uint32_t(double(src_height) / scale);
+		}
+
+		if (scale_cx % 2 != 0) {
+			scale_cx += 1;
+		}
+
+		if (scale_cy % 2 != 0) {
+			scale_cy += 1;
+		}
+
+
+		*out_width = scale_cx;
+		*out_height = scale_cy;
+
+		al_info("get valid output resolution from %dx%d to %dx%d,with scale:%lf", src_width, src_height, scale_cx, scale_cy, scaled_vals[i]);
+	};
+
+	int src_width=2736, src_height=1824;
+	int dst_width, dst_height;
+
+	get_valid_out_resolution(src_width, src_height, &dst_width, &dst_height);
+}
+
 int main(int argc, char **argv)
 {
 	al_info("record start...");
@@ -441,11 +480,13 @@ int main(int argc, char **argv)
 
 	//test_audio();
 
-	test_recorder();
+	//test_recorder();
 
 	//test_remux();
 
 	//save_aac();
+
+	test_scale();
 
 
 	al_info("press any key to exit...");

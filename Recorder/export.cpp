@@ -308,6 +308,13 @@ void recorder::get_valid_out_resolution(int src_width, int src_height, int * out
 		scale_cy = uint32_t(double(src_height) / scale);
 	}
 
+	if (scale_cx % 2 != 0) {
+		scale_cx += 1;
+	}
+
+	if (scale_cy % 2 != 0) {
+		scale_cy += 1;
+	}
 
 	*out_width = scale_cx;
 	*out_height = scale_cy;

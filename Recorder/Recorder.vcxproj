@@ -256,11 +256,11 @@ xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)</Command>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
-xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)
-xcopy /r /y $(ProjectDir)export.h $(SolutionDir)2node\platform\win32\export.h
-xcopy /r /y $(TargetDir)$(TargetName).dll $(SolutionDir)2node\platform\win32\$(TargetName).dll
-xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(TargetName).lib</Command>
+      <Command>echo f| xcopy /r /y $(SolutionDir)ffmpeg\bin $(TargetDir)
+echo f| xcopy /r /y $(SolutionDir)portaudio\bin $(TargetDir)
+echo f| xcopy /r /y $(ProjectDir)export.h $(SolutionDir)2node\platform\win32\export.h
+echo f| xcopy /r /y $(TargetDir)$(TargetName).dll $(SolutionDir)2node\platform\win32\$(TargetName).dll
+echo f| xcopy /r /y $(TargetDir)$(TargetName).lib $(SolutionDir)2node\platform\win32\$(TargetName).lib</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
