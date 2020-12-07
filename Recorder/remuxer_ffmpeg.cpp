@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "headers_ffmpeg.h"
+#include "utils_string.h"
 
 #include "error_define.h"
 #include "log_helper.h"
@@ -146,12 +147,12 @@ namespace am {
 			param->cb_state(param->src, 1, AE_NO);
 
 		do {
-			error = open_src(&ctx_src, param->src);
+			error = open_src(&ctx_src, utils_string::ascii_utf8(param->src).c_str());
 			if (error != AE_NO) {
 				break;
 			}
 
-			error = open_dst(&ctx_dst, param->dst, ctx_src);
+			error = open_dst(&ctx_dst, utils_string::ascii_utf8(param->dst).c_str(), ctx_src);
 			if (error != AE_NO) {
 				break;
 			}
