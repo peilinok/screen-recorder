@@ -1,0 +1,240 @@
+#pragma once
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#define RAY_CALL __cdecl
+#if defined(RAY_EXPORT)
+#define RAY_API extern "C" __declspec(dllexport)
+#else
+#define RAY_API extern "C" __declspec(dllimport)
+#endif
+#elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#define RAY_API __attribute__((visibility("default"))) extern "C"
+#define RAY_CALL
+#elif defined(__ANDROID__) || defined(__linux__)
+#define RAY_API extern "C" __attribute__((visibility("default")))
+#define RAY_CALL
+#else
+#define RAY_API extern "C"
+#define RAY_CALL
+#endif
+
+#define DEVICE_MAX_NAME_LEN 260
+#define DEVICE_MAX_ID_LEN 260
+
+#define RECORDER_MAX_PATH_LEN 260
+
+namespace ray {
+
+
+typedef uint64_t	rt_uid;
+
+typedef enum ErrorCode {
+	ERR_NO = 0,
+	ERR_ERROR,
+	ERR_UNSUPPORT,
+	ERR_INVALID_CONTEXT,
+	ERR_NEED_INIT,
+	ERR_TIMEOUT,
+	ERR_ALLOCATE_FAILED,
+
+	//ERR_CO_
+	ERR_CO_INITED_FAILED,
+	ERR_CO_CREATE_FAILED,
+	ERR_CO_GETENDPOINT_FAILED,
+	ERR_CO_ACTIVE_DEVICE_FAILED,
+	ERR_CO_GET_FORMAT_FAILED,
+	ERR_CO_AUDIOCLIENT_INIT_FAILED,
+	ERR_CO_GET_CAPTURE_FAILED,
+	ERR_CO_CREATE_EVENT_FAILED,
+	ERR_CO_SET_EVENT_FAILED,
+	ERR_CO_START_FAILED,
+	ERR_CO_ENUMENDPOINT_FAILED,
+	ERR_CO_GET_ENDPOINT_COUNT_FAILED,
+	ERR_CO_GET_ENDPOINT_ID_FAILED,
+	ERR_CO_OPEN_PROPERTY_FAILED,
+	ERR_CO_GET_VALUE_FAILED,
+	ERR_CO_GET_BUFFER_FAILED,
+	ERR_CO_RELEASE_BUFFER_FAILED,
+	ERR_CO_GET_PACKET_FAILED,
+	ERR_CO_PADDING_UNEXPECTED,
+
+	//ERR_FFMPEG_
+	ERR_FFMPEG_OPEN_INPUT_FAILED,
+	ERR_FFMPEG_FIND_STREAM_FAILED,
+	ERR_FFMPEG_FIND_DECODER_FAILED,
+	ERR_FFMPEG_OPEN_CODEC_FAILED,
+	ERR_FFMPEG_READ_FRAME_FAILED,
+	ERR_FFMPEG_READ_PACKET_FAILED,
+	ERR_FFMPEG_DECODE_FRAME_FAILED,
+	ERR_FFMPEG_NEW_SWSCALE_FAILED,
+	ERR_FFMPEG_FIND_ENCODER_FAILED,
+	ERR_FFMPEG_ALLOC_CONTEXT_FAILED,
+	ERR_FFMPEG_ENCODE_FRAME_FAILED,
+	ERR_FFMPEG_ALLOC_FRAME_FAILED,
+	ERR_FFMPEG_OPEN_IO_FAILED,
+	ERR_FFMPEG_CREATE_STREAM_FAILED,
+	ERR_FFMPEG_COPY_PARAMS_FAILED,
+	ERR_RESAMPLE_INIT_FAILED,
+	ERR_FFMPEG_NEW_STREAM_FAILED,
+	ERR_FFMPEG_FIND_INPUT_FMT_FAILED,
+	ERR_FFMPEG_WRITE_HEADER_FAILED,
+	ERR_FFMPEG_WRITE_TRAILER_FAILED,
+	ERR_FFMPEG_WRITE_FRAME_FAILED,
+
+	//ERR_FILTER_
+	ERR_FILTER_ALLOC_GRAPH_FAILED,
+	ERR_FILTER_CREATE_FILTER_FAILED,
+	ERR_FILTER_PARSE_PTR_FAILED,
+	ERR_FILTER_CONFIG_FAILED,
+	ERR_FILTER_INVALID_CTX_INDEX,
+	ERR_FILTER_ADD_FRAME_FAILED,
+
+	//ERR_GDI_
+	ERR_GDI_GET_DC_FAILED,
+	ERR_GDI_CREATE_DC_FAILED,
+	ERR_GDI_CREATE_BMP_FAILED,
+	ERR_GDI_BITBLT_FAILED,
+	ERR_GDI_GET_DIBITS_FAILED,
+
+	//ERR_D3D_
+	ERR_D3D_LOAD_FAILED,
+	ERR_D3D_GET_PROC_FAILED,
+	ERR_D3D_CREATE_DEVICE_FAILED,
+	ERR_D3D_QUERYINTERFACE_FAILED,
+	ERR_D3D_CREATE_VERTEX_SHADER_FAILED,
+	ERR_D3D_CREATE_INLAYOUT_FAILED,
+	ERR_D3D_CREATE_PIXEL_SHADER_FAILED,
+	ERR_D3D_CREATE_SAMPLERSTATE_FAILED,
+
+	//ERR_DXGI_
+	ERR_DXGI_GET_PROC_FAILED,
+	ERR_DXGI_GET_ADAPTER_FAILED,
+	ERR_DXGI_GET_FACTORY_FAILED,
+	ERR_DXGI_FOUND_ADAPTER_FAILED,
+
+	//ERR_DUP_
+	ERR_DUP_ATTATCH_FAILED,
+	ERR_DUP_QI_FAILED,
+	ERR_DUP_GET_PARENT_FAILED,
+	ERR_DUP_ENUM_OUTPUT_FAILED,
+	ERR_DUP_DUPLICATE_MAX_FAILED,
+	ERR_DUP_DUPLICATE_FAILED,
+	ERR_DUP_RELEASE_FRAME_FAILED,
+	ERR_DUP_ACQUIRE_FRAME_FAILED,
+	ERR_DUP_QI_FRAME_FAILED,
+	ERR_DUP_CREATE_TEXTURE_FAILED,
+	ERR_DUP_QI_DXGI_FAILED,
+	ERR_DUP_MAP_FAILED,
+	ERR_DUP_GET_CURSORSHAPE_FAILED,
+
+	//ERR_REMUX_
+	ERR_REMUX_RUNNING,
+	ERR_REMUX_NOT_EXIST,
+	ERR_REMUX_INVALID_INOUT,
+
+	ERR_MAX
+}ErrorCode;
+
+typedef ErrorCode rt_error;
+
+typedef enum ErrorReason {
+	REASON_NONE = 0
+}ErrorReason;
+
+typedef enum VIDEO_SOURCE_TYPE {
+	VIDEO_SOURCE_UNKNOWN = 0,
+
+	/**
+	* whole monitor video source
+	*/
+	VIDEO_SOURCE_MONITOR,
+
+	/**
+	* rect video source
+	*/
+	VIDEO_SOURCE_RECT,
+
+	/**
+	* window video source
+	*/
+	VIDEO_SOURCE_WINDOW,
+
+	/**
+	* game video source, means dx or gl hook source
+	*/
+	VIDEO_SOURCE_GAME,
+
+	/**
+	* camera video source
+	*/
+	VIDEO_SOURCE_CAMERA,
+
+	/**
+	* text source
+	*/
+	VIDEO_SOURCE_TEXT,
+
+	/**
+	* picture source
+	*/
+	VIDEO_SOURCE_PIC,
+
+	/**
+	* file source
+	*/
+	VIDEO_SOURCE_FILE,
+}VIDEO_SOURCE_TYPE;
+
+typedef enum AUDIO_SOURCE_TYPE {
+	AUDIO_SOURCE_UNKNOWN = 0,
+
+	/**
+	* speaker audio source
+	*/
+	AUDIO_SOURCE_SPEAKER,
+
+	/**
+	* microphone audio source
+	*/
+	AUDIO_SOURCE_MICROPHONE,
+
+	/**
+	* app audio source
+	*/
+	AUDIO_SOURCE_APP
+}AUDIO_SOURCE_TYPE;
+
+class CRect {
+public:
+	CRect() {}
+	~CRect() {}
+
+	uint32_t width() { return right - left; }
+	uint32_t height() { return bottom - top; }
+
+	uint32_t left;
+	uint32_t top;
+	uint32_t right;
+	uint32_t bottom;
+	
+	bool operator==(const CRect&rhs) { 
+		return this->left == rhs.left &&
+			this->right == rhs.left &&
+			this->bottom == rhs.bottom &&
+			this->top == rhs.top;
+	}
+};
+
+} // namespace ray
+
+RAY_API void RAY_CALL getVersion(uint32_t *major, uint32_t *minor, uint32_t *patch, uint32_t *build);

@@ -3,7 +3,7 @@ const platform = process.platform;
 let recorder = undefined
 
 if(platform === 'win32')
-  recorder = require('../platform/win32/recorder.node')
+  recorder = require('../platform/win32/screen-recorder.node')
 
 if(global.navigator === undefined)
     global.navigator = {

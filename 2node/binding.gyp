@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "recorder",
+      "target_name": "screen-recorder",
       "conditions": [
         ['OS=="win"',
           {
@@ -9,7 +9,7 @@
               {
                 'VCLinkerTool':
                   {
-                    'AdditionalDependencies': ['recorder.lib'],
+                    'AdditionalDependencies': ['screen-recorder.lib'],
                     'AdditionalLibraryDirectories': ['../platform/win32'],
                   },
               },
@@ -24,7 +24,7 @@
       "type": "none",
       "copies": [
         {
-          "files": [ "<(PRODUCT_DIR)/recorder.node" ],
+          "files": [ "<(PRODUCT_DIR)/screen-recorder.node" ],
           "destination": "./platform/win32"
         }
       ]
