@@ -201,6 +201,7 @@ copy /Y $(TargetDir)$(TargetName).lib $(SolutionDir)..\2node\platform\win32\
     <ClInclude Include="..\src\constants\ray_error_str.h" />
     <ClInclude Include="..\src\constants\ray_version.h" />
     <ClInclude Include="..\src\devices\ray_audio_device.h" />
+    <ClInclude Include="..\src\devices\ray_audio_wasapi.h" />
     <ClInclude Include="..\src\ffmpeg\common.h" />
     <ClInclude Include="..\src\old\common.h" />
     <ClInclude Include="..\src\old\d3d_helper.h" />
@@ -253,6 +254,7 @@ copy /Y $(TargetDir)$(TargetName).lib $(SolutionDir)..\2node\platform\win32\
   <ItemGroup>
     <ClCompile Include="..\src\devices\ray_audio_device.cpp" />
     <ClCompile Include="..\src\devices\ray_audio_device_win.cpp" />
+    <ClCompile Include="..\src\devices\ray_audio_wasapi.cpp" />
     <ClCompile Include="..\src\ray_dllmain.cpp" />
     <ClCompile Include="..\src\ray_dump.cpp" />
     <ClCompile Include="..\src\ray_recorder.cpp" />
@@ -291,6 +293,9 @@ copy /Y $(TargetDir)$(TargetName).lib $(SolutionDir)..\2node\platform\win32\
     <ClCompile Include="..\src\old\system_version.cpp" />
     <ClCompile Include="..\src\utils\ray_log.cpp" />
     <ClCompile Include="..\src\utils\ray_string.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

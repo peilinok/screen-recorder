@@ -13,6 +13,16 @@
 namespace ray {
 namespace devices {
 
+AudioDeviceManager::AudioDeviceManager()
+{
+	enumerator_ = new WasapiDeviceEnumerator();
+	enumerator_->Initialize();
+}
+
+AudioDeviceManager::~AudioDeviceManager()
+{
+}
+
 int AudioDeviceManager::setMicrophone(const char id[kAdmDeviceIdSize])
 {
 	return 0;
@@ -68,7 +78,7 @@ ray_refptr<IAudioDeviceCollection> AudioDeviceManager::getSpeakerCollection()
 	return nullptr;
 }
 
-int AudioDeviceManager::getAudioDevices(bool capture, std::list<AudioDeviceInfo>& devices)
+int AudioDeviceManager::getAudioDevices(bool is_microphone, std::list<AudioDeviceInfo>& devices)
 {
 	utils::com_initialize com_obj;
 
@@ -83,12 +93,6 @@ int AudioDeviceManager::getAudioDevices(bool capture, std::list<AudioDeviceInfo>
 	devices.clear();
 
 	do {
-		std::shared_ptr<void> raii_ptr(nullptr, [&](void*) {
-			collection = nullptr;
-			device = nullptr;
-			device_enumerator = nullptr;
-		});
-
 		HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
 			CLSCTX_ALL,
 			__uuidof(IMMDeviceEnumerator),
@@ -100,7 +104,7 @@ int AudioDeviceManager::getAudioDevices(bool capture, std::list<AudioDeviceInfo>
 		}
 
 		hr = device_enumerator->GetDefaultAudioEndpoint(
-			capture == true ? eCapture : eRender,
+			is_microphone == true ? eCapture : eRender,
 			eConsole,
 			device.GetAddressOf());
 
@@ -110,7 +114,7 @@ int AudioDeviceManager::getAudioDevices(bool capture, std::list<AudioDeviceInfo>
 		}
 
 		hr = device_enumerator->EnumAudioEndpoints(
-			capture == true ? eCapture : eRender,
+			is_microphone == true ? eCapture : eRender,
 			DEVICE_STATE_ACTIVE,
 			collection.GetAddressOf());
 
@@ -186,7 +190,7 @@ int AudioDeviceManager::getAudioDevices(bool capture, std::list<AudioDeviceInfo>
 
 			AudioDeviceInfo device_info;
 
-			device_info.isMicrophone = capture;
+			device_info.isMicrophone = is_microphone;
 			device_info.isCurrentSelected = device_info.isDefaultSelecteed = (str_id.compare(default_id) == 0);
 
 			memcpy_s(device_info.name, kAdmDeviceNameSize, str_friendly.c_str(), str_friendly.length());

@@ -28,12 +28,12 @@ int main()
 	AMRECORDER_DEVICE *speakers = NULL, *mics = NULL;
 	AMRECORDER_ENCODERS *vencoders = NULL;
 
-	AMRECORDER_SETTING setting = {0};
-	AMRECORDER_CALLBACK callback = {0};
+	AMRECORDER_SETTING setting = { 0 };
+	AMRECORDER_CALLBACK callback = { 0 };
 
 
 	int nspeaker = recorder_get_speakers(&speakers);
-	
+
 	int nmic = recorder_get_mics(&mics);
 
 	int n_vencoders = recorder_get_vencoders(&vencoders);
@@ -137,7 +137,7 @@ int main() {
 
 		getVersion(&major, &minor, &patch, &build);
 
-		printf("lib version %d.%d.%d.%d", major, minor, patch, build);
+		printf("lib version %d.%d.%d.%d\r\n", major, minor, patch, build);
 
 		ray_autoptr<IRemuxer> remuxer = createRemuxer();
 
@@ -145,9 +145,19 @@ int main() {
 
 		ray_refptr<IAudioDeviceManager> audio_device_mgr = recorder->getAudioDeviceManager();
 
-		ray_refptr<IAudioDeviceCollection> iaudio_device_collection = audio_device_mgr->getMicrophoneCollection();
+		ray_refptr<IAudioDeviceCollection> microphone_collection = audio_device_mgr->getMicrophoneCollection();
+		if (microphone_collection)
+			for (int i = 0; i < microphone_collection->getDeviceCount(); i++) {
+				auto device = microphone_collection->getDeviceInfo(i);
+				printf("%s   %s\r\n", device.id, device.name);
+			}
 
-		ray_refptr<IAudioDeviceCollection> oaudio_device_collection = audio_device_mgr->getSpeakerCollection();
+		ray_refptr<IAudioDeviceCollection> speaker_collection = audio_device_mgr->getSpeakerCollection();
+		if (speaker_collection)
+			for (int i = 0; i < speaker_collection->getDeviceCount(); i++) {
+				auto device = speaker_collection->getDeviceInfo(i);
+				printf("%s   %s\r\n", device.id, device.name);
+			}
 	};
 
 	test();

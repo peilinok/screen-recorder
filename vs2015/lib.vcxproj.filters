@@ -46,6 +46,12 @@
     <Filter Include="source">
       <UniqueIdentifier>{06d19726-b0cf-49cb-9562-ecb1d4525c50}</UniqueIdentifier>
     </Filter>
+    <Filter Include="devices\audio">
+      <UniqueIdentifier>{d37123a5-69ab-4613-858d-f446e781b969}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="devices\audio\wasapi">
+      <UniqueIdentifier>{3eda7b2c-46ce-4159-b8fc-96d81230c855}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\old\common.h">
@@ -237,14 +243,17 @@
     <ClInclude Include="..\include\iray_audio_encoder.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\devices\ray_audio_device.h">
-      <Filter>devices</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\ray_refptr_object.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\win\ray_com.h">
       <Filter>utils\win</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\ray_audio_device.h">
+      <Filter>devices\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\ray_audio_wasapi.h">
+      <Filter>devices\audio\wasapi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -353,10 +362,16 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ray_audio_device.cpp">
-      <Filter>devices</Filter>
+      <Filter>devices\audio</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ray_audio_device_win.cpp">
-      <Filter>devices</Filter>
+      <Filter>devices\audio</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ray_audio_wasapi.cpp">
+      <Filter>devices\audio\wasapi</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

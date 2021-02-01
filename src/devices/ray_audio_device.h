@@ -3,6 +3,10 @@
 #include <list>
 #include <mutex>
 
+#if defined (WIN32)
+#include "ray_audio_wasapi.h"
+#endif // _WIN32
+
 #include "base\ray_macro.h"
 
 #include "include\iray_audio_device.h"
@@ -78,16 +82,18 @@ public:
 	ray_refptr<IAudioDeviceCollection> getSpeakerCollection() override;
 
 private:
+
 #if defined(WIN32)
-
-	int getAudioDevices(bool capture, std::list<AudioDeviceInfo>& devices);
-
+	int getAudioDevices(bool is_microphone, std::list<AudioDeviceInfo>& devices);
 #endif
 
 private:
 	std::mutex observers_mutex_;
-
 	std::list<IAudioDeviceObserver*> observers_;
+
+#if defined(WIN32)
+	Microsoft::WRL::ComPtr<WasapiDeviceEnumerator> enumerator_;
+#endif
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(AudioDeviceManager);

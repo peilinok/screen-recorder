@@ -5,14 +5,6 @@
 namespace ray {
 namespace devices {
 
-AudioDeviceManager::AudioDeviceManager()
-{
-}
-
-AudioDeviceManager::~AudioDeviceManager()
-{
-}
-
 void AudioDeviceManager::registerObserver(IAudioDeviceObserver * observer)
 {
 	std::lock_guard<std::mutex> lock(observers_mutex_);
