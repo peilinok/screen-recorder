@@ -46,7 +46,7 @@ namespace am {
 		_stop_event = NULL;
 		_render_event = NULL;
 
-		_use_device_ts = true;
+		_use_device_ts = false;
 
 		_start_time = 0;
 	}
@@ -283,6 +283,8 @@ namespace am {
 				_wfex,
 				NULL);
 
+			// AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED
+			// https://docs.microsoft.com/en-us/windows/win32/api/audioclient/nf-audioclient-iaudioclient-initialize
 			if (hr != S_OK) {
 				error = AE_CO_AUDIOCLIENT_INIT_FAILED;
 				break;
@@ -434,8 +436,9 @@ namespace am {
 		//wasapi time unit is 100ns,so time base is NS_PER_SEC
 		frame->pts = _use_device_ts ? device_ts * 100 : av_gettime_relative();
 
-		if(_use_device_ts == false)
-			frame->pts -= (int64_t)sample_count * NS_PER_SEC / (int64_t)_sample_rate;
+		if (_use_device_ts == false) {
+			frame->pts -= (int64_t)sample_count * NS_PER_SEC / (int64_t)_sample_rate / 100;
+		}
 
 		frame->pkt_dts = frame->pts;
 		frame->nb_samples = sample_count;

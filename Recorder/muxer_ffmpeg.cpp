@@ -303,7 +303,7 @@ namespace am {
 		sample_len = av_samples_get_buffer_size(NULL, frame->channels, frame->nb_samples, (AVSampleFormat)frame->format, 1);
 
 #ifdef _DEBUG
-		al_debug("dg:%d", pcm_fltp_db_count(frame, frame->channels));
+		//al_debug("dg:%d", pcm_fltp_db_count(frame, frame->channels));
 #endif
 
 		int remain_len = sample_len;
@@ -825,18 +825,26 @@ namespace am {
 
 		packet->stream_index = _v_stream->st->index;
 
+		av_packet_rescale_ts(packet, _v_stream->v_src->get_time_base(), { 1,AV_TIME_BASE });
+
+		/*packet->pts = av_rescale_q_rnd(packet->pts, 
+			_v_stream->v_src->get_time_base(), 
+			{ 1,AV_TIME_BASE }, 
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));*/
+
+		// make audio and video use one clock
 		if (_v_stream->pre_pts == (uint64_t)-1) {
 			_v_stream->pre_pts = packet->pts;
 		}
 
+		//make pts start from zero,otherwise the total play time of target file is incorrect
 		packet->pts = packet->pts - _v_stream->pre_pts;
-		packet->pts = av_rescale_q_rnd(packet->pts, _v_stream->v_src->get_time_base(), _v_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-
-
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
+		av_packet_rescale_ts(packet, { 1,AV_TIME_BASE }, _a_stream->st->time_base);
 
-		//al_debug("V:%lld", packet->pts);
+
+		al_debug("V:%lld", packet->pts);
 		
 		av_assert0(packet->data != NULL);
 
@@ -852,15 +860,8 @@ namespace am {
 	int muxer_ffmpeg::write_audio(AVPacket *packet)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		
+
 		packet->stream_index = _a_stream->st->index;
-
-		if (_a_stream->pre_pts == (uint64_t)-1) {
-			_a_stream->pre_pts = packet->pts;
-		}
-
-		//unless you ensure that there will always have audio data,in fact,mostly you got silent
-		packet->pts = packet->pts - _a_stream->pre_pts;
 
 		AVRational src_timebase = { 1,1 };
 
@@ -871,11 +872,26 @@ namespace am {
 			src_timebase = _a_stream->a_filter_aresample[0]->get_time_base();
 		}
 
-		packet->pts = av_rescale_q_rnd(packet->pts, src_timebase, _a_stream->st->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+		av_packet_rescale_ts(packet, src_timebase, { 1,AV_TIME_BASE });
 
+		/*packet->pts = av_rescale_q_rnd(packet->pts, 
+			src_timebase, 
+			{ 1,AV_TIME_BASE }, 
+			(AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));*/
+
+		// make audio and video use one clock
+		if (_v_stream->pre_pts == (uint64_t)-1) {
+			_v_stream->pre_pts = packet->pts;
+		}
+
+		//make pts start from zero,otherwise the total play time of target file is incorrect
+		packet->pts = packet->pts - _v_stream->pre_pts;
 		packet->dts = packet->pts;//make sure that dts is equal to pts
 
-		//al_debug("A:%lld %lld", packet->pts, packet->dts);
+		av_packet_rescale_ts(packet, { 1,AV_TIME_BASE }, _a_stream->st->time_base);
+		
+
+		al_debug("A:%lld %lld", packet->pts, packet->dts);
 
 		av_assert0(packet->data != NULL);
 
