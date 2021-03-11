@@ -28,9 +28,9 @@
 
 #define V_FRAME_RATE 30
 #define V_BIT_RATE 1280*1000
-#define V_WIDTH 1920
-#define V_HEIGHT 1080
-#define V_QUALITY 60
+#define V_WIDTH GetSystemMetrics(SM_CXSCREEN)
+#define V_HEIGHT  GetSystemMetrics(SM_CYSCREEN);
+#define V_QUALITY 100
 
 #define A_SAMPLE_CHANNEL 2
 #define A_SAMPLE_RATE 44100
@@ -110,7 +110,9 @@ int start_muxer() {
 	setting.v_width = V_WIDTH;
 	setting.v_height = V_HEIGHT;
 	setting.v_qb = V_QUALITY;
-	setting.v_encoder_id = am::EID_VIDEO_NVENC;
+	setting.v_encoder_id = am::EID_VIDEO_X264;
+	setting.v_out_width = 1920;
+	setting.v_out_height = 1080;
 
 	setting.a_nb_channel = A_SAMPLE_CHANNEL;
 	setting.a_sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -480,13 +482,13 @@ int main(int argc, char **argv)
 
 	//test_audio();
 
-	//test_recorder();
+	test_recorder();
 
 	//test_remux();
 
 	//save_aac();
 
-	test_scale();
+	//test_scale();
 
 
 	al_info("press any key to exit...");

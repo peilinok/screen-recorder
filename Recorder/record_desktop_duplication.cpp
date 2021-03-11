@@ -834,7 +834,7 @@ namespace am {
 			frame->width = _width;
 			frame->height = _height;
 			frame->format = AV_PIX_FMT_BGRA;
-			frame->pict_type = AV_PICTURE_TYPE_I;
+			frame->pict_type = AV_PICTURE_TYPE_NONE;
 			frame->pkt_size = _width * _height * 4;
 
 			av_image_fill_arrays(frame->data,
